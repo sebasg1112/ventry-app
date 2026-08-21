@@ -2,10 +2,9 @@ import streamlit as st
 from datetime import datetime
 import qrcode
 from io import BytesIO
-import json
-import os
 import cv2
 import numpy as np
+import gspread # NUEVA LIBRERÍA PARA GOOGLE SHEETS
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Ventry - Control de Acceso", page_icon="🔑", layout="centered")
@@ -20,31 +19,44 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- MOTOR DE BASE DE DATOS (JSON) ---
-ARCHIVO_BD = "socios.json"
+# --- MOTOR DE BASE DE DATOS (GOOGLE SHEETS) ---
+# Nos conectamos a Google usando tu llave secreta
+try:
+    gc = gspread.service_account(filename="credenciales.json")
+    hoja_bd = gc.open("Ventry_BD").sheet1
+except Exception as e:
+    st.error("Error conectando a Google Sheets. Verifica que credenciales.json esté en la carpeta y que compartiste el archivo con el correo del bot.")
+    st.stop()
 
 def cargar_bd():
-    if not os.path.exists(ARCHIVO_BD):
-        # Agregamos usuarios maestros por defecto para probar los roles
-        datos_iniciales = {
-            "28472315": {"nombre": "Sebastián Giménez", "clave": "Bowie1234", "accion": "0393", "rol": "Titular", "solvencia": "Al dia", "cedula": "28472315"},
-            "admin": {"nombre": "Gerencia Ventry", "clave": "admin123", "accion": "0000", "rol": "Administrador", "solvencia": "Al dia", "cedula": "admin"},
-            "garita": {"nombre": "Vigilancia Turno 1", "clave": "seguridad123", "accion": "0000", "rol": "Vigilante", "solvencia": "Al dia", "cedula": "garita"}
+    """Descarga los datos de Google Sheets y los convierte al formato que usa la app"""
+    registros = hoja_bd.get_all_records()
+    datos = {}
+    for fila in registros:
+        ced = str(fila["cedula"])
+        datos[ced] = {
+            "nombre": str(fila["nombre"]),
+            "clave": str(fila["clave"]),
+            "accion": str(fila["accion"]),
+            "rol": str(fila["rol"]),
+            "solvencia": str(fila["solvencia"]),
+            "cedula": ced
         }
-        with open(ARCHIVO_BD, "w") as archivo:
-            json.dump(datos_iniciales, archivo, indent=4)
-            return datos_iniciales
-            
-    with open(ARCHIVO_BD, "r") as archivo:
-        datos = json.load(archivo)
-        for cedula, info in datos.items():
-            info["cedula"] = cedula
-        return datos
+    return datos
 
 def guardar_bd(datos):
-    with open(ARCHIVO_BD, "w") as archivo:
-        json.dump(datos, archivo, indent=4)
+    """Sube los datos actualizados a Google Sheets"""
+    # Preparamos la primera fila (los encabezados)
+    filas_a_subir = [["cedula", "nombre", "clave", "accion", "rol", "solvencia"]]
+    # Agregamos a todos los socios
+    for ced, info in datos.items():
+        filas_a_subir.append([ced, info["nombre"], info["clave"], info["accion"], info["rol"], info["solvencia"]])
+    
+    # Limpiamos la hoja completa y escribimos los datos nuevos
+    hoja_bd.clear()
+    hoja_bd.update(values=filas_a_subir, range_name="A1")
 
+# Cargamos la base de datos desde la nube
 BASE_DATOS_SOCIOS = cargar_bd()
 
 # --- ESTADO DE SESIÓN ---
@@ -58,7 +70,7 @@ if "historial" not in st.session_state:
 url_logo = "AQUÍ_PEGAS_EL_ENLACE_DE_TU_DRIVE"
 
 # ==========================================
-# PANTALLA ÚNICA DE LOGIN (Si no está logueado)
+# PANTALLA ÚNICA DE LOGIN
 # ==========================================
 if not st.session_state.logueado:
     try:
@@ -77,13 +89,11 @@ if not st.session_state.logueado:
     if boton_entrar:
         if cedula_ingresada in BASE_DATOS_SOCIOS:
             socio = BASE_DATOS_SOCIOS[cedula_ingresada]
-            if clave_ingresada == socio["clave"]:
+            if clave_ingresada == str(socio["clave"]):
                 if socio["solvencia"] == "Al dia":
                     st.session_state.logueado = True
                     st.session_state.usuario_actual = socio
                     hora_ingreso = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    
-                    # Solo registramos en el historial si es un socio normal entrando a su app
                     if socio["rol"] not in ["Administrador", "Vigilante"]:
                         st.session_state.historial.insert(0, {"nombre": socio["nombre"], "accion": socio["accion"], "hora": hora_ingreso, "via": "App (Login)"})
                     st.rerun()
@@ -95,13 +105,12 @@ if not st.session_state.logueado:
             st.error("Usuario no registrado.")
 
 # ==========================================
-# SISTEMA INTERNO (Si YA está logueado)
+# SISTEMA INTERNO
 # ==========================================
 else:
     socio_actual = st.session_state.usuario_actual
     rol_actual = socio_actual["rol"]
 
-    # --- CONSTRUCCIÓN DEL MENÚ LATERAL SEGÚN EL ROL ---
     st.sidebar.image("https://cdn-icons-png.flaticon.com/512/6195/6195699.png", width=100)
     st.sidebar.title(f"Hola, {socio_actual['nombre']}")
     st.sidebar.write(f"Rol: **{rol_actual}**")
@@ -123,11 +132,9 @@ else:
         st.session_state.usuario_actual = None
         st.rerun()
 
-    # --- MÓDULO 1: CARNET DIGITAL ---
     if modulo_seleccionado == "Mi Carnet Digital":
         st.subheader("Club Exclusivo Magnum")
         st.markdown("### 🎫 Tu Carnet Digital")
-        
         col1, col2 = st.columns(2)
         with col1:
             st.markdown(f"**Acción:** `{socio_actual['accion']}`")
@@ -135,24 +142,19 @@ else:
         with col2:
             st.markdown(f"**Cédula:** `{socio_actual['cedula']}`")
             st.markdown("**Vencimiento:** `2 horas`")
-
         st.write("---")
         datos_qr = f"CEDULA:{socio_actual['cedula']}|VENTRY|{socio_actual['nombre']}|{socio_actual['accion']}"
         img = qrcode.make(datos_qr)
         buffer = BytesIO()
         img.save(buffer, format="PNG")
-        
         col_A, col_B, col_C = st.columns([1,2,1])
         with col_B:
             st.image(buffer.getvalue(), caption="Muestre este código en Garita", width=220)
 
-    # --- MÓDULO 2: GARITA ---
     elif modulo_seleccionado == "Panel de Garita":
         st.title("🛡️ Módulo de Garita")
         st.write("---")
-        
         foto_qr = st.camera_input("Apunte el código QR aquí")
-
         if foto_qr is not None:
             bytes_data = foto_qr.getvalue()
             cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
@@ -194,10 +196,9 @@ else:
             for acceso in st.session_state.historial:
                 st.write(f"🟢 **{acceso['nombre']}** (Acc. {acceso['accion']}) - {acceso['hora']} - {acceso.get('via', '')}")
 
-    # --- MÓDULO 3: ADMINISTRACIÓN ---
     elif modulo_seleccionado == "Portal de Administración":
         st.title("⚙️ Administración General")
-        tab1, tab2, tab3 = st.tabs(["➕ Nuevo Usuario", "📝 Estatus", "🗃️ Base de Datos"])
+        tab1, tab2, tab3 = st.tabs(["➕ Nuevo Usuario", "📝 Estatus", "🗃️ Base de Datos en Vivo"])
 
         with tab1:
             with st.form("form_nuevo"):
@@ -214,8 +215,8 @@ else:
                 if st.form_submit_button("Guardar"):
                     if n_cedula and n_nombre and n_clave:
                         BASE_DATOS_SOCIOS[n_cedula] = {"nombre": n_nombre, "clave": n_clave, "accion": n_accion, "rol": n_rol, "solvencia": n_solvencia, "cedula": n_cedula}
-                        guardar_bd(BASE_DATOS_SOCIOS)
-                        st.success("✅ Registrado.")
+                        guardar_bd(BASE_DATOS_SOCIOS) # Esto ahora escribe en tu Google Sheet
+                        st.success("✅ Registrado en Google Sheets.")
                     else:
                         st.error("⚠️ Faltan datos.")
 
@@ -223,10 +224,11 @@ else:
             opciones_socios = {ced: f"{d['nombre']} - {d['solvencia']}" for ced, d in BASE_DATOS_SOCIOS.items()}
             socio_sel = st.selectbox("Seleccione:", list(opciones_socios.keys()), format_func=lambda x: opciones_socios[x])
             n_estatus = st.radio("Estatus:", ["Al dia", "Moroso"])
-            if st.button("Actualizar"):
+            if st.button("Actualizar Estatus"):
                 BASE_DATOS_SOCIOS[socio_sel]["solvencia"] = n_estatus
-                guardar_bd(BASE_DATOS_SOCIOS)
-                st.success("✅ Actualizado.")
+                guardar_bd(BASE_DATOS_SOCIOS) # Esto también actualiza la celda en tu Google Sheet
+                st.success("✅ Actualizado en Google Sheets.")
 
         with tab3:
+            st.write("Estos datos vienen directamente de tu archivo Ventry_BD:")
             st.json(BASE_DATOS_SOCIOS)

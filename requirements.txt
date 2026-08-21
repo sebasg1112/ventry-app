@@ -2,3 +2,4 @@ streamlit
 qrcode
 opencv-python-headless
 numpy
+gspread

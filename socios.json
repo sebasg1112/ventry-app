@@ -1,0 +1,26 @@
+{
+    "28472315": {
+        "nombre": "Sebasti\u00e1n Gim\u00e9nez",
+        "clave": "Bowie1234",
+        "accion": "0393",
+        "rol": "Titular",
+        "solvencia": "Al dia",
+        "cedula": "28472315"
+    },
+    "admin": {
+        "nombre": "Gerencia Ventry",
+        "clave": "admin123",
+        "accion": "0000",
+        "rol": "Administrador",
+        "solvencia": "Al dia",
+        "cedula": "admin"
+    },
+    "garita": {
+        "nombre": "Vigilancia Turno 1",
+        "clave": "seguridad123",
+        "accion": "0000",
+        "rol": "Vigilante",
+        "solvencia": "Al dia",
+        "cedula": "garita"
+    }
+}

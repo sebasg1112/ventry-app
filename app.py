@@ -4,7 +4,8 @@ import qrcode
 from io import BytesIO
 import cv2
 import numpy as np
-import gspread # NUEVA LIBRERÍA PARA GOOGLE SHEETS
+import gspread
+import json
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Ventry - Control de Acceso", page_icon="🔑", layout="centered")
@@ -20,16 +21,22 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- MOTOR DE BASE DE DATOS (GOOGLE SHEETS) ---
-# Nos conectamos a Google usando tu llave secreta
 try:
-    gc = gspread.service_account(filename="credenciales.json")
+    # Verificamos si estamos en la nube de Streamlit
+    if "google_credentials" in st.secrets:
+        cred_dict = json.loads(st.secrets["google_credentials"])
+        gc = gspread.service_account_from_dict(cred_dict)
+    # Si no estamos en la nube, usamos el archivo local
+    else:
+        gc = gspread.service_account(filename="credenciales.json")
+        
     hoja_bd = gc.open("Ventry_BD").sheet1
 except Exception as e:
-    st.error("Error conectando a Google Sheets. Verifica que credenciales.json esté en la carpeta y que compartiste el archivo con el correo del bot.")
+    st.error(f"Error conectando a Google Sheets: {e}")
     st.stop()
 
 def cargar_bd():
-    """Descarga los datos de Google Sheets y los convierte al formato que usa la app"""
+    """Descarga los datos de Google Sheets y los convierte al formato de la app"""
     registros = hoja_bd.get_all_records()
     datos = {}
     for fila in registros:
@@ -46,17 +53,13 @@ def cargar_bd():
 
 def guardar_bd(datos):
     """Sube los datos actualizados a Google Sheets"""
-    # Preparamos la primera fila (los encabezados)
     filas_a_subir = [["cedula", "nombre", "clave", "accion", "rol", "solvencia"]]
-    # Agregamos a todos los socios
     for ced, info in datos.items():
         filas_a_subir.append([ced, info["nombre"], info["clave"], info["accion"], info["rol"], info["solvencia"]])
     
-    # Limpiamos la hoja completa y escribimos los datos nuevos
     hoja_bd.clear()
     hoja_bd.update(values=filas_a_subir, range_name="A1")
 
-# Cargamos la base de datos desde la nube
 BASE_DATOS_SOCIOS = cargar_bd()
 
 # --- ESTADO DE SESIÓN ---
@@ -132,6 +135,7 @@ else:
         st.session_state.usuario_actual = None
         st.rerun()
 
+    # --- MÓDULO 1: CARNET DIGITAL ---
     if modulo_seleccionado == "Mi Carnet Digital":
         st.subheader("Club Exclusivo Magnum")
         st.markdown("### 🎫 Tu Carnet Digital")
@@ -151,6 +155,7 @@ else:
         with col_B:
             st.image(buffer.getvalue(), caption="Muestre este código en Garita", width=220)
 
+    # --- MÓDULO 2: GARITA ---
     elif modulo_seleccionado == "Panel de Garita":
         st.title("🛡️ Módulo de Garita")
         st.write("---")
@@ -196,6 +201,7 @@ else:
             for acceso in st.session_state.historial:
                 st.write(f"🟢 **{acceso['nombre']}** (Acc. {acceso['accion']}) - {acceso['hora']} - {acceso.get('via', '')}")
 
+    # --- MÓDULO 3: ADMINISTRACIÓN ---
     elif modulo_seleccionado == "Portal de Administración":
         st.title("⚙️ Administración General")
         tab1, tab2, tab3 = st.tabs(["➕ Nuevo Usuario", "📝 Estatus", "🗃️ Base de Datos en Vivo"])
@@ -215,7 +221,7 @@ else:
                 if st.form_submit_button("Guardar"):
                     if n_cedula and n_nombre and n_clave:
                         BASE_DATOS_SOCIOS[n_cedula] = {"nombre": n_nombre, "clave": n_clave, "accion": n_accion, "rol": n_rol, "solvencia": n_solvencia, "cedula": n_cedula}
-                        guardar_bd(BASE_DATOS_SOCIOS) # Esto ahora escribe en tu Google Sheet
+                        guardar_bd(BASE_DATOS_SOCIOS)
                         st.success("✅ Registrado en Google Sheets.")
                     else:
                         st.error("⚠️ Faltan datos.")
@@ -226,7 +232,7 @@ else:
             n_estatus = st.radio("Estatus:", ["Al dia", "Moroso"])
             if st.button("Actualizar Estatus"):
                 BASE_DATOS_SOCIOS[socio_sel]["solvencia"] = n_estatus
-                guardar_bd(BASE_DATOS_SOCIOS) # Esto también actualiza la celda en tu Google Sheet
+                guardar_bd(BASE_DATOS_SOCIOS)
                 st.success("✅ Actualizado en Google Sheets.")
 
         with tab3:

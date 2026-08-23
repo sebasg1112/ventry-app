@@ -12,6 +12,12 @@ st.set_page_config(page_title="Ventry - Control de Acceso", page_icon="🔑", la
 
 st.markdown("""
     <style>
+    /* Ocultar menú superior, pie de página y botón de GitHub de Streamlit */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Tu diseño corporativo original */
     .main { background-color: #ffffff; }
     .stButton>button { 
         width: 100%; border-radius: 8px; background-color: #003366; color: white; font-weight: bold; border: none;
@@ -204,7 +210,9 @@ else:
     # --- MÓDULO 3: ADMINISTRACIÓN ---
     elif modulo_seleccionado == "Portal de Administración":
         st.title("⚙️ Administración General")
-        tab1, tab2, tab3 = st.tabs(["➕ Nuevo Usuario", "📝 Estatus", "🗃️ Base de Datos en Vivo"])
+        
+        # Aquí están las 4 pestañas (Tabs)
+        tab1, tab2, tab3, tab4 = st.tabs(["➕ Nuevo Usuario", "📝 Estatus", "🗃️ Base de Datos en Vivo", "📈 Analítica Financiera"])
 
         with tab1:
             with st.form("form_nuevo"):
@@ -238,3 +246,35 @@ else:
         with tab3:
             st.write("Estos datos vienen directamente de tu archivo Ventry_BD:")
             st.json(BASE_DATOS_SOCIOS)
+
+        # --- NUEVA SECCIÓN DE ANALÍTICA ---
+        with tab4:
+            st.markdown("### 📊 Radiografía de la Cartera")
+            
+            # Procesamos el dataset actual
+            total_socios = len(BASE_DATOS_SOCIOS)
+            
+            if total_socios > 0:
+                # Contamos cuántos morosos hay
+                morosos = sum(1 for socio in BASE_DATOS_SOCIOS.values() if socio["solvencia"] == "Moroso")
+                al_dia = total_socios - morosos
+                tasa_morosidad = (morosos / total_socios) * 100
+                
+                # Proyección financiera (Asumiendo Cuota base de $104)
+                capital_retenido = morosos * 104
+                
+                # Tarjetas de métricas (KPIs)
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Total de Socios", total_socios)
+                col2.metric("Tasa de Morosidad", f"{tasa_morosidad:.1f}%")
+                col3.metric("Capital en Riesgo", f"${capital_retenido:,.2f}")
+                
+                st.write("---")
+                
+                # Gráfico visual
+                st.markdown("#### Distribución de Estatus")
+                datos_grafico = {"Estatus": ["Al Día", "Moroso"], "Cantidad": [al_dia, morosos]}
+                st.bar_chart(data=datos_grafico, x="Estatus", y="Cantidad", color="#003366")
+                
+            else:
+                st.info("No hay datos suficientes para generar analíticas.")

@@ -1,5 +1,5 @@
 import streamlit as st
-from datetime import datetime, timedelta
+from datetime import datetime
 import qrcode
 from io import BytesIO
 import cv2
@@ -7,7 +7,7 @@ import numpy as np
 import gspread
 import json
 import pandas as pd
-import uuid # Para generar códigos únicos de invitados
+import uuid
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Ventry - Control de Acceso", page_icon="🔑", layout="centered")
@@ -34,12 +34,11 @@ try:
         gc = gspread.service_account(filename="credenciales.json")
         
     hoja_bd = gc.open("Ventry_BD").sheet1
-    hoja_invitaciones = gc.open("Ventry_BD").worksheet("Invitaciones") # NUEVA CONEXIÓN
+    hoja_invitaciones = gc.open("Ventry_BD").worksheet("Invitaciones")
 except Exception as e:
     st.error(f"Error conectando a Google Sheets: {e}")
     st.stop()
 
-# --- FUNCIONES DE LECTURA/ESCRITURA (SOCIOS) ---
 def cargar_bd():
     registros = hoja_bd.get_all_records()
     datos = {}
@@ -66,36 +65,36 @@ def guardar_bd(datos):
     hoja_bd.clear()
     hoja_bd.update(values=filas_a_subir, range_name="A1")
 
-# --- FUNCIONES DE LECTURA/ESCRITURA (INVITADOS) ---
 def cargar_invitaciones():
     try:
         registros = hoja_invitaciones.get_all_records()
     except:
-        return {} # Si la hoja está vacía
-    
+        return {}
     datos = {}
     for fila in registros:
         id_qr = str(fila.get("id_qr", ""))
         if id_qr:
             datos[id_qr] = {
                 "accion": str(fila.get("accion", "")),
-                "tipo_pase": str(fila.get("tipo_pase", "")),
-                "vencimiento": str(fila.get("vencimiento", "")),
+                "fecha_visita": str(fila.get("fecha_visita", "")),
+                "cedula_invitado": str(fila.get("cedula_invitado", "")),
+                "nombre_invitado": str(fila.get("nombre_invitado", "")),
+                "fecha_nacimiento": str(fila.get("fecha_nacimiento", "")),
+                "correo": str(fila.get("correo", "")),
                 "estatus": str(fila.get("estatus", ""))
             }
     return datos
 
 def guardar_bd_invitaciones(datos):
-    filas_a_subir = [["id_qr", "accion", "tipo_pase", "vencimiento", "estatus"]]
+    filas_a_subir = [["id_qr", "accion", "fecha_visita", "cedula_invitado", "nombre_invitado", "fecha_nacimiento", "correo", "estatus"]]
     for id_qr, info in datos.items():
-        filas_a_subir.append([id_qr, info["accion"], info["tipo_pase"], info["vencimiento"], info["estatus"]])
+        filas_a_subir.append([id_qr, info["accion"], info["fecha_visita"], info["cedula_invitado"], info["nombre_invitado"], info.get("fecha_nacimiento", ""), info.get("correo", ""), info["estatus"]])
     hoja_invitaciones.clear()
     hoja_invitaciones.update(values=filas_a_subir, range_name="A1")
 
 BASE_DATOS_SOCIOS = cargar_bd()
 BASE_DATOS_INVITACIONES = cargar_invitaciones()
 
-# --- ESTADO DE SESIÓN ---
 if "logueado" not in st.session_state:
     st.session_state.logueado = False
 if "usuario_actual" not in st.session_state:
@@ -120,15 +119,14 @@ if not st.session_state.logueado:
         if cedula_ingresada in BASE_DATOS_SOCIOS:
             socio = BASE_DATOS_SOCIOS[cedula_ingresada]
             if clave_ingresada == str(socio["clave"]):
-                if socio["solvencia"] == "Al dia":
-                    st.session_state.logueado = True
-                    st.session_state.usuario_actual = socio
-                    hora_ingreso = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    if socio["rol"] not in ["Administrador", "Vigilante"]:
-                        st.session_state.historial.insert(0, {"nombre": socio["nombre"], "accion": socio["accion"], "hora": hora_ingreso, "via": "App (Login)"})
-                    st.rerun()
-                else:
-                    st.error("❌ ACCESO DENEGADO: Su cuenta se encuentra en estatus [Moroso].")
+                # ¡NUEVA LÓGICA! Dejamos entrar a todos, sin importar la solvencia.
+                st.session_state.logueado = True
+                st.session_state.usuario_actual = socio
+                
+                # Solo registramos el log de entrada a la app si están al día (opcional)
+                if socio["solvencia"] == "Al dia" and socio["rol"] not in ["Administrador", "Vigilante"]:
+                    st.session_state.historial.insert(0, {"nombre": socio["nombre"], "accion": socio["accion"], "hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "via": "App (Login)"})
+                st.rerun()
             else:
                 st.error("Contraseña incorrecta.")
         else:
@@ -146,7 +144,6 @@ else:
     st.sidebar.write(f"Rol: **{rol_actual}**")
     st.sidebar.write("---")
     
-    # --- MENÚ ACTUALIZADO ---
     opciones_menu = []
     if rol_actual in ["Titular", "Familiar"]:
         opciones_menu = ["Mi Carnet Digital", "Pases de Invitados"]
@@ -166,65 +163,109 @@ else:
     # --- MÓDULO 1: CARNET DIGITAL ---
     if modulo_seleccionado == "Mi Carnet Digital":
         st.subheader("Club Exclusivo Magnum")
+        
+        # Si está moroso, le mostramos una alerta gigante
+        if socio_actual['solvencia'] != "Al dia":
+            st.error("⚠️ ATENCIÓN: Tu grupo familiar presenta un saldo pendiente.")
+            st.warning("Tu acceso a las instalaciones se encuentra temporalmente restringido. Por favor, regulariza tu estatus en el módulo de pagos (Próximamente).")
+            
         st.markdown("### 🎫 Tu Carnet Digital")
         col1, col2 = st.columns(2)
         with col1:
             st.markdown(f"**Acción:** `{socio_actual['accion']}`")
-            st.markdown(f"**Estatus:** `{socio_actual['solvencia']} ✅`")
+            # Cambia el color del texto dependiendo de la solvencia
+            estatus_color = "✅ Al dia" if socio_actual['solvencia'] == "Al dia" else "❌ MOROSO"
+            st.markdown(f"**Estatus:** `{estatus_color}`")
         with col2:
             st.markdown(f"**Cédula:** `{socio_actual['cedula']}`")
         st.write("---")
+        
         datos_qr = f"CEDULA:{socio_actual['cedula']}|VENTRY|{socio_actual['nombre']}|{socio_actual['accion']}"
         img = qrcode.make(datos_qr)
         buffer = BytesIO()
         img.save(buffer, format="PNG")
+        
         col_A, col_B, col_C = st.columns([1,2,1])
         with col_B:
+            # Si está moroso, mostramos el QR pero le advertimos que no funcionará
             st.image(buffer.getvalue(), caption="Muestre este código en Garita", width=220)
+            if socio_actual['solvencia'] != "Al dia":
+                st.error("❌ Este código será rechazado en la garita.")
 
     # --- MÓDULO 2: PASES DE INVITADOS ---
     elif modulo_seleccionado == "Pases de Invitados":
-        st.subheader("🎫 Generar Pase Temporal")
-        st.write("Crea un código QR de un solo uso para tus invitados.")
+        st.subheader("🎫 Generar Pase de Invitado")
+        st.write("Crea un código QR válido por un día completo para tu invitado.")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            btn_1h = st.button("Pase de 1 Hora")
-        with col2:
-            btn_24h = st.button("Pase de 24 Horas")
+        # Buscar invitados anteriores del mismo socio y guardar sus datos extra
+        invitados_previos = {}
+        for inv in BASE_DATOS_INVITACIONES.values():
+            if inv["accion"] == socio_actual["accion"]:
+                invitados_previos[inv["cedula_invitado"]] = {
+                    "nombre": inv["nombre_invitado"],
+                    "correo": inv.get("correo", "")
+                }
+
+        # Selectores dinámicos FUERA del formulario para permitir autocompletado
+        modo_ingreso = st.radio("Seleccione el tipo de registro:", ["Nuevo Invitado", "Invitado Frecuente"])
+        
+        n_cedula_def = ""
+        n_nombre_def = ""
+        n_correo_def = ""
+        
+        if modo_ingreso == "Invitado Frecuente":
+            if invitados_previos:
+                inv_sel = st.selectbox("Seleccione de su directorio:", list(invitados_previos.keys()), format_func=lambda x: f"{invitados_previos[x]['nombre']} (C.I: {x})")
+                n_cedula_def = inv_sel
+                n_nombre_def = invitados_previos[inv_sel]['nombre']
+                n_correo_def = invitados_previos[inv_sel]['correo']
+            else:
+                st.info("Aún no tienes invitados guardados en tu directorio.")
+
+        with st.form("form_invitacion"):
+            col_a, col_b = st.columns(2)
+            with col_a:
+                n_cedula_inv = st.text_input("Cédula del Invitado", value=n_cedula_def)
+                n_nombre_inv = st.text_input("Nombre del Invitado", value=n_nombre_def)
+            with col_b:
+                n_correo_inv = st.text_input("Correo Electrónico", value=n_correo_def)
+                n_nacimiento_inv = st.date_input("Fecha de Nacimiento", min_value=datetime(1920, 1, 1), max_value=datetime.today())
             
-        if btn_1h or btn_24h:
-            # Validamos nuevamente que el socio esté solvente por seguridad
+            st.write("---")
+            st.markdown("#### 📸 Documento de Identidad")
+            foto_cedula = st.file_uploader("Sube la foto de la Cédula (Fase Beta - Interfaz Lista)", type=["jpg", "png", "jpeg"])
+            st.write("---")
+            
+            fecha_visita = st.date_input("Fecha de la visita (Válido por todo el día)", min_value=datetime.today())
+            btn_generar = st.form_submit_button("Generar Pase QR")
+            
+        if btn_generar:
             if socio_actual["solvencia"] != "Al dia":
                 st.error("❌ Operación Denegada. Tu grupo familiar presenta morosidad.")
+            elif not n_cedula_inv or not n_nombre_inv:
+                st.error("⚠️ Debes ingresar al menos la Cédula y el Nombre del invitado.")
             else:
-                tipo = "1 Hora" if btn_1h else "24 Horas"
-                horas_sumar = 1 if btn_1h else 24
-                
-                # Generamos un ID encriptado único (Ej. INV-393-A4B7D2)
+                str_fecha = fecha_visita.strftime("%Y-%m-%d")
+                str_nacimiento = n_nacimiento_inv.strftime("%Y-%m-%d")
                 id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
                 
-                # Calculamos matemáticamente la fecha de caducidad
-                ahora = datetime.now()
-                vence = ahora + timedelta(hours=horas_sumar)
-                str_vence = vence.strftime("%Y-%m-%d %H:%M:%S")
-                
-                # Guardamos en la nueva pestaña de Google Sheets
                 BASE_DATOS_INVITACIONES[id_unico] = {
                     "accion": socio_actual["accion"],
-                    "tipo_pase": tipo,
-                    "vencimiento": str_vence,
+                    "fecha_visita": str_fecha,
+                    "cedula_invitado": n_cedula_inv,
+                    "nombre_invitado": n_nombre_inv,
+                    "fecha_nacimiento": str_nacimiento,
+                    "correo": n_correo_inv,
                     "estatus": "Activo"
                 }
                 guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
                 
-                # Inyectamos el ID en el QR
                 datos_qr = f"INVITADO|{id_unico}"
                 img = qrcode.make(datos_qr)
                 buffer = BytesIO()
                 img.save(buffer, format="PNG")
                 
-                st.success(f"✅ Pase generado con éxito. Válido hasta: {str_vence}")
+                st.success(f"✅ Pase generado para {n_nombre_inv}. Válido para el día: {str_fecha}")
                 col_A, col_B, col_C = st.columns([1,2,1])
                 with col_B:
                     st.image(buffer.getvalue(), caption="Comparte este QR con tu invitado", width=250)
@@ -241,53 +282,52 @@ else:
             datos_decodificados, bbox, _ = detector.detectAndDecode(cv2_img)
             
             if datos_decodificados:
-                # 1. LECTURA DE SOCIO
                 if "CEDULA:" in datos_decodificados:
                     cedula_escaneada = datos_decodificados.split("|")[0].replace("CEDULA:", "")
                     if cedula_escaneada in BASE_DATOS_SOCIOS:
                         socio = BASE_DATOS_SOCIOS[cedula_escaneada]
                         if socio["solvencia"] == "Al dia":
                             st.success("✅ ACCESO PERMITIDO (Socio)")
-                            st.info(f"**Socio:** {socio['nombre']} | **Acción:** {socio['accion']} | **Rol:** {socio['rol']}")
+                            st.info(f"**Socio:** {socio['nombre']} | **Acción:** {socio['accion']}")
                             st.session_state.historial.insert(0, {"nombre": socio["nombre"], "accion": socio["accion"], "hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "via": "QR (Socio)"})
                         else:
                             st.error("❌ ACCESO DENEGADO - SOCIO MOROSO")
                     else:
-                        st.error("⚠️ El socio ya no existe en la Base de Datos.")
+                        st.error("⚠️ El socio ya no existe en la BD.")
                 
-                # 2. LECTURA DE INVITADO
                 elif "INVITADO|" in datos_decodificados:
                     id_qr = datos_decodificados.split("|")[1]
                     if id_qr in BASE_DATOS_INVITACIONES:
                         pase = BASE_DATOS_INVITACIONES[id_qr]
                         
                         if pase["estatus"] == "Activo":
-                            vencimiento_dt = datetime.strptime(pase["vencimiento"], "%Y-%m-%d %H:%M:%S")
-                            # Validar el tiempo
-                            if datetime.now() <= vencimiento_dt:
-                                # Validar que la acción que invita siga solvente
+                            fecha_hoy = datetime.now().strftime("%Y-%m-%d")
+                            fecha_pase = pase["fecha_visita"]
+                            
+                            if fecha_hoy == fecha_pase:
                                 accion_invita = pase["accion"]
                                 socio_solvente = any(s["accion"] == accion_invita and s["solvencia"] == "Al dia" for s in BASE_DATOS_SOCIOS.values())
                                 
                                 if socio_solvente:
-                                    st.success(f"✅ ACCESO PERMITIDO (Invitado - {pase['tipo_pase']})")
-                                    st.info(f"Autorizado por la Acción: {accion_invita}")
+                                    st.success(f"✅ ACCESO PERMITIDO (Invitado: {pase['nombre_invitado']})")
+                                    st.info(f"C.I: {pase['cedula_invitado']} | Autorizado por Acción: {accion_invita}")
                                     
-                                    # Quemar el pase para que no se use dos veces
                                     BASE_DATOS_INVITACIONES[id_qr]["estatus"] = "Usado"
                                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
                                     
-                                    st.session_state.historial.insert(0, {"nombre": "Invitado Temporal", "accion": accion_invita, "hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "via": "QR (Invitado)"})
+                                    st.session_state.historial.insert(0, {"nombre": f"Inv: {pase['nombre_invitado']}", "accion": accion_invita, "hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "via": "QR (Invitado)"})
                                 else:
-                                    st.error("❌ ACCESO DENEGADO - La Acción que emitió este pase se encuentra Morosa.")
-                            else:
-                                st.error("❌ ACCESO DENEGADO - Este pase ha caducado.")
+                                    st.error("❌ ACCESO DENEGADO - La Acción que emitió este pase está Morosa.")
+                            elif fecha_hoy > fecha_pase:
+                                st.error("❌ ACCESO DENEGADO - Este pase expiró.")
                                 BASE_DATOS_INVITACIONES[id_qr]["estatus"] = "Vencido"
                                 guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
+                            else:
+                                st.warning("⚠️ ACCESO DENEGADO - Este pase es para una fecha futura.")
                         else:
                             st.error(f"❌ ACCESO DENEGADO - Este código QR ya se encuentra {pase['estatus']}.")
                     else:
-                        st.warning("⚠️ Código de invitado no encontrado o adulterado.")
+                        st.warning("⚠️ Código de invitado no encontrado.")
             else:
                 st.warning("⚠️ No se detectó un código válido.")
         
@@ -295,12 +335,11 @@ else:
         st.markdown("### 📊 Registro de Entradas (Local)")
         if st.session_state.historial:
             for acceso in st.session_state.historial:
-                st.write(f"🟢 **{acceso['nombre']}** (Acc. {acceso['accion']}) - {acceso['hora']} - {acceso.get('via', '')}")
+                st.write(f"🟢 **{acceso['nombre']}** (Acc. {acceso['accion']}) - {acceso['hora']}")
 
-    # --- MÓDULO 4: ADMINISTRACIÓN (Se mantiene exacto a la versión anterior) ---
+    # --- MÓDULO 4: ADMINISTRACIÓN (Intacto) ---
     elif modulo_seleccionado == "Portal de Administración":
         st.title("⚙️ Administración General")
-        
         tab1, tab2, tab3, tab4, tab5 = st.tabs(["➕ Nuevo Usuario", "✏️ Editar Perfil", "📝 Gestión Familiar", "🗃️ Base de Datos", "📈 Analítica"])
 
         with tab1:
@@ -315,7 +354,6 @@ else:
                     n_rol = st.selectbox("Rol", ["Titular", "Familiar", "Vigilante", "Administrador"])
                 with col_c:
                     n_parentesco = st.selectbox("Parentesco", ["N/A (Titular/Staff)", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"])
-                
                 n_solvencia = st.selectbox("Estatus", ["Al dia", "Moroso"])
 
                 if st.form_submit_button("Guardar Nuevo"):
@@ -327,7 +365,7 @@ else:
                                     titular_existente = True
                                     break
                         if titular_existente:
-                            st.error(f"⚠️ Operación denegada: La Acción {n_accion} ya tiene un Titular registrado.")
+                            st.error(f"⚠️ Operación denegada: La Acción {n_accion} ya tiene un Titular.")
                         else:
                             BASE_DATOS_SOCIOS[n_cedula] = {"nombre": n_nombre, "clave": n_clave, "accion": n_accion, "rol": n_rol, "parentesco": n_parentesco, "solvencia": n_solvencia, "cedula": n_cedula}
                             guardar_bd(BASE_DATOS_SOCIOS)
@@ -341,7 +379,6 @@ else:
             if opciones_editar:
                 socio_a_editar = st.selectbox("Seleccione el socio:", list(opciones_editar.keys()), format_func=lambda x: opciones_editar[x])
                 socio_data = BASE_DATOS_SOCIOS[socio_a_editar]
-                
                 with st.form("form_editar"):
                     e_nombre = st.text_input("Nombre", value=socio_data["nombre"])
                     e_clave = st.text_input("Contraseña", value=socio_data["clave"])
@@ -366,14 +403,11 @@ else:
                         BASE_DATOS_SOCIOS[socio_a_editar]["parentesco"] = e_parentesco
                         guardar_bd(BASE_DATOS_SOCIOS)
                         st.success("✅ Perfil actualizado.")
-            else:
-                st.info("No hay usuarios.")
 
         with tab3:
             st.markdown("### 🏠 Gestión de Grupos Familiares")
             acciones_disponibles = list(set(d["accion"] for d in BASE_DATOS_SOCIOS.values()))
             acciones_disponibles.sort()
-            
             if acciones_disponibles:
                 accion_sel = st.selectbox("Seleccione Acción:", acciones_disponibles)
                 miembros_accion = [info for info in BASE_DATOS_SOCIOS.values() if info["accion"] == accion_sel]
@@ -398,8 +432,6 @@ else:
                                     BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
                             guardar_bd(BASE_DATOS_SOCIOS)
                             st.success("✅ Actualizado.")
-            else:
-                st.info("No hay acciones.")
 
         with tab4:
             st.write("Datos de tu archivo Ventry_BD (Socios):")
@@ -430,5 +462,3 @@ else:
                     "Color": ["#003366", "#FF4B4B"]
                 })
                 st.bar_chart(data=df_grafico, x="Estatus", y="Cantidad", color="Color")
-            else:
-                st.info("Datos insuficientes.")

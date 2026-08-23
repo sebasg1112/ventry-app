@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import gspread
 import json
-import pandas as pd
+import pandas as pd # Librería para los gráficos y manipulación de datos
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Ventry - Control de Acceso", page_icon="🔑", layout="centered")
@@ -29,11 +29,9 @@ st.markdown("""
 
 # --- MOTOR DE BASE DE DATOS (GOOGLE SHEETS) ---
 try:
-    # Verificamos si estamos en la nube de Streamlit
     if "google_credentials" in st.secrets:
         cred_dict = json.loads(st.secrets["google_credentials"])
         gc = gspread.service_account_from_dict(cred_dict)
-    # Si no estamos en la nube, usamos el archivo local
     else:
         gc = gspread.service_account(filename="credenciales.json")
         
@@ -53,6 +51,7 @@ def cargar_bd():
             "clave": str(fila["clave"]),
             "accion": str(fila["accion"]),
             "rol": str(fila["rol"]),
+            "parentesco": str(fila.get("parentesco", "N/A")), # Evita errores si la columna es nueva
             "solvencia": str(fila["solvencia"]),
             "cedula": ced
         }
@@ -60,16 +59,12 @@ def cargar_bd():
 
 def guardar_bd(datos):
     """Sube los datos a Google Sheets ordenados por Acción y Titular primero"""
-    # 1. Convertimos el diccionario a una lista para poder ordenarla
     lista_socios = list(datos.values())
+    # Ordenamos: Primero por Acción, luego por Rol (Titular queda antes que Familiar)
+    lista_socios.sort(key=lambda x: (x.get("accion", ""), x.get("rol", "")), reverse=True) 
     
-    # 2. Ordenamos: Primero por número de Acción, luego por Rol (Titular queda antes que Familiar)
-    lista_socios.sort(key=lambda x: (x.get("accion", ""), x.get("rol", "")), reverse=True) # reverse=True para que Titular quede arriba de Familiar alfabéticamente
-    
-    # 3. Preparamos las filas (¡Agregamos la columna 'parentesco'!)
     filas_a_subir = [["cedula", "nombre", "clave", "accion", "rol", "parentesco", "solvencia"]]
     for socio in lista_socios:
-        # Si es un usuario viejo sin parentesco, le ponemos "N/A" por defecto
         parentesco = socio.get("parentesco", "N/A") 
         filas_a_subir.append([socio["cedula"], socio["nombre"], socio["clave"], socio["accion"], socio["rol"], parentesco, socio["solvencia"]])
     
@@ -86,7 +81,7 @@ if "usuario_actual" not in st.session_state:
 if "historial" not in st.session_state:
     st.session_state.historial = []
 
-url_logo = "AQUÍ_PEGAS_EL_ENLACE_DE_TU_DRIVE"
+url_logo = "AQUÍ_PEGAS_EL_ENLACE_DE_TU_DRIVE" # Recuerda volver a poner tu enlace aquí si lo tenías
 
 # ==========================================
 # PANTALLA ÚNICA DE LOGIN
@@ -221,7 +216,8 @@ else:
     elif modulo_seleccionado == "Portal de Administración":
         st.title("⚙️ Administración General")
         
-        tab1, tab2, tab3, tab4 = st.tabs(["➕ Nuevo Usuario", "📝 Estatus", "🗃️ Base de Datos en Vivo", "📈 Analítica Financiera"])
+        # 5 Pestañas bien numeradas
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["➕ Nuevo Usuario", "✏️ Editar Perfil", "📝 Gestión Familiar", "🗃️ Base de Datos", "📈 Analítica"])
 
         with tab1:
             with st.form("form_nuevo"):
@@ -235,12 +231,11 @@ else:
                 with col_b:
                     n_rol = st.selectbox("Rol", ["Titular", "Familiar", "Vigilante", "Administrador"])
                 with col_c:
-                    # Nuevo campo para identificar el parentesco
                     n_parentesco = st.selectbox("Parentesco", ["N/A (Titular/Staff)", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"])
                 
                 n_solvencia = st.selectbox("Estatus", ["Al dia", "Moroso"])
 
-                if st.form_submit_button("Guardar"):
+                if st.form_submit_button("Guardar Nuevo"):
                     if n_cedula and n_nombre and n_clave:
                         titular_existente = False
                         if n_rol == "Titular":
@@ -252,7 +247,6 @@ else:
                         if titular_existente:
                             st.error(f"⚠️ Operación denegada: La Acción {n_accion} ya tiene un Titular registrado.")
                         else:
-                            # Guardamos con el nuevo campo de parentesco
                             BASE_DATOS_SOCIOS[n_cedula] = {"nombre": n_nombre, "clave": n_clave, "accion": n_accion, "rol": n_rol, "parentesco": n_parentesco, "solvencia": n_solvencia, "cedula": n_cedula}
                             guardar_bd(BASE_DATOS_SOCIOS)
                             st.success("✅ Registrado y ordenado en Google Sheets.")
@@ -260,18 +254,53 @@ else:
                         st.error("⚠️ Faltan datos.")
 
         with tab2:
-            st.markdown("### Gestión de Grupos Familiares")
+            st.markdown("### ✏️ Modificar Datos del Socio")
+            opciones_editar = {ced: f"{d['nombre']} (C.I: {ced})" for ced, d in BASE_DATOS_SOCIOS.items()}
             
-            # Agrupamos por acción para el selector principal
+            if opciones_editar:
+                socio_a_editar = st.selectbox("Seleccione el socio a modificar:", list(opciones_editar.keys()), format_func=lambda x: opciones_editar[x])
+                socio_data = BASE_DATOS_SOCIOS[socio_a_editar]
+                
+                with st.form("form_editar"):
+                    e_nombre = st.text_input("Nombre", value=socio_data["nombre"])
+                    e_clave = st.text_input("Contraseña", value=socio_data["clave"])
+                    
+                    col_a, col_b, col_c = st.columns(3)
+                    with col_a:
+                        e_accion = st.text_input("Acción", value=socio_data["accion"])
+                    with col_b:
+                        roles_lista = ["Titular", "Familiar", "Vigilante", "Administrador"]
+                        idx_rol = roles_lista.index(socio_data["rol"]) if socio_data["rol"] in roles_lista else 0
+                        e_rol = st.selectbox("Rol", roles_lista, index=idx_rol)
+                    with col_c:
+                        parentesco_lista = ["N/A (Titular/Staff)", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"]
+                        parentesco_actual = socio_data.get("parentesco", "N/A (Titular/Staff)")
+                        idx_par = parentesco_lista.index(parentesco_actual) if parentesco_actual in parentesco_lista else 0
+                        e_parentesco = st.selectbox("Parentesco", parentesco_lista, index=idx_par)
+                    
+                    if st.form_submit_button("Guardar Cambios"):
+                        BASE_DATOS_SOCIOS[socio_a_editar]["nombre"] = e_nombre
+                        BASE_DATOS_SOCIOS[socio_a_editar]["clave"] = e_clave
+                        BASE_DATOS_SOCIOS[socio_a_editar]["accion"] = e_accion
+                        BASE_DATOS_SOCIOS[socio_a_editar]["rol"] = e_rol
+                        BASE_DATOS_SOCIOS[socio_a_editar]["parentesco"] = e_parentesco
+                        
+                        guardar_bd(BASE_DATOS_SOCIOS)
+                        st.success("✅ Perfil actualizado correctamente.")
+            else:
+                st.info("No hay usuarios registrados para editar.")
+
+        with tab3:
+            st.markdown("### 🏠 Gestión de Grupos Familiares")
+            
             acciones_disponibles = list(set(d["accion"] for d in BASE_DATOS_SOCIOS.values()))
-            acciones_disponibles.sort() # Ordenamos la lista de acciones numéricamente
+            acciones_disponibles.sort()
             
             if acciones_disponibles:
                 accion_sel = st.selectbox("Seleccione la Acción a visualizar:", acciones_disponibles)
                 
-                # Extraemos y ordenamos los miembros de la acción seleccionada
                 miembros_accion = [info for info in BASE_DATOS_SOCIOS.values() if info["accion"] == accion_sel]
-                miembros_accion.sort(key=lambda x: x.get("rol", ""), reverse=True) # Titular primero
+                miembros_accion.sort(key=lambda x: x.get("rol", ""), reverse=True)
                 
                 estatus_actual_grupo = miembros_accion[0]["solvencia"] if miembros_accion else "Desconocido"
 
@@ -279,14 +308,12 @@ else:
                 col1, col2 = st.columns([2, 1])
                 
                 with col1:
-                    st.markdown(f"#### 🏠 Grupo Familiar (Acción {accion_sel})")
-                    # Creamos una tabla visual usando markdown para que se vea ordenado
+                    st.markdown(f"#### Grupo Familiar (Acción {accion_sel})")
                     tabla_md = "| Nombre | Rol | Parentesco | Estatus |\n| :--- | :--- | :--- | :--- |\n"
                     for m in miembros_accion:
                         parentesco_mostrar = m.get('parentesco', 'N/A')
                         icono = "👑" if m["rol"] == "Titular" else "👤"
                         tabla_md += f"| {icono} {m['nombre']} | {m['rol']} | {parentesco_mostrar} | {m['solvencia']} |\n"
-                    
                     st.markdown(tabla_md)
 
                 with col2:
@@ -303,14 +330,13 @@ else:
             else:
                 st.info("No hay acciones registradas.")
 
-        with tab3:
+        with tab4:
             st.write("Estos datos vienen directamente de tu archivo Ventry_BD:")
             st.json(BASE_DATOS_SOCIOS)
 
-        with tab4:
+        with tab5:
             st.markdown("### 📊 Radiografía de la Cartera (Por Acciones)")
             
-            # --- CORRECCIÓN LÓGICA: Contar Acciones únicas, no personas ---
             acciones_totales = set()
             acciones_morosas = set()
             
@@ -326,7 +352,6 @@ else:
                 al_dia_count = total_acciones_unicas - morosos_count
                 tasa_morosidad = (morosos_count / total_acciones_unicas) * 100
                 
-                # Proyección financiera real (1 Cuota por Acción, no por familiar)
                 capital_retenido = morosos_count * 104
                 
                 col1, col2, col3 = st.columns(3)
@@ -335,13 +360,11 @@ else:
                 col3.metric("Capital en Riesgo", f"${capital_retenido:,.2f}")
                 
                 st.write("---")
-                
                 st.markdown("#### Distribución de Estatus")
-                # Creamos la tabla de datos incluyendo el color exacto para cada barra
                 df_grafico = pd.DataFrame({
                     "Estatus": ["Al Día", "Moroso"],
                     "Cantidad": [al_dia_count, morosos_count],
-                    "Color": ["#003366", "#FF4B4B"] # Azul corporativo y Rojo alerta
+                    "Color": ["#003366", "#FF4B4B"]
                 })
                 
                 st.bar_chart(data=df_grafico, x="Estatus", y="Cantidad", color="Color")

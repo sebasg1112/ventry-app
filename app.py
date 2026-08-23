@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import gspread
 import json
+import pandas as pd
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Ventry - Control de Acceso", page_icon="🔑", layout="centered")
@@ -211,7 +212,6 @@ else:
     elif modulo_seleccionado == "Portal de Administración":
         st.title("⚙️ Administración General")
         
-        # Aquí están las 4 pestañas (Tabs)
         tab1, tab2, tab3, tab4 = st.tabs(["➕ Nuevo Usuario", "📝 Estatus", "🗃️ Base de Datos en Vivo", "📈 Analítica Financiera"])
 
         with tab1:
@@ -235,46 +235,64 @@ else:
                         st.error("⚠️ Faltan datos.")
 
         with tab2:
-            opciones_socios = {ced: f"{d['nombre']} - {d['solvencia']}" for ced, d in BASE_DATOS_SOCIOS.items()}
-            socio_sel = st.selectbox("Seleccione:", list(opciones_socios.keys()), format_func=lambda x: opciones_socios[x])
-            n_estatus = st.radio("Estatus:", ["Al dia", "Moroso"])
+            opciones_socios = {ced: f"{d['nombre']} (Acción: {d['accion']}) - {d['solvencia']}" for ced, d in BASE_DATOS_SOCIOS.items()}
+            socio_sel = st.selectbox("Seleccione un Socio para ubicar su Acción:", list(opciones_socios.keys()), format_func=lambda x: opciones_socios[x])
+            
+            n_estatus = st.radio("Nuevo Estatus (Aplica a todo el grupo familiar):", ["Al dia", "Moroso"])
+            
             if st.button("Actualizar Estatus"):
-                BASE_DATOS_SOCIOS[socio_sel]["solvencia"] = n_estatus
+                accion_afectada = BASE_DATOS_SOCIOS[socio_sel]["accion"]
+                
+                # Magia: Buscamos a todos los que compartan la acción y los actualizamos juntos
+                for ced, info in BASE_DATOS_SOCIOS.items():
+                    if info["accion"] == accion_afectada:
+                        BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
+                        
                 guardar_bd(BASE_DATOS_SOCIOS)
-                st.success("✅ Actualizado en Google Sheets.")
+                st.success(f"✅ Se actualizó el estatus a '{n_estatus}' para todos los miembros de la Acción {accion_afectada}.")
 
         with tab3:
             st.write("Estos datos vienen directamente de tu archivo Ventry_BD:")
             st.json(BASE_DATOS_SOCIOS)
 
-        # --- NUEVA SECCIÓN DE ANALÍTICA ---
         with tab4:
-            st.markdown("### 📊 Radiografía de la Cartera")
+            st.markdown("### 📊 Radiografía de la Cartera (Por Acciones)")
             
-            # Procesamos el dataset actual
-            total_socios = len(BASE_DATOS_SOCIOS)
+            # --- CORRECCIÓN LÓGICA: Contar Acciones únicas, no personas ---
+            acciones_totales = set()
+            acciones_morosas = set()
             
-            if total_socios > 0:
-                # Contamos cuántos morosos hay
-                morosos = sum(1 for socio in BASE_DATOS_SOCIOS.values() if socio["solvencia"] == "Moroso")
-                al_dia = total_socios - morosos
-                tasa_morosidad = (morosos / total_socios) * 100
+            for socio in BASE_DATOS_SOCIOS.values():
+                acciones_totales.add(socio["accion"])
+                if socio["solvencia"] == "Moroso":
+                    acciones_morosas.add(socio["accion"])
+            
+            total_acciones_unicas = len(acciones_totales)
+            
+            if total_acciones_unicas > 0:
+                morosos_count = len(acciones_morosas)
+                al_dia_count = total_acciones_unicas - morosos_count
+                tasa_morosidad = (morosos_count / total_acciones_unicas) * 100
                 
-                # Proyección financiera (Asumiendo Cuota base de $104)
-                capital_retenido = morosos * 104
+                # Proyección financiera real (1 Cuota por Acción, no por familiar)
+                capital_retenido = morosos_count * 104
                 
-                # Tarjetas de métricas (KPIs)
                 col1, col2, col3 = st.columns(3)
-                col1.metric("Total de Socios", total_socios)
+                col1.metric("Acciones Totales", total_acciones_unicas)
                 col2.metric("Tasa de Morosidad", f"{tasa_morosidad:.1f}%")
                 col3.metric("Capital en Riesgo", f"${capital_retenido:,.2f}")
                 
                 st.write("---")
                 
-                # Gráfico visual
                 st.markdown("#### Distribución de Estatus")
-                datos_grafico = {"Estatus": ["Al Día", "Moroso"], "Cantidad": [al_dia, morosos]}
-                st.bar_chart(data=datos_grafico, x="Estatus", y="Cantidad", color="#003366")
+                # Creamos la tabla de datos incluyendo el color exacto para cada barra
+                df_grafico = pd.DataFrame({
+                    "Estatus": ["Al Día", "Moroso"],
+                    "Cantidad": [al_dia_count, morosos_count],
+                    "Color": ["#003366", "#FF4B4B"] # Azul corporativo y Rojo alerta
+                })
+                
+                st.bar_chart(data=df_grafico, x="Estatus", y="Cantidad", color="Color")
                 
             else:
                 st.info("No hay datos suficientes para generar analíticas.")

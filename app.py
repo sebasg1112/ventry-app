@@ -59,10 +59,19 @@ def cargar_bd():
     return datos
 
 def guardar_bd(datos):
-    """Sube los datos actualizados a Google Sheets"""
-    filas_a_subir = [["cedula", "nombre", "clave", "accion", "rol", "solvencia"]]
-    for ced, info in datos.items():
-        filas_a_subir.append([ced, info["nombre"], info["clave"], info["accion"], info["rol"], info["solvencia"]])
+    """Sube los datos a Google Sheets ordenados por Acción y Titular primero"""
+    # 1. Convertimos el diccionario a una lista para poder ordenarla
+    lista_socios = list(datos.values())
+    
+    # 2. Ordenamos: Primero por número de Acción, luego por Rol (Titular queda antes que Familiar)
+    lista_socios.sort(key=lambda x: (x.get("accion", ""), x.get("rol", "")), reverse=True) # reverse=True para que Titular quede arriba de Familiar alfabéticamente
+    
+    # 3. Preparamos las filas (¡Agregamos la columna 'parentesco'!)
+    filas_a_subir = [["cedula", "nombre", "clave", "accion", "rol", "parentesco", "solvencia"]]
+    for socio in lista_socios:
+        # Si es un usuario viejo sin parentesco, le ponemos "N/A" por defecto
+        parentesco = socio.get("parentesco", "N/A") 
+        filas_a_subir.append([socio["cedula"], socio["nombre"], socio["clave"], socio["accion"], socio["rol"], parentesco, socio["solvencia"]])
     
     hoja_bd.clear()
     hoja_bd.update(values=filas_a_subir, range_name="A1")
@@ -219,16 +228,20 @@ else:
                 n_cedula = st.text_input("Usuario / Cédula")
                 n_nombre = st.text_input("Nombre")
                 n_clave = st.text_input("Contraseña")
-                col_a, col_b = st.columns(2)
+                
+                col_a, col_b, col_c = st.columns(3)
                 with col_a:
                     n_accion = st.text_input("Acción (0000 para staff)")
-                    n_rol = st.selectbox("Rol", ["Titular", "Familiar", "Vigilante", "Administrador"])
                 with col_b:
-                    n_solvencia = st.selectbox("Estatus", ["Al dia", "Moroso"])
+                    n_rol = st.selectbox("Rol", ["Titular", "Familiar", "Vigilante", "Administrador"])
+                with col_c:
+                    # Nuevo campo para identificar el parentesco
+                    n_parentesco = st.selectbox("Parentesco", ["N/A (Titular/Staff)", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"])
+                
+                n_solvencia = st.selectbox("Estatus", ["Al dia", "Moroso"])
 
                 if st.form_submit_button("Guardar"):
                     if n_cedula and n_nombre and n_clave:
-                        # --- NUEVA LÓGICA: Evitar dos titulares en la misma acción ---
                         titular_existente = False
                         if n_rol == "Titular":
                             for info in BASE_DATOS_SOCIOS.values():
@@ -239,51 +252,56 @@ else:
                         if titular_existente:
                             st.error(f"⚠️ Operación denegada: La Acción {n_accion} ya tiene un Titular registrado.")
                         else:
-                            BASE_DATOS_SOCIOS[n_cedula] = {"nombre": n_nombre, "clave": n_clave, "accion": n_accion, "rol": n_rol, "solvencia": n_solvencia, "cedula": n_cedula}
+                            # Guardamos con el nuevo campo de parentesco
+                            BASE_DATOS_SOCIOS[n_cedula] = {"nombre": n_nombre, "clave": n_clave, "accion": n_accion, "rol": n_rol, "parentesco": n_parentesco, "solvencia": n_solvencia, "cedula": n_cedula}
                             guardar_bd(BASE_DATOS_SOCIOS)
-                            st.success("✅ Registrado en Google Sheets.")
+                            st.success("✅ Registrado y ordenado en Google Sheets.")
                     else:
                         st.error("⚠️ Faltan datos.")
 
         with tab2:
-            # --- NUEVA LÓGICA: Agrupar la lista visualmente por número de Acción ---
-            acciones_agrupadas = {}
-            for ced, d in BASE_DATOS_SOCIOS.items():
-                acc = d["accion"]
+            st.markdown("### Gestión de Grupos Familiares")
+            
+            # Agrupamos por acción para el selector principal
+            acciones_disponibles = list(set(d["accion"] for d in BASE_DATOS_SOCIOS.values()))
+            acciones_disponibles.sort() # Ordenamos la lista de acciones numéricamente
+            
+            if acciones_disponibles:
+                accion_sel = st.selectbox("Seleccione la Acción a visualizar:", acciones_disponibles)
                 
-                # Creamos el contenedor para la Acción si no existe
-                if acc not in acciones_agrupadas:
-                    acciones_agrupadas[acc] = {"titular": "Sin Titular asignado", "familiares": [], "estatus": d["solvencia"]}
+                # Extraemos y ordenamos los miembros de la acción seleccionada
+                miembros_accion = [info for info in BASE_DATOS_SOCIOS.values() if info["accion"] == accion_sel]
+                miembros_accion.sort(key=lambda x: x.get("rol", ""), reverse=True) # Titular primero
                 
-                # Clasificamos quién es quién dentro de la Acción
-                if d["rol"] == "Titular":
-                    acciones_agrupadas[acc]["titular"] = d["nombre"]
-                else:
-                    # Todo el que no sea titular (Familiares, o Staff en caso de la acción 0000)
-                    acciones_agrupadas[acc]["familiares"].append(d["nombre"])
+                estatus_actual_grupo = miembros_accion[0]["solvencia"] if miembros_accion else "Desconocido"
 
-            # Formateamos el texto para que se vea impecable en el menú desplegable
-            opciones_acciones = {}
-            for acc, datos in acciones_agrupadas.items():
-                fam_str = ", ".join(datos["familiares"]) if datos["familiares"] else "Sin familiares"
-                texto_mostrar = f"Acción {acc} | Titular: {datos['titular']} | Miembros: {fam_str} | Estatus: {datos['estatus']}"
-                opciones_acciones[acc] = texto_mostrar
-
-            if opciones_acciones:
-                accion_sel = st.selectbox("Seleccione la Acción a modificar:", list(opciones_acciones.keys()), format_func=lambda x: opciones_acciones[x])
-                
                 st.write("---")
-                n_estatus = st.radio("Nuevo Estatus (Aplica a todo el grupo familiar):", ["Al dia", "Moroso"])
+                col1, col2 = st.columns([2, 1])
                 
-                if st.button("Actualizar Estatus"):
-                    for ced, info in BASE_DATOS_SOCIOS.items():
-                        if info["accion"] == accion_sel:
-                            BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
-                            
-                    guardar_bd(BASE_DATOS_SOCIOS)
-                    st.success(f"✅ Se actualizó el estatus a '{n_estatus}' para la Acción {accion_sel} y todos sus integrantes.")
+                with col1:
+                    st.markdown(f"#### 🏠 Grupo Familiar (Acción {accion_sel})")
+                    # Creamos una tabla visual usando markdown para que se vea ordenado
+                    tabla_md = "| Nombre | Rol | Parentesco | Estatus |\n| :--- | :--- | :--- | :--- |\n"
+                    for m in miembros_accion:
+                        parentesco_mostrar = m.get('parentesco', 'N/A')
+                        icono = "👑" if m["rol"] == "Titular" else "👤"
+                        tabla_md += f"| {icono} {m['nombre']} | {m['rol']} | {parentesco_mostrar} | {m['solvencia']} |\n"
+                    
+                    st.markdown(tabla_md)
+
+                with col2:
+                    st.markdown("#### ⚙️ Control")
+                    with st.form("form_estatus"):
+                        st.write(f"Estatus actual: **{estatus_actual_grupo}**")
+                        n_estatus = st.radio("Modificar Estatus:", ["Al dia", "Moroso"])
+                        if st.form_submit_button("Actualizar Toda la Acción"):
+                            for ced, info in BASE_DATOS_SOCIOS.items():
+                                if info["accion"] == accion_sel:
+                                    BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
+                            guardar_bd(BASE_DATOS_SOCIOS)
+                            st.success("✅ Estatus actualizado.")
             else:
-                st.info("No hay acciones registradas en la base de datos.")
+                st.info("No hay acciones registradas.")
 
         with tab3:
             st.write("Estos datos vienen directamente de tu archivo Ventry_BD:")

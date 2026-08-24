@@ -36,34 +36,33 @@ try:
     else:
         gc = gspread.service_account(filename="credenciales.json")
         
-    # SE ACTUALIZÓ EL NOMBRE DE LA HOJA PRINCIPAL
     hoja_bd = gc.open("Ventry_BD").worksheet("Socios Magnum City Club")
     hoja_invitaciones = gc.open("Ventry_BD").worksheet("Invitaciones")
     hoja_pagos = gc.open("Ventry_BD").worksheet("Pagos")
     hoja_directorio = gc.open("Ventry_BD").worksheet("Directorio")
+    hoja_historial = gc.open("Ventry_BD").worksheet("Historial")
 except Exception as e:
     st.error(f"Error conectando a Google Sheets: {e}")
     st.stop()
 
-# --- FUNCIONES DE CÁLCULO ---
+# --- FUNCIONES DE CÁLCULO Y AUDITORÍA ---
 def calcular_edad(fecha_nac_str):
-    if not fecha_nac_str:
-        return "N/A"
+    if not fecha_nac_str: return "N/A"
     try:
-        # Intentamos leer primero el formato DD/MM/YYYY
         fecha_nac = datetime.strptime(fecha_nac_str, "%d/%m/%Y").date()
         hoy = datetime.today().date()
-        edad = hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day))
-        return str(edad)
+        return str(hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day)))
     except:
         try:
-            # Salvavidas por si quedó alguna fecha vieja en formato YYYY-MM-DD
             fecha_nac = datetime.strptime(fecha_nac_str, "%Y-%m-%d").date()
             hoy = datetime.today().date()
-            edad = hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day))
-            return str(edad)
-        except:
-            return "N/A"
+            return str(hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day)))
+        except: return "N/A"
+
+def registrar_acceso(nombre, accion, via, movimiento):
+    hora_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    hoja_historial.append_row([hora_actual, str(accion), nombre, via, movimiento])
+    st.session_state.historial.insert(0, {"nombre": nombre, "accion": accion, "hora": hora_actual, "via": via, "movimiento": movimiento})
 
 # --- FUNCIONES DE LECTURA/ESCRITURA ---
 def cargar_bd():
@@ -135,8 +134,7 @@ def cargar_directorio():
             acc = str(f.get("accion", ""))
             ced = str(f.get("cedula_invitado", ""))
             if acc and ced:
-                if acc not in datos:
-                    datos[acc] = {}
+                if acc not in datos: datos[acc] = {}
                 datos[acc][ced] = {
                     "nombre": str(f.get("nombre_invitado", "")),
                     "correo": str(f.get("correo", "")),
@@ -158,12 +156,15 @@ BASE_DATOS_INVITACIONES = cargar_invitaciones()
 BASE_DATOS_PAGOS = cargar_pagos()
 BASE_DATOS_DIRECTORIO = cargar_directorio()
 
+# --- INICIALIZACIÓN DE MEMORIA LOCAL ---
 if "logueado" not in st.session_state:
     st.session_state.logueado = False
 if "usuario_actual" not in st.session_state:
     st.session_state.usuario_actual = None
 if "historial" not in st.session_state:
     st.session_state.historial = []
+if "ubicacion_socios" not in st.session_state:
+    st.session_state.ubicacion_socios = {} # Memoria para saber si el socio está adentro o afuera
 
 # ==========================================
 # PANTALLA INICIAL: LOGIN Y AUTO-REGISTRO
@@ -187,8 +188,6 @@ if not st.session_state.logueado:
                 if clave_ingresada == str(socio["clave"]):
                     st.session_state.logueado = True
                     st.session_state.usuario_actual = socio
-                    if socio["solvencia"] == "Al dia" and socio["rol"] not in ["Administrador", "Vigilante"]:
-                        st.session_state.historial.insert(0, {"nombre": socio["nombre"], "accion": socio["accion"], "hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "via": "App (Login)"})
                     st.rerun()
                 else:
                     st.error("❌ Contraseña incorrecta.")
@@ -222,7 +221,6 @@ if not st.session_state.logueado:
             else:
                 r_acc_norm = r_accion.strip().lstrip('0') or "0"
                 titular_existente = False
-                
                 if r_rol == "Titular":
                     for info in BASE_DATOS_SOCIOS.values():
                         if info["accion"] == r_acc_norm and info["rol"] == "Titular":
@@ -231,16 +229,11 @@ if not st.session_state.logueado:
                 if titular_existente:
                     st.error(f"⚠️ Operación Denegada: La Acción {r_acc_norm} ya tiene un Titular registrado.")
                 else:
-                    # Guardamos la fecha con el formato latino
                     BASE_DATOS_SOCIOS[r_cedula] = {
-                        "nombre": r_nombre, 
-                        "clave": r_clave, 
-                        "accion": r_acc_norm, 
-                        "rol": r_rol, 
-                        "parentesco": r_parentesco, 
+                        "nombre": r_nombre, "clave": r_clave, "accion": r_acc_norm, 
+                        "rol": r_rol, "parentesco": r_parentesco, 
                         "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"),
-                        "solvencia": "Pendiente", 
-                        "cedula": r_cedula
+                        "solvencia": "Pendiente", "cedula": r_cedula
                     }
                     guardar_bd(BASE_DATOS_SOCIOS)
                     st.success("✅ ¡Registro exitoso! Ya puedes iniciar sesión.")
@@ -310,25 +303,19 @@ else:
     # --- MÓDULO 2: PAGOS ---
     elif modulo_seleccionado == "Módulo de Pagos":
         st.subheader("💸 Depositar Fondos / Pagar Mensualidad")
-        
         st.markdown("<div class='pago-card'>", unsafe_allow_html=True)
         st.markdown(f"#### Acción: {socio_actual['accion']}")
         deuda = 104.00 if socio_actual['solvencia'] == "Moroso" else 0.00
         st.metric("Saldo Pendiente Estimado", f"${deuda:.2f}")
-        if deuda == 0:
-            st.success("¡Tu grupo familiar se encuentra solvente!")
+        if deuda == 0: st.success("¡Tu grupo familiar se encuentra solvente!")
         st.markdown("</div>", unsafe_allow_html=True)
         
         st.write("¿Cómo deseas reportar tu pago?")
         metodo = st.radio("", ["Zelle", "Pago Móvil", "Transferencia Nacional"], horizontal=True)
-        
         st.write("---")
-        if metodo == "Zelle":
-            st.info("📲 **Datos Zelle:**\n\n**Correo:** pagos@clubmagnum.com\n**Titular:** Inversiones Magnum LLC")
-        elif metodo == "Pago Móvil":
-            st.info("📱 **Datos Pago Móvil:**\n\n**Banco:** Bancamiga (0172)\n**RIF:** J-12345678-9\n**Teléfono:** 0414-1234567")
-        else:
-            st.info("🏦 **Cuentas Nacionales:**\n\n**Banco:** Banesco\n**Cuenta:** 0134-1234-5678-9012-3456\n**RIF:** J-12345678-9")
+        if metodo == "Zelle": st.info("📲 **Datos Zelle:**\n\n**Correo:** pagos@clubmagnum.com\n**Titular:** Inversiones Magnum LLC")
+        elif metodo == "Pago Móvil": st.info("📱 **Datos Pago Móvil:**\n\n**Banco:** Bancamiga (0172)\n**RIF:** J-12345678-9\n**Teléfono:** 0414-1234567")
+        else: st.info("🏦 **Cuentas Nacionales:**\n\n**Banco:** Banesco\n**Cuenta:** 0134-1234-5678-9012-3456\n**RIF:** J-12345678-9")
 
         st.markdown("### 📝 Reportar Transacción")
         with st.form("form_pago"):
@@ -338,17 +325,12 @@ else:
             btn_reportar = st.form_submit_button("Reportar Pago")
             
         if btn_reportar:
-            if not n_referencia:
-                st.error("Debes ingresar un número de referencia válido.")
+            if not n_referencia: st.error("Debes ingresar un número de referencia válido.")
             else:
                 id_pago = f"PAG-{str(uuid.uuid4())[:6].upper()}"
                 BASE_DATOS_PAGOS[id_pago] = {
-                    "accion": socio_actual["accion"],
-                    "metodo": metodo,
-                    "referencia": str(n_referencia),
-                    "monto": str(n_monto),
-                    "fecha_reporte": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                    "estatus": "En Revisión"
+                    "accion": socio_actual["accion"], "metodo": metodo, "referencia": str(n_referencia),
+                    "monto": str(n_monto), "fecha_reporte": datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "estatus": "En Revisión"
                 }
                 guardar_bd_pagos(BASE_DATOS_PAGOS)
                 st.success("✅ Pago reportado con éxito. En breve será validado.")
@@ -360,11 +342,8 @@ else:
             st.error("❌ Operación Denegada. Tu grupo familiar no se encuentra solvente.")
         else:
             invitados_previos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
-
             modo_ingreso = st.radio("Seleccione el tipo de registro:", ["Nuevo Invitado", "Directorio de Favoritos"])
-            n_cedula_def = ""
-            n_nombre_def = ""
-            n_correo_def = ""
+            n_cedula_def, n_nombre_def, n_correo_def = "", "", ""
             n_nacimiento_def = datetime.today()
             
             if modo_ingreso == "Directorio de Favoritos":
@@ -373,18 +352,12 @@ else:
                     n_cedula_def = inv_sel
                     n_nombre_def = invitados_previos[inv_sel]['nombre']
                     n_correo_def = invitados_previos[inv_sel]['correo']
-                    
                     if invitados_previos[inv_sel].get("fecha_nacimiento"):
-                        try:
-                            # Intentamos DD/MM/YYYY
-                            n_nacimiento_def = datetime.strptime(invitados_previos[inv_sel]["fecha_nacimiento"], "%d/%m/%Y").date()
+                        try: n_nacimiento_def = datetime.strptime(invitados_previos[inv_sel]["fecha_nacimiento"], "%d/%m/%Y").date()
                         except:
-                            try:
-                                # Fallback a YYYY-MM-DD
-                                n_nacimiento_def = datetime.strptime(invitados_previos[inv_sel]["fecha_nacimiento"], "%Y-%m-%d").date()
+                            try: n_nacimiento_def = datetime.strptime(invitados_previos[inv_sel]["fecha_nacimiento"], "%Y-%m-%d").date()
                             except: pass
-                else:
-                    st.info("Aún no tienes invitados guardados en tu directorio.")
+                else: st.info("Aún no tienes invitados guardados en tu directorio.")
 
             with st.form("form_invitacion"):
                 col_a, col_b = st.columns(2)
@@ -394,34 +367,26 @@ else:
                 with col_b:
                     n_correo_inv = st.text_input("Correo Electrónico", value=n_correo_def)
                     n_nacimiento_inv = st.date_input("Fecha de Nacimiento", value=n_nacimiento_def, min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
-                
                 fecha_visita = st.date_input("Fecha de la visita (Válido por todo el día)", min_value=datetime.today(), format="DD/MM/YYYY")
                 st.write("---")
                 guardar_contacto = st.checkbox("⭐ Guardar/Actualizar en mi directorio de invitados frecuentes", value=False if modo_ingreso == "Directorio de Favoritos" else True)
                 btn_generar = st.form_submit_button("Generar Pase QR")
                 
             if btn_generar:
-                if not n_cedula_inv or not n_nombre_inv:
-                    st.error("⚠️ Debes ingresar al menos la Cédula y el Nombre.")
+                if not n_cedula_inv or not n_nombre_inv: st.error("⚠️ Debes ingresar al menos la Cédula y el Nombre.")
                 else:
                     if guardar_contacto:
-                        if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO:
-                            BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
-                        
+                        if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
                         BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {
-                            "nombre": n_nombre_inv,
-                            "correo": n_correo_inv,
-                            "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y")
+                            "nombre": n_nombre_inv, "correo": n_correo_inv, "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y")
                         }
                         guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
-
                     str_fecha = fecha_visita.strftime("%d/%m/%Y")
                     id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
                     BASE_DATOS_INVITACIONES[id_unico] = {
                         "accion": socio_actual["accion"], "fecha_visita": str_fecha,
                         "cedula_invitado": n_cedula_inv, "nombre_invitado": n_nombre_inv,
-                        "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y"), "correo": n_correo_inv,
-                        "estatus": "Activo"
+                        "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y"), "correo": n_correo_inv, "estatus": "Activo"
                     }
                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
                     datos_qr = f"INVITADO|{id_unico}"
@@ -429,15 +394,13 @@ else:
                     buffer = BytesIO()
                     img.save(buffer, format="PNG")
                     st.success(f"✅ Pase generado para {n_nombre_inv}.")
-                    if guardar_contacto:
-                        st.info(f"⭐ Datos de {n_nombre_inv} guardados en el directorio.")
+                    if guardar_contacto: st.info(f"⭐ Datos de {n_nombre_inv} guardados en el directorio.")
                     col_A, col_B, col_C = st.columns([1,2,1])
-                    with col_B:
-                        st.image(buffer.getvalue(), caption="Comparte este QR con tu invitado", width=250)
+                    with col_B: st.image(buffer.getvalue(), caption="Comparte este QR con tu invitado", width=250)
 
-    # --- MÓDULO 4: GARITA ---
+    # --- MÓDULO 4: GARITA (100% AUTOMATIZADA) ---
     elif modulo_seleccionado == "Panel de Garita":
-        st.title("🛡️ Módulo de Garita")
+        st.title("🛡️ Módulo de Garita (Automático)")
         st.write("---")
         foto_qr = st.camera_input("Apunte el código QR aquí")
         if foto_qr is not None:
@@ -447,37 +410,69 @@ else:
             datos_decodificados, bbox, _ = detector.detectAndDecode(cv2_img)
             
             if datos_decodificados:
+                # 1. LÓGICA DE SOCIOS (Se basa en la memoria de ubicación)
                 if "CEDULA:" in datos_decodificados:
                     cedula_escaneada = datos_decodificados.split("|")[0].replace("CEDULA:", "")
                     if cedula_escaneada in BASE_DATOS_SOCIOS:
                         socio = BASE_DATOS_SOCIOS[cedula_escaneada]
                         if socio["solvencia"] == "Al dia":
-                            st.success("✅ ACCESO PERMITIDO (Socio)")
+                            estado_actual = st.session_state.ubicacion_socios.get(cedula_escaneada, "Afuera")
+                            
+                            if estado_actual == "Afuera":
+                                st.success("✅ ENTRADA PERMITIDA (Socio)")
+                                st.session_state.ubicacion_socios[cedula_escaneada] = "Adentro"
+                                sentido_str = "Entrada"
+                            else:
+                                st.success("✅ SALIDA REGISTRADA (Socio)")
+                                st.session_state.ubicacion_socios[cedula_escaneada] = "Afuera"
+                                sentido_str = "Salida"
+                                
                             edad_socio = calcular_edad(socio.get("fecha_nacimiento", ""))
                             st.info(f"**Socio:** {socio['nombre']} ({edad_socio} años) | **Acción:** {socio['accion']}")
+                            registrar_acceso(socio["nombre"], socio["accion"], "QR (Socio)", sentido_str)
                         else:
                             st.error(f"❌ ACCESO DENEGADO - SOCIO {socio['solvencia'].upper()}")
                     else:
                         st.error("⚠️ El socio ya no existe en la BD.")
+                        
+                # 2. LÓGICA DE INVITADOS (Se basa en el estatus del QR en Google Sheets)
                 elif "INVITADO|" in datos_decodificados:
                     id_qr = datos_decodificados.split("|")[1]
                     if id_qr in BASE_DATOS_INVITACIONES:
                         pase = BASE_DATOS_INVITACIONES[id_qr]
+                        
                         if pase["estatus"] == "Activo":
                             if datetime.now().strftime("%d/%m/%Y") == pase["fecha_visita"]:
                                 socio_solvente = any(str(s["accion"]) == str(pase["accion"]) and s["solvencia"] == "Al dia" for s in BASE_DATOS_SOCIOS.values())
                                 if socio_solvente:
-                                    st.success(f"✅ ACCESO PERMITIDO (Invitado: {pase['nombre_invitado']})")
-                                    BASE_DATOS_INVITACIONES[id_qr]["estatus"] = "Usado"
+                                    st.success(f"✅ ENTRADA PERMITIDA (Invitado: {pase['nombre_invitado']})")
+                                    BASE_DATOS_INVITACIONES[id_qr]["estatus"] = "Adentro"
                                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
+                                    registrar_acceso(f"Inv: {pase['nombre_invitado']}", pase["accion"], "QR (Invitado)", "Entrada")
                                 else:
                                     st.error("❌ ACCESO DENEGADO - La Acción que emitió este pase no está solvente.")
                             else:
-                                st.error("❌ ACCESO DENEGADO - Fecha incorrecta.")
+                                st.error("❌ ACCESO DENEGADO - Este pase no es para el día de hoy.")
+                                
+                        elif pase["estatus"] in ["Adentro", "Usado"]: 
+                            st.success(f"✅ SALIDA REGISTRADA (Invitado: {pase['nombre_invitado']})")
+                            BASE_DATOS_INVITACIONES[id_qr]["estatus"] = "Salió"
+                            guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
+                            registrar_acceso(f"Inv: {pase['nombre_invitado']}", pase["accion"], "QR (Invitado)", "Salida")
+                            
                         else:
-                            st.error(f"❌ ACCESO DENEGADO - Pase {pase['estatus']}.")
+                            st.error(f"❌ ACCESO DENEGADO - Este QR ya registra el estatus: {pase['estatus']}.")
+                    else:
+                        st.warning("⚠️ Código de invitado no encontrado.")
             else:
                 st.warning("⚠️ No se detectó un código válido.")
+        
+        st.write("---")
+        st.markdown("### 📊 Registro de Tránsito (En Vivo)")
+        if st.session_state.historial:
+            for acceso in st.session_state.historial[:15]: 
+                icono_mov = "🟢" if acceso['movimiento'] == "Entrada" else "🔴"
+                st.write(f"{icono_mov} **{acceso['movimiento'].upper()}** - {acceso['nombre']} (Acc. {acceso['accion']}) - {acceso['hora']}")
 
     # --- MÓDULO 5: ADMINISTRACIÓN ---
     elif modulo_seleccionado == "Portal de Administración":
@@ -505,14 +500,11 @@ else:
                                 if info["accion"] == n_acc_norm and info["rol"] == "Titular":
                                     titular_existente = True
                                     break
-                                    
-                        if titular_existente:
-                            st.error(f"⚠️ Operación Denegada: La Acción {n_acc_norm} ya tiene un Titular registrado.")
+                        if titular_existente: st.error(f"⚠️ Operación Denegada: La Acción {n_acc_norm} ya tiene un Titular registrado.")
                         else:
                             BASE_DATOS_SOCIOS[n_cedula] = {
                                 "nombre": n_nombre, "clave": n_clave, "accion": n_acc_norm, 
-                                "rol": n_rol, "parentesco": n_parentesco, 
-                                "fecha_nacimiento": n_nacimiento.strftime("%d/%m/%Y"),
+                                "rol": n_rol, "parentesco": n_parentesco, "fecha_nacimiento": n_nacimiento.strftime("%d/%m/%Y"),
                                 "solvencia": n_solvencia, "cedula": n_cedula
                             }
                             guardar_bd(BASE_DATOS_SOCIOS)
@@ -524,7 +516,6 @@ else:
             if opciones_editar:
                 socio_a_editar = st.selectbox("Seleccione el socio:", list(opciones_editar.keys()), format_func=lambda x: opciones_editar[x])
                 socio_data = BASE_DATOS_SOCIOS[socio_a_editar]
-                
                 e_nac_def = datetime.today()
                 if socio_data.get("fecha_nacimiento"):
                     try: e_nac_def = datetime.strptime(socio_data["fecha_nacimiento"], "%d/%m/%Y").date()
@@ -561,7 +552,6 @@ else:
             st.markdown("### 🏠 Gestión de Grupos Familiares")
             acciones_disponibles = list(set(d["accion"] for d in BASE_DATOS_SOCIOS.values()))
             acciones_disponibles.sort()
-            
             if acciones_disponibles:
                 accion_sel = st.selectbox("Seleccione Acción:", acciones_disponibles)
                 miembros_accion = [info for info in BASE_DATOS_SOCIOS.values() if info["accion"] == accion_sel]
@@ -584,14 +574,12 @@ else:
                         n_estatus = st.radio("Modificar Estatus a todo el grupo:", ["Al dia", "Moroso", "Pendiente"])
                         if st.form_submit_button("Actualizar Todo"):
                             for ced, info in BASE_DATOS_SOCIOS.items():
-                                if info["accion"] == accion_sel:
-                                    BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
+                                if info["accion"] == accion_sel: BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
                             guardar_bd(BASE_DATOS_SOCIOS)
                             st.success("✅ Grupo familiar actualizado.")
 
         with tab4:
             st.markdown("### 💳 Conciliación de Pagos")
-            st.write("Revisa los pagos reportados por los socios.")
             pagos_pendientes = {k: v for k, v in BASE_DATOS_PAGOS.items() if v["estatus"] == "En Revisión"}
             if pagos_pendientes:
                 for p_id, p_info in pagos_pendientes.items():
@@ -604,8 +592,7 @@ else:
                                 BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"
                                 guardar_bd_pagos(BASE_DATOS_PAGOS)
                                 for ced, socio_info in BASE_DATOS_SOCIOS.items():
-                                    if str(socio_info["accion"]) == str(p_info["accion"]):
-                                        BASE_DATOS_SOCIOS[ced]["solvencia"] = "Al dia"
+                                    if str(socio_info["accion"]) == str(p_info["accion"]): BASE_DATOS_SOCIOS[ced]["solvencia"] = "Al dia"
                                 guardar_bd(BASE_DATOS_SOCIOS)
                                 st.success(f"Pago aprobado. Familia {p_info['accion']} solvente.")
                                 st.rerun()
@@ -615,8 +602,7 @@ else:
                                 guardar_bd_pagos(BASE_DATOS_PAGOS)
                                 st.warning("Pago rechazado.")
                                 st.rerun()
-            else:
-                st.info("No hay pagos pendientes por conciliar 🎉")
+            else: st.info("No hay pagos pendientes por conciliar 🎉")
 
         with tab5:
             st.write("Base de Datos Maestra:")
@@ -624,17 +610,12 @@ else:
 
         with tab6:
             st.markdown("### 📊 Radiografía de la Cartera")
-            acciones_al_dia = set()
-            acciones_morosas = set()
-            acciones_pendientes = set()
+            acciones_al_dia, acciones_morosas, acciones_pendientes = set(), set(), set()
             
             for socio in BASE_DATOS_SOCIOS.values():
-                if socio["solvencia"] == "Moroso":
-                    acciones_morosas.add(socio["accion"])
-                elif socio["solvencia"] == "Pendiente":
-                    acciones_pendientes.add(socio["accion"])
-                else:
-                    acciones_al_dia.add(socio["accion"])
+                if socio["solvencia"] == "Moroso": acciones_morosas.add(socio["accion"])
+                elif socio["solvencia"] == "Pendiente": acciones_pendientes.add(socio["accion"])
+                else: acciones_al_dia.add(socio["accion"])
                     
             for acc in acciones_morosas:
                 acciones_pendientes.discard(acc)
@@ -642,9 +623,7 @@ else:
             for acc in acciones_pendientes:
                 acciones_al_dia.discard(acc)
                 
-            morosos_count = len(acciones_morosas)
-            pendientes_count = len(acciones_pendientes)
-            al_dia_count = len(acciones_al_dia)
+            morosos_count, pendientes_count, al_dia_count = len(acciones_morosas), len(acciones_pendientes), len(acciones_al_dia)
             total_acciones_unicas = morosos_count + pendientes_count + al_dia_count
             
             if total_acciones_unicas > 0:
@@ -663,5 +642,22 @@ else:
                     "Color": ["#003366", "#FF4B4B", "#FFA500"]
                 })
                 st.bar_chart(data=df_grafico, x="Estatus", y="Cantidad", color="Color")
-            else:
-                st.info("Datos insuficientes.")
+                
+                # --- BOTONES DE DESCARGA ---
+                st.write("---")
+                st.markdown("#### 📥 Exportar Reportes (CSV)")
+                colA, colB = st.columns(2)
+                with colA:
+                    df_socios = pd.DataFrame(list(BASE_DATOS_SOCIOS.values()))
+                    csv_socios = df_socios.to_csv(index=False).encode('utf-8')
+                    st.download_button(label="Descargar Matriz de Socios", data=csv_socios, file_name=f"Reporte_Socios_Ventry_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
+                with colB:
+                    try:
+                        historial_data = hoja_historial.get_all_records()
+                        if historial_data:
+                            df_historial = pd.DataFrame(historial_data)
+                            csv_historial = df_historial.to_csv(index=False).encode('utf-8')
+                            st.download_button(label="Descargar Auditoría de Garita", data=csv_historial, file_name=f"Auditoria_Accesos_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
+                        else: st.info("El historial de garita aún está vacío.")
+                    except: st.info("El historial de garita aún está vacío.")
+            else: st.info("Datos insuficientes.")

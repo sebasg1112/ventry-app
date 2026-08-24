@@ -8,102 +8,143 @@ import gspread
 import json
 import pandas as pd
 import uuid
-import base64  # <-- ¡AQUÍ ESTÁ LA HERRAMIENTA QUE FALTABA!
+import base64
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Ventry - Control de Acceso", page_icon="🔑", layout="centered")
 
-# --- CSS AVANZADO (AQUÍ ESTÁ LA MAGIA DEL CARNET VIP) ---
+# --- CSS AVANZADO (GLASSMORPHISM Y DARK MODE) ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    .main { background-color: #f8f9fa; } 
+    
+    /* Fondo general de la app para que contraste el carnet */
+    .stApp { background-color: #f0f2f6; } 
+    
     .stButton>button { 
-        width: 100%; border-radius: 12px; background-color: #003366; color: white; font-weight: bold; border: none; padding: 10px;
+        width: 100%; border-radius: 12px; background-color: #0d1117; color: white; font-weight: bold; border: none; padding: 10px;
     }
-    h1, h2, h3 { color: #003366; }
+    h1, h2, h3 { color: #0d1117; }
     .pago-card {
         background-color: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;
     }
     
-    /* ESTILOS DEL CARNET VIP */
-    .carnet-container {
-        background: linear-gradient(135deg, #001f3f 0%, #003366 100%);
-        padding: 25px;
+    /* ESTILOS DEL CARNET TIPO CANVA (GLASSMORPHISM) */
+    .dark-wrapper {
+        background-color: #121826; /* Fondo gris oscuro */
+        padding: 40px 20px;
+        border-radius: 24px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 30px;
+        box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+    }
+    .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 20px;
-        box-shadow: 0 15px 25px rgba(0,0,0,0.2);
-        border: 2px solid #d4af37; /* Borde Dorado */
-        text-align: center;
+        padding: 40px 30px;
+        width: 100%;
+        max-width: 360px;
         color: white;
-        margin-bottom: 25px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
         position: relative;
         overflow: hidden;
     }
-    .carnet-logo {
-        font-size: 22px;
-        font-weight: 900;
-        letter-spacing: 3px;
-        color: #d4af37; /* Dorado */
-        text-transform: uppercase;
-        margin-bottom: 15px;
-        border-bottom: 1px solid rgba(212, 175, 55, 0.3);
-        padding-bottom: 10px;
+    /* Destello azul simulando luz de neón trasera */
+    .glow-effect {
+        position: absolute;
+        top: -20%;
+        left: -20%;
+        width: 140%;
+        height: 140%;
+        background: radial-gradient(circle at center, rgba(0, 123, 255, 0.15) 0%, transparent 60%);
+        z-index: 0;
+        pointer-events: none;
     }
-    .carnet-nombre {
-        font-size: 26px;
-        font-weight: bold;
-        margin-bottom: 5px;
+    .glass-content {
+        position: relative;
+        z-index: 1;
     }
-    .carnet-rol {
-        font-size: 14px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #a0b8d1;
-        margin-bottom: 20px;
+    .magnum-logo {
+        text-align: center;
+        margin-bottom: 35px;
     }
-    .carnet-datos {
-        display: flex;
-        justify-content: space-between;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 15px;
-        border-radius: 12px;
-        margin-bottom: 20px;
+    .logo-m {
+        font-size: 50px;
+        font-weight: 300;
+        margin: 0;
+        line-height: 1;
+        color: #ffffff;
     }
-    .dato-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    .dato-label {
-        font-size: 11px;
-        color: #d4af37;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    .dato-valor {
+    .logo-magnum {
         font-size: 16px;
-        font-weight: bold;
+        font-weight: 600;
+        letter-spacing: 5px;
+        margin: 5px 0 0 0;
+        color: #ffffff;
+    }
+    .logo-city {
+        font-size: 9px;
+        letter-spacing: 2px;
+        color: #8892b0;
+        margin: 0;
+        text-transform: uppercase;
+    }
+    .logo-line {
+        width: 30px;
+        height: 1px;
+        background-color: #8892b0;
+        margin: 15px auto 0 auto;
+    }
+    .info-group {
+        margin-bottom: 18px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        padding-bottom: 8px;
+    }
+    .info-label {
+        font-size: 12px;
+        color: #8892b0;
+        margin-bottom: 4px;
+        letter-spacing: 0.5px;
+    }
+    .info-value {
+        font-size: 18px;
+        font-weight: 500;
+        color: #e6f1ff;
     }
     .qr-container {
-        background-color: white;
-        padding: 15px;
-        border-radius: 15px;
-        display: inline-block;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        text-align: center;
+        margin-top: 30px;
     }
-    .estatus-badge {
+    .qr-box {
+        background: rgba(255,255,255,0.9);
+        padding: 10px;
+        border-radius: 12px;
         display: inline-block;
-        padding: 5px 15px;
-        border-radius: 20px;
+        margin-bottom: 15px;
+    }
+    .qr-box img {
+        width: 140px;
+        display: block;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 6px 18px;
+        border-radius: 30px;
+        font-size: 12px;
         font-weight: bold;
-        font-size: 14px;
-        margin-top: 15px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
     }
-    .badge-aldia { background-color: #28a745; color: white; }
-    .badge-moroso { background-color: #dc3545; color: white; }
-    .badge-pendiente { background-color: #ffc107; color: black; }
+    .badge-aldia { background: rgba(40, 167, 69, 0.15); color: #4ade80; border: 1px solid rgba(40, 167, 69, 0.3); }
+    .badge-moroso { background: rgba(220, 53, 69, 0.15); color: #ff6b6b; border: 1px solid rgba(220, 53, 69, 0.3); }
+    .badge-pendiente { background: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3); }
     </style>
 """, unsafe_allow_html=True)
 
@@ -354,7 +395,7 @@ else:
         st.session_state.usuario_actual = None
         st.rerun()
 
-    # --- MÓDULO 1: CARNET DIGITAL (VIP) ---
+    # --- MÓDULO 1: CARNET DIGITAL (VIP GLASSMORPHISM) ---
     if modulo_seleccionado == "Mi Carnet Digital":
         
         if socio_actual['solvencia'] == "Moroso":
@@ -363,59 +404,59 @@ else:
         elif socio_actual['solvencia'] == "Pendiente":
             st.warning("⏳ Tu cuenta se encuentra en revisión administrativa. El código QR no será válido hasta ser aprobado.")
 
-        edad_socio = calcular_edad(socio_actual.get('fecha_nacimiento', ''))
-        
         if socio_actual['solvencia'] == "Al dia":
             clase_badge = "badge-aldia"
-            texto_badge = "✅ AL DÍA"
+            texto_badge = "AL DÍA"
         elif socio_actual['solvencia'] == "Pendiente":
             clase_badge = "badge-pendiente"
-            texto_badge = "⏳ PENDIENTE"
+            texto_badge = "PENDIENTE"
         else:
             clase_badge = "badge-moroso"
-            texto_badge = "❌ MOROSO"
+            texto_badge = "MOROSO"
 
+        # Generar QR
         datos_qr = f"CEDULA:{socio_actual['cedula']}|VENTRY|{socio_actual['nombre']}|{socio_actual['accion']}"
         img = qrcode.make(datos_qr)
         buffer = BytesIO()
         img.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue()).decode()
 
+        # HTML ALINEADO A LA IZQUIERDA PARA EVITAR EL BUG DE STREAMLIT (MARKDOWN CODE BLOCK)
         carnet_html = f"""
-        <div class="carnet-container">
-            <div class="carnet-logo">Magnum City Club</div>
-            <div class="carnet-nombre">{socio_actual['nombre']}</div>
-            <div class="carnet-rol">{socio_actual['rol']} {socio_actual['parentesco'] if socio_actual['parentesco'] != "N/A (Titular)" else ""}</div>
-            
-            <div class="carnet-datos">
-                <div class="dato-item">
-                    <span class="dato-label">Acción</span>
-                    <span class="dato-valor">{socio_actual['accion']}</span>
-                </div>
-                <div class="dato-item">
-                    <span class="dato-label">Cédula</span>
-                    <span class="dato-valor">{socio_actual['cedula']}</span>
-                </div>
-                <div class="dato-item">
-                    <span class="dato-label">Edad</span>
-                    <span class="dato-valor">{edad_socio}</span>
-                </div>
-            </div>
-            
-            <div class="qr-container">
-                <img src="data:image/png;base64,{img_str}" width="180">
-            </div>
-            
-            <div>
-                <span class="estatus-badge {clase_badge}">{texto_badge}</span>
-            </div>
-        </div>
-        """
-        
+<div class="dark-wrapper">
+<div class="glass-card">
+<div class="glow-effect"></div>
+<div class="glass-content">
+<div class="magnum-logo">
+<p class="logo-m">M</p>
+<p class="logo-magnum">MAGNUM</p>
+<p class="logo-city">CITY CLUB</p>
+<div class="logo-line"></div>
+</div>
+<div class="info-group">
+<p class="info-label">Nombre</p>
+<p class="info-value">{socio_actual['nombre']}</p>
+</div>
+<div class="info-group">
+<p class="info-label">ID (Cédula)</p>
+<p class="info-value">{socio_actual['cedula']}</p>
+</div>
+<div class="info-group">
+<p class="info-label">Acción</p>
+<p class="info-value">{socio_actual['accion']} <span style="font-size:12px; color:#8892b0; font-weight:normal;">({socio_actual['rol']})</span></p>
+</div>
+<div class="qr-container">
+<div class="qr-box">
+<img src="data:image/png;base64,{img_str}">
+</div>
+<br>
+<span class="status-badge {clase_badge}">{texto_badge}</span>
+</div>
+</div>
+</div>
+</div>
+"""
         st.markdown(carnet_html, unsafe_allow_html=True)
-        
-        if socio_actual['solvencia'] != "Al dia":
-            st.error("❌ Código Inactivo en Garita.")
 
     # --- MÓDULO 2: PAGOS ---
     elif modulo_seleccionado == "Módulo de Pagos":

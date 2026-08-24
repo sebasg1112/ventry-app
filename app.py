@@ -36,7 +36,8 @@ try:
     else:
         gc = gspread.service_account(filename="credenciales.json")
         
-    hoja_bd = gc.open("Ventry_BD").sheet1
+    # SE ACTUALIZÓ EL NOMBRE DE LA HOJA PRINCIPAL
+    hoja_bd = gc.open("Ventry_BD").worksheet("Socios Magnum City Club")
     hoja_invitaciones = gc.open("Ventry_BD").worksheet("Invitaciones")
     hoja_pagos = gc.open("Ventry_BD").worksheet("Pagos")
     hoja_directorio = gc.open("Ventry_BD").worksheet("Directorio")
@@ -49,12 +50,20 @@ def calcular_edad(fecha_nac_str):
     if not fecha_nac_str:
         return "N/A"
     try:
-        fecha_nac = datetime.strptime(fecha_nac_str, "%Y-%m-%d").date()
+        # Intentamos leer primero el formato DD/MM/YYYY
+        fecha_nac = datetime.strptime(fecha_nac_str, "%d/%m/%Y").date()
         hoy = datetime.today().date()
         edad = hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day))
         return str(edad)
     except:
-        return "N/A"
+        try:
+            # Salvavidas por si quedó alguna fecha vieja en formato YYYY-MM-DD
+            fecha_nac = datetime.strptime(fecha_nac_str, "%Y-%m-%d").date()
+            hoy = datetime.today().date()
+            edad = hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day))
+            return str(edad)
+        except:
+            return "N/A"
 
 # --- FUNCIONES DE LECTURA/ESCRITURA ---
 def cargar_bd():
@@ -222,13 +231,14 @@ if not st.session_state.logueado:
                 if titular_existente:
                     st.error(f"⚠️ Operación Denegada: La Acción {r_acc_norm} ya tiene un Titular registrado.")
                 else:
+                    # Guardamos la fecha con el formato latino
                     BASE_DATOS_SOCIOS[r_cedula] = {
                         "nombre": r_nombre, 
                         "clave": r_clave, 
                         "accion": r_acc_norm, 
                         "rol": r_rol, 
                         "parentesco": r_parentesco, 
-                        "fecha_nacimiento": r_nacimiento.strftime("%Y-%m-%d"),
+                        "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"),
                         "solvencia": "Pendiente", 
                         "cedula": r_cedula
                     }
@@ -337,7 +347,7 @@ else:
                     "metodo": metodo,
                     "referencia": str(n_referencia),
                     "monto": str(n_monto),
-                    "fecha_reporte": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "fecha_reporte": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                     "estatus": "En Revisión"
                 }
                 guardar_bd_pagos(BASE_DATOS_PAGOS)
@@ -366,9 +376,13 @@ else:
                     
                     if invitados_previos[inv_sel].get("fecha_nacimiento"):
                         try:
-                            n_nacimiento_def = datetime.strptime(invitados_previos[inv_sel]["fecha_nacimiento"], "%Y-%m-%d").date()
+                            # Intentamos DD/MM/YYYY
+                            n_nacimiento_def = datetime.strptime(invitados_previos[inv_sel]["fecha_nacimiento"], "%d/%m/%Y").date()
                         except:
-                            pass
+                            try:
+                                # Fallback a YYYY-MM-DD
+                                n_nacimiento_def = datetime.strptime(invitados_previos[inv_sel]["fecha_nacimiento"], "%Y-%m-%d").date()
+                            except: pass
                 else:
                     st.info("Aún no tienes invitados guardados en tu directorio.")
 
@@ -397,16 +411,16 @@ else:
                         BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {
                             "nombre": n_nombre_inv,
                             "correo": n_correo_inv,
-                            "fecha_nacimiento": n_nacimiento_inv.strftime("%Y-%m-%d")
+                            "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y")
                         }
                         guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
 
-                    str_fecha = fecha_visita.strftime("%Y-%m-%d")
+                    str_fecha = fecha_visita.strftime("%d/%m/%Y")
                     id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
                     BASE_DATOS_INVITACIONES[id_unico] = {
                         "accion": socio_actual["accion"], "fecha_visita": str_fecha,
                         "cedula_invitado": n_cedula_inv, "nombre_invitado": n_nombre_inv,
-                        "fecha_nacimiento": n_nacimiento_inv.strftime("%Y-%m-%d"), "correo": n_correo_inv,
+                        "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y"), "correo": n_correo_inv,
                         "estatus": "Activo"
                     }
                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
@@ -450,7 +464,7 @@ else:
                     if id_qr in BASE_DATOS_INVITACIONES:
                         pase = BASE_DATOS_INVITACIONES[id_qr]
                         if pase["estatus"] == "Activo":
-                            if datetime.now().strftime("%Y-%m-%d") == pase["fecha_visita"]:
+                            if datetime.now().strftime("%d/%m/%Y") == pase["fecha_visita"]:
                                 socio_solvente = any(str(s["accion"]) == str(pase["accion"]) and s["solvencia"] == "Al dia" for s in BASE_DATOS_SOCIOS.values())
                                 if socio_solvente:
                                     st.success(f"✅ ACCESO PERMITIDO (Invitado: {pase['nombre_invitado']})")
@@ -498,7 +512,7 @@ else:
                             BASE_DATOS_SOCIOS[n_cedula] = {
                                 "nombre": n_nombre, "clave": n_clave, "accion": n_acc_norm, 
                                 "rol": n_rol, "parentesco": n_parentesco, 
-                                "fecha_nacimiento": n_nacimiento.strftime("%Y-%m-%d"),
+                                "fecha_nacimiento": n_nacimiento.strftime("%d/%m/%Y"),
                                 "solvencia": n_solvencia, "cedula": n_cedula
                             }
                             guardar_bd(BASE_DATOS_SOCIOS)
@@ -511,11 +525,12 @@ else:
                 socio_a_editar = st.selectbox("Seleccione el socio:", list(opciones_editar.keys()), format_func=lambda x: opciones_editar[x])
                 socio_data = BASE_DATOS_SOCIOS[socio_a_editar]
                 
-                # Intentar parsear la fecha de nacimiento previa
                 e_nac_def = datetime.today()
                 if socio_data.get("fecha_nacimiento"):
-                    try: e_nac_def = datetime.strptime(socio_data["fecha_nacimiento"], "%Y-%m-%d").date()
-                    except: pass
+                    try: e_nac_def = datetime.strptime(socio_data["fecha_nacimiento"], "%d/%m/%Y").date()
+                    except:
+                        try: e_nac_def = datetime.strptime(socio_data["fecha_nacimiento"], "%Y-%m-%d").date()
+                        except: pass
 
                 with st.form("form_editar_admin"):
                     e_nombre = st.text_input("Nombre", value=socio_data["nombre"])
@@ -534,7 +549,7 @@ else:
                     if st.form_submit_button("Guardar Cambios"):
                         BASE_DATOS_SOCIOS[socio_a_editar]["nombre"] = e_nombre
                         BASE_DATOS_SOCIOS[socio_a_editar]["clave"] = e_clave
-                        BASE_DATOS_SOCIOS[socio_a_editar]["fecha_nacimiento"] = e_nacimiento.strftime("%Y-%m-%d")
+                        BASE_DATOS_SOCIOS[socio_a_editar]["fecha_nacimiento"] = e_nacimiento.strftime("%d/%m/%Y")
                         BASE_DATOS_SOCIOS[socio_a_editar]["accion"] = e_accion.strip().lstrip('0') or "0"
                         BASE_DATOS_SOCIOS[socio_a_editar]["rol"] = e_rol
                         BASE_DATOS_SOCIOS[socio_a_editar]["parentesco"] = e_parentesco
@@ -557,7 +572,6 @@ else:
                 col1, col2 = st.columns([2, 1])
                 with col1:
                     st.markdown(f"#### Acción {accion_sel}")
-                    # Añadimos la Edad a la tabla Markdown
                     tabla_md = "| Nombre | Rol | Parentesco | Edad | Estatus |\n| :--- | :--- | :--- | :--- | :--- |\n"
                     for m in miembros_accion:
                         icono = "👑" if m["rol"] == "Titular" else "👤"

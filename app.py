@@ -8,6 +8,7 @@ import gspread
 import json
 import pandas as pd
 import uuid
+import base64  # <-- ¡AQUÍ ESTÁ LA HERRAMIENTA QUE FALTABA!
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Ventry - Control de Acceso", page_icon="🔑", layout="centered")
@@ -356,17 +357,14 @@ else:
     # --- MÓDULO 1: CARNET DIGITAL (VIP) ---
     if modulo_seleccionado == "Mi Carnet Digital":
         
-        # Alertas de estatus que se muestran arriba del carnet
         if socio_actual['solvencia'] == "Moroso":
             st.error("⚠️ ATENCIÓN: Tu grupo familiar presenta un saldo pendiente.")
             st.warning("Tu acceso a las instalaciones está restringido. Por favor, regulariza tu estatus en el Módulo de Pagos.")
         elif socio_actual['solvencia'] == "Pendiente":
             st.warning("⏳ Tu cuenta se encuentra en revisión administrativa. El código QR no será válido hasta ser aprobado.")
 
-        # Calculo de datos para inyectar en el HTML
         edad_socio = calcular_edad(socio_actual.get('fecha_nacimiento', ''))
         
-        # Determinar clase del badge de estatus
         if socio_actual['solvencia'] == "Al dia":
             clase_badge = "badge-aldia"
             texto_badge = "✅ AL DÍA"
@@ -377,14 +375,12 @@ else:
             clase_badge = "badge-moroso"
             texto_badge = "❌ MOROSO"
 
-        # Generación de la imagen QR en formato base64 para inyectar en HTML
         datos_qr = f"CEDULA:{socio_actual['cedula']}|VENTRY|{socio_actual['nombre']}|{socio_actual['accion']}"
         img = qrcode.make(datos_qr)
         buffer = BytesIO()
         img.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue()).decode()
 
-        # ESTRUCTURA HTML DEL CARNET VIP
         carnet_html = f"""
         <div class="carnet-container">
             <div class="carnet-logo">Magnum City Club</div>
@@ -416,7 +412,6 @@ else:
         </div>
         """
         
-        # Renderizamos el carnet en pantalla
         st.markdown(carnet_html, unsafe_allow_html=True)
         
         if socio_actual['solvencia'] != "Al dia":

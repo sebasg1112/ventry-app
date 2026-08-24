@@ -28,19 +28,27 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- MOTOR DE BASE DE DATOS ---
-try:
+# --- MOTOR DE BASE DE DATOS (CONEXIÓN BLINDADA CON CACHÉ) ---
+@st.cache_resource
+def conectar_google_sheets():
     if "google_credentials" in st.secrets:
         cred_dict = json.loads(st.secrets["google_credentials"])
         gc = gspread.service_account_from_dict(cred_dict)
     else:
         gc = gspread.service_account(filename="credenciales.json")
-        
-    hoja_bd = gc.open("Ventry_BD").worksheet("Socios Magnum City Club")
-    hoja_invitaciones = gc.open("Ventry_BD").worksheet("Invitaciones")
-    hoja_pagos = gc.open("Ventry_BD").worksheet("Pagos")
-    hoja_directorio = gc.open("Ventry_BD").worksheet("Directorio")
-    hoja_historial = gc.open("Ventry_BD").worksheet("Historial")
+    
+    # Abre el documento una sola vez
+    doc = gc.open("Ventry_BD")
+    return (
+        doc.worksheet("Socios Magnum City Club"),
+        doc.worksheet("Invitaciones"),
+        doc.worksheet("Pagos"),
+        doc.worksheet("Directorio"),
+        doc.worksheet("Historial")
+    )
+
+try:
+    hoja_bd, hoja_invitaciones, hoja_pagos, hoja_directorio, hoja_historial = conectar_google_sheets()
 except Exception as e:
     st.error(f"Error conectando a Google Sheets: {e}")
     st.stop()
@@ -147,7 +155,7 @@ def guardar_bd_directorio(datos):
     hoja_directorio.update(values=filas, range_name="A1")
     st.session_state.db_directorio = datos
 
-# --- INICIALIZACIÓN DE MEMORIA LOCAL (ANTI-CRASH DE GOOGLE SHEETS) ---
+# --- INICIALIZACIÓN DE MEMORIA LOCAL (ANTI-CRASH) ---
 if "datos_cargados" not in st.session_state:
     st.session_state.db_socios = cargar_bd()
     st.session_state.db_invitaciones = cargar_invitaciones()
@@ -155,20 +163,15 @@ if "datos_cargados" not in st.session_state:
     st.session_state.db_directorio = cargar_directorio()
     st.session_state.datos_cargados = True
 
-# Apuntamos las variables globales a la memoria RAM de la sesión
 BASE_DATOS_SOCIOS = st.session_state.db_socios
 BASE_DATOS_INVITACIONES = st.session_state.db_invitaciones
 BASE_DATOS_PAGOS = st.session_state.db_pagos
 BASE_DATOS_DIRECTORIO = st.session_state.db_directorio
 
-if "logueado" not in st.session_state:
-    st.session_state.logueado = False
-if "usuario_actual" not in st.session_state:
-    st.session_state.usuario_actual = None
-if "historial" not in st.session_state:
-    st.session_state.historial = []
-if "ubicacion_socios" not in st.session_state:
-    st.session_state.ubicacion_socios = {} 
+if "logueado" not in st.session_state: st.session_state.logueado = False
+if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = None
+if "historial" not in st.session_state: st.session_state.historial = []
+if "ubicacion_socios" not in st.session_state: st.session_state.ubicacion_socios = {} 
 
 # ==========================================
 # PANTALLA INICIAL: LOGIN Y AUTO-REGISTRO
@@ -193,10 +196,8 @@ if not st.session_state.logueado:
                     st.session_state.logueado = True
                     st.session_state.usuario_actual = socio
                     st.rerun()
-                else:
-                    st.error("❌ Contraseña incorrecta.")
-            else:
-                st.error("⚠️ Usuario no registrado.")
+                else: st.error("❌ Contraseña incorrecta.")
+            else: st.error("⚠️ Usuario no registrado.")
 
     with tab_registro:
         st.subheader("Solicitud de Nuevo Ingreso")
@@ -216,12 +217,9 @@ if not st.session_state.logueado:
             btn_registrar = st.form_submit_button("Enviar Solicitud")
             
         if btn_registrar:
-            if not r_cedula or not r_nombre or not r_accion or not r_clave:
-                st.error("⚠️ Todos los campos son obligatorios.")
-            elif r_clave != r_clave_conf:
-                st.error("❌ Las contraseñas no coinciden.")
-            elif r_cedula in BASE_DATOS_SOCIOS:
-                st.error("⚠️ Esta cédula ya se encuentra registrada.")
+            if not r_cedula or not r_nombre or not r_accion or not r_clave: st.error("⚠️ Todos los campos son obligatorios.")
+            elif r_clave != r_clave_conf: st.error("❌ Las contraseñas no coinciden.")
+            elif r_cedula in BASE_DATOS_SOCIOS: st.error("⚠️ Esta cédula ya se encuentra registrada.")
             else:
                 r_acc_norm = r_accion.strip().lstrip('0') or "0"
                 titular_existente = False
@@ -230,8 +228,7 @@ if not st.session_state.logueado:
                         if info["accion"] == r_acc_norm and info["rol"] == "Titular":
                             titular_existente = True
                             break
-                if titular_existente:
-                    st.error(f"⚠️ Operación Denegada: La Acción {r_acc_norm} ya tiene un Titular registrado.")
+                if titular_existente: st.error(f"⚠️ Operación Denegada: La Acción {r_acc_norm} ya tiene un Titular registrado.")
                 else:
                     BASE_DATOS_SOCIOS[r_cedula] = {
                         "nombre": r_nombre, "clave": r_clave, "accion": r_acc_norm, 
@@ -253,7 +250,6 @@ else:
     st.sidebar.title(f"Hola, {socio_actual['nombre']}")
     st.sidebar.write(f"Rol: **{rol_actual}**")
     
-    # Botón exclusivo para administradores para refrescar datos desde Google Sheets
     if rol_actual == "Administrador":
         if st.sidebar.button("🔄 Sincronizar Nube"):
             st.session_state.db_socios = cargar_bd()
@@ -311,8 +307,7 @@ else:
         col_A, col_B, col_C = st.columns([1,2,1])
         with col_B:
             st.image(buffer.getvalue(), caption="Muestre este código en Garita", width=220)
-            if socio_actual['solvencia'] != "Al dia":
-                st.error("❌ Código Inactivo.")
+            if socio_actual['solvencia'] != "Al dia": st.error("❌ Código Inactivo.")
         st.markdown("</div>", unsafe_allow_html=True)
 
     # --- MÓDULO 2: PAGOS ---
@@ -443,10 +438,8 @@ else:
                             edad_socio = calcular_edad(socio.get("fecha_nacimiento", ""))
                             st.info(f"**Socio:** {socio['nombre']} ({edad_socio} años) | **Acción:** {socio['accion']}")
                             registrar_acceso(socio["nombre"], socio["accion"], "QR (Socio)", sentido_str)
-                        else:
-                            st.error(f"❌ ACCESO DENEGADO - SOCIO {socio['solvencia'].upper()}")
-                    else:
-                        st.error("⚠️ El socio ya no existe en la BD.")
+                        else: st.error(f"❌ ACCESO DENEGADO - SOCIO {socio['solvencia'].upper()}")
+                    else: st.error("⚠️ El socio ya no existe en la BD.")
                         
                 elif "INVITADO|" in datos_decodificados:
                     id_qr = datos_decodificados.split("|")[1]
@@ -647,6 +640,7 @@ else:
                 })
                 st.bar_chart(data=df_grafico, x="Estatus", y="Cantidad", color="Color")
                 
+                # --- BOTONES DE DESCARGA ---
                 st.write("---")
                 st.markdown("#### 📥 Exportar Reportes (CSV)")
                 colA, colB = st.columns(2)

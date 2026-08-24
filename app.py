@@ -9,6 +9,11 @@ import json
 import pandas as pd
 import uuid
 
+# --- NUEVAS LIBRERÍAS PARA GOOGLE DRIVE ---
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Ventry - Control de Acceso", page_icon="🔑", layout="centered")
 
@@ -28,30 +33,54 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- MOTOR DE BASE DE DATOS (CONEXIÓN BLINDADA CON CACHÉ) ---
+# --- ID DE LA CARPETA DE DRIVE ---
+FOLDER_ID_DRIVE = "1e5-Zpi3w8rjmRWghL-Va0DrRJEb0a1Gv"
+
+# --- MOTOR DE BASE DE DATOS Y DRIVE (CON CACHÉ) ---
 @st.cache_resource
-def conectar_google_sheets():
+def inicializar_servicios_google():
     if "google_credentials" in st.secrets:
         cred_dict = json.loads(st.secrets["google_credentials"])
-        gc = gspread.service_account_from_dict(cred_dict)
+        creds_sheets = Credentials.from_service_account_info(cred_dict, scopes=['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'])
     else:
-        gc = gspread.service_account(filename="credenciales.json")
+        creds_sheets = Credentials.from_service_account_file("credenciales.json", scopes=['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'])
     
-    # Abre el documento una sola vez
+    # Servicio de Sheets
+    gc = gspread.authorize(creds_sheets)
     doc = gc.open("Ventry_BD")
+    
+    # Servicio de Drive
+    drive_service = build('drive', 'v3', credentials=creds_sheets)
+    
     return (
         doc.worksheet("Socios Magnum City Club"),
         doc.worksheet("Invitaciones"),
         doc.worksheet("Pagos"),
         doc.worksheet("Directorio"),
-        doc.worksheet("Historial")
+        doc.worksheet("Historial"),
+        drive_service
     )
 
 try:
-    hoja_bd, hoja_invitaciones, hoja_pagos, hoja_directorio, hoja_historial = conectar_google_sheets()
+    hoja_bd, hoja_invitaciones, hoja_pagos, hoja_directorio, hoja_historial, drive_service = inicializar_servicios_google()
 except Exception as e:
-    st.error(f"Error conectando a Google Sheets: {e}")
+    st.error(f"Error conectando a Google: {e}")
     st.stop()
+
+# --- FUNCIÓN PARA SUBIR A DRIVE ---
+def subir_foto_a_drive(file_buffer, filename):
+    try:
+        file_metadata = {'name': filename, 'parents': [FOLDER_ID_DRIVE]}
+        media = MediaIoBaseUpload(file_buffer, mimetype='image/jpeg', resumable=True)
+        file = drive_service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
+        
+        # Le damos permiso de lectura para que puedas verlo desde el Sheets sin loguearte de nuevo
+        drive_service.permissions().create(fileId=file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
+        
+        return file.get('webViewLink')
+    except Exception as e:
+        st.error(f"Error subiendo documento a Drive: {e}")
+        return ""
 
 # --- FUNCIONES DE CÁLCULO Y AUDITORÍA ---
 def calcular_edad(fecha_nac_str):
@@ -102,8 +131,9 @@ def cargar_invitaciones():
     except: return {}
 
 def guardar_bd_invitaciones(datos):
-    filas = [["id_qr", "accion", "fecha_visita", "cedula_invitado", "nombre_invitado", "fecha_nacimiento", "correo", "estatus"]]
-    for k, v in datos.items(): filas.append([k, v["accion"], v["fecha_visita"], v["cedula_invitado"], v["nombre_invitado"], v.get("fecha_nacimiento", ""), v.get("correo", ""), v["estatus"]])
+    filas = [["id_qr", "accion", "fecha_visita", "cedula_invitado", "nombre_invitado", "fecha_nacimiento", "correo", "estatus", "link_cedula"]]
+    for k, v in datos.items(): 
+        filas.append([k, v["accion"], v["fecha_visita"], v["cedula_invitado"], v["nombre_invitado"], v.get("fecha_nacimiento", ""), v.get("correo", ""), v["estatus"], v.get("link_cedula", "")])
     hoja_invitaciones.clear()
     hoja_invitaciones.update(values=filas, range_name="A1")
     st.session_state.db_invitaciones = datos
@@ -155,7 +185,7 @@ def guardar_bd_directorio(datos):
     hoja_directorio.update(values=filas, range_name="A1")
     st.session_state.db_directorio = datos
 
-# --- INICIALIZACIÓN DE MEMORIA LOCAL (ANTI-CRASH) ---
+# --- INICIALIZACIÓN DE MEMORIA LOCAL ---
 if "datos_cargados" not in st.session_state:
     st.session_state.db_socios = cargar_bd()
     st.session_state.db_invitaciones = cargar_invitaciones()
@@ -232,8 +262,7 @@ if not st.session_state.logueado:
                 else:
                     BASE_DATOS_SOCIOS[r_cedula] = {
                         "nombre": r_nombre, "clave": r_clave, "accion": r_acc_norm, 
-                        "rol": r_rol, "parentesco": r_parentesco, 
-                        "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"),
+                        "rol": r_rol, "parentesco": r_parentesco, "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"),
                         "solvencia": "Pendiente", "cedula": r_cedula
                     }
                     guardar_bd(BASE_DATOS_SOCIOS)
@@ -345,7 +374,7 @@ else:
                 guardar_bd_pagos(BASE_DATOS_PAGOS)
                 st.success("✅ Pago reportado con éxito. En breve será validado.")
 
-    # --- MÓDULO 3: PASES DE INVITADOS ---
+    # --- MÓDULO 3: PASES DE INVITADOS (CON FOTO Y DRIVE) ---
     elif modulo_seleccionado == "Pases de Invitados":
         st.subheader("🎫 Generar Pase de Invitado")
         if socio_actual["solvencia"] != "Al dia":
@@ -377,34 +406,53 @@ else:
                 with col_b:
                     n_correo_inv = st.text_input("Correo Electrónico", value=n_correo_def)
                     n_nacimiento_inv = st.date_input("Fecha de Nacimiento", value=n_nacimiento_def, min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
-                fecha_visita = st.date_input("Fecha de la visita (Válido por todo el día)", min_value=datetime.today(), format="DD/MM/YYYY")
+                
                 st.write("---")
+                st.markdown("#### 📸 Documento de Identidad")
+                # Archivo listo para subir
+                foto_cedula = st.file_uploader("Sube la foto de la Cédula", type=["jpg", "png", "jpeg"])
+                st.write("---")
+                
+                fecha_visita = st.date_input("Fecha de la visita (Válido por todo el día)", min_value=datetime.today(), format="DD/MM/YYYY")
                 guardar_contacto = st.checkbox("⭐ Guardar/Actualizar en mi directorio de invitados frecuentes", value=False if modo_ingreso == "Directorio de Favoritos" else True)
                 btn_generar = st.form_submit_button("Generar Pase QR")
                 
             if btn_generar:
                 if not n_cedula_inv or not n_nombre_inv: st.error("⚠️ Debes ingresar al menos la Cédula y el Nombre.")
                 else:
+                    id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
+                    link_documento = ""
+                    
+                    # PROCESAMIENTO A DRIVE
+                    if foto_cedula is not None:
+                        with st.spinner("Subiendo documento a la bóveda segura..."):
+                            nombre_archivo = f"CEDULA_{n_cedula_inv}_Pase_{id_unico}.jpg"
+                            link_documento = subir_foto_a_drive(foto_cedula, nombre_archivo)
+                    
                     if guardar_contacto:
                         if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
                         BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {
                             "nombre": n_nombre_inv, "correo": n_correo_inv, "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y")
                         }
                         guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
+                        
                     str_fecha = fecha_visita.strftime("%d/%m/%Y")
-                    id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
                     BASE_DATOS_INVITACIONES[id_unico] = {
                         "accion": socio_actual["accion"], "fecha_visita": str_fecha,
                         "cedula_invitado": n_cedula_inv, "nombre_invitado": n_nombre_inv,
-                        "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y"), "correo": n_correo_inv, "estatus": "Activo"
+                        "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y"), "correo": n_correo_inv, 
+                        "estatus": "Activo", "link_cedula": link_documento
                     }
                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
+                    
                     datos_qr = f"INVITADO|{id_unico}"
                     img = qrcode.make(datos_qr)
                     buffer = BytesIO()
                     img.save(buffer, format="PNG")
                     st.success(f"✅ Pase generado para {n_nombre_inv}.")
                     if guardar_contacto: st.info(f"⭐ Datos de {n_nombre_inv} guardados en el directorio.")
+                    if link_documento: st.info("📎 Documento de identidad guardado correctamente.")
+                    
                     col_A, col_B, col_C = st.columns([1,2,1])
                     with col_B: st.image(buffer.getvalue(), caption="Comparte este QR con tu invitado", width=250)
 
@@ -608,7 +656,6 @@ else:
         with tab6:
             st.markdown("### 📊 Radiografía de la Cartera")
             acciones_al_dia, acciones_morosas, acciones_pendientes = set(), set(), set()
-            
             for socio in BASE_DATOS_SOCIOS.values():
                 if socio["solvencia"] == "Moroso": acciones_morosas.add(socio["accion"])
                 elif socio["solvencia"] == "Pendiente": acciones_pendientes.add(socio["accion"])
@@ -640,7 +687,6 @@ else:
                 })
                 st.bar_chart(data=df_grafico, x="Estatus", y="Cantidad", color="Color")
                 
-                # --- BOTONES DE DESCARGA ---
                 st.write("---")
                 st.markdown("#### 📥 Exportar Reportes (CSV)")
                 colA, colB = st.columns(2)

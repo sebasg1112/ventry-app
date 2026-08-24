@@ -39,10 +39,12 @@ try:
     hoja_bd = gc.open("Ventry_BD").sheet1
     hoja_invitaciones = gc.open("Ventry_BD").worksheet("Invitaciones")
     hoja_pagos = gc.open("Ventry_BD").worksheet("Pagos")
+    hoja_directorio = gc.open("Ventry_BD").worksheet("Directorio")
 except Exception as e:
     st.error(f"Error conectando a Google Sheets: {e}")
     st.stop()
 
+# --- FUNCIONES DE LECTURA/ESCRITURA ---
 def cargar_bd():
     registros = hoja_bd.get_all_records()
     datos = {}
@@ -87,7 +89,7 @@ def cargar_pagos():
             id_p = str(f.get("id_pago", ""))
             if id_p:
                 datos[id_p] = {
-                    "accion": str(f.get("accion", "")), # CORRECCIÓN VITAL: Forzar lectura de acción como texto
+                    "accion": str(f.get("accion", "")),
                     "metodo": str(f.get("metodo", "")),
                     "referencia": str(f.get("referencia", "")),
                     "monto": str(f.get("monto", "")),
@@ -103,9 +105,36 @@ def guardar_bd_pagos(datos):
     hoja_pagos.clear()
     hoja_pagos.update(values=filas, range_name="A1")
 
+def cargar_directorio():
+    try:
+        registros = hoja_directorio.get_all_records()
+        datos = {}
+        for f in registros:
+            acc = str(f.get("accion", ""))
+            ced = str(f.get("cedula_invitado", ""))
+            if acc and ced:
+                if acc not in datos:
+                    datos[acc] = {}
+                datos[acc][ced] = {
+                    "nombre": str(f.get("nombre_invitado", "")),
+                    "correo": str(f.get("correo", "")),
+                    "fecha_nacimiento": str(f.get("fecha_nacimiento", ""))
+                }
+        return datos
+    except: return {}
+
+def guardar_bd_directorio(datos):
+    filas = [["accion", "cedula_invitado", "nombre_invitado", "correo", "fecha_nacimiento"]]
+    for acc, invitados in datos.items():
+        for ced, info in invitados.items():
+            filas.append([acc, ced, info["nombre"], info["correo"], info.get("fecha_nacimiento", "")])
+    hoja_directorio.clear()
+    hoja_directorio.update(values=filas, range_name="A1")
+
 BASE_DATOS_SOCIOS = cargar_bd()
 BASE_DATOS_INVITACIONES = cargar_invitaciones()
 BASE_DATOS_PAGOS = cargar_pagos()
+BASE_DATOS_DIRECTORIO = cargar_directorio()
 
 if "logueado" not in st.session_state:
     st.session_state.logueado = False
@@ -288,28 +317,32 @@ else:
                 guardar_bd_pagos(BASE_DATOS_PAGOS)
                 st.success("✅ Pago reportado con éxito. En breve será validado.")
 
-    # --- MÓDULO 3: PASES DE INVITADOS ---
+    # --- MÓDULO 3: PASES DE INVITADOS (FULL DATA) ---
     elif modulo_seleccionado == "Pases de Invitados":
         st.subheader("🎫 Generar Pase de Invitado")
         if socio_actual["solvencia"] != "Al dia":
             st.error("❌ Operación Denegada. Tu grupo familiar no se encuentra solvente.")
         else:
-            invitados_previos = {}
-            for inv in BASE_DATOS_INVITACIONES.values():
-                if inv["accion"] == socio_actual["accion"]:
-                    invitados_previos[inv["cedula_invitado"]] = {"nombre": inv["nombre_invitado"], "correo": inv.get("correo", "")}
+            invitados_previos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
 
-            modo_ingreso = st.radio("Seleccione el tipo de registro:", ["Nuevo Invitado", "Invitado Frecuente"])
+            modo_ingreso = st.radio("Seleccione el tipo de registro:", ["Nuevo Invitado", "Directorio de Favoritos"])
             n_cedula_def = ""
             n_nombre_def = ""
             n_correo_def = ""
+            n_nacimiento_def = datetime.today()
             
-            if modo_ingreso == "Invitado Frecuente":
+            if modo_ingreso == "Directorio de Favoritos":
                 if invitados_previos:
                     inv_sel = st.selectbox("Seleccione de su directorio:", list(invitados_previos.keys()), format_func=lambda x: f"{invitados_previos[x]['nombre']} (C.I: {x})")
                     n_cedula_def = inv_sel
                     n_nombre_def = invitados_previos[inv_sel]['nombre']
                     n_correo_def = invitados_previos[inv_sel]['correo']
+                    
+                    if invitados_previos[inv_sel].get("fecha_nacimiento"):
+                        try:
+                            n_nacimiento_def = datetime.strptime(invitados_previos[inv_sel]["fecha_nacimiento"], "%Y-%m-%d").date()
+                        except:
+                            pass
                 else:
                     st.info("Aún no tienes invitados guardados en tu directorio.")
 
@@ -320,15 +353,28 @@ else:
                     n_nombre_inv = st.text_input("Nombre del Invitado", value=n_nombre_def)
                 with col_b:
                     n_correo_inv = st.text_input("Correo Electrónico", value=n_correo_def)
-                    n_nacimiento_inv = st.date_input("Fecha de Nacimiento", min_value=datetime(1920, 1, 1), max_value=datetime.today())
+                    n_nacimiento_inv = st.date_input("Fecha de Nacimiento", value=n_nacimiento_def, min_value=datetime(1920, 1, 1), max_value=datetime.today())
                 
                 fecha_visita = st.date_input("Fecha de la visita (Válido por todo el día)", min_value=datetime.today())
+                st.write("---")
+                guardar_contacto = st.checkbox("⭐ Guardar/Actualizar en mi directorio de invitados frecuentes", value=False if modo_ingreso == "Directorio de Favoritos" else True)
                 btn_generar = st.form_submit_button("Generar Pase QR")
                 
             if btn_generar:
                 if not n_cedula_inv or not n_nombre_inv:
                     st.error("⚠️ Debes ingresar al menos la Cédula y el Nombre.")
                 else:
+                    if guardar_contacto:
+                        if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO:
+                            BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
+                        
+                        BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {
+                            "nombre": n_nombre_inv,
+                            "correo": n_correo_inv,
+                            "fecha_nacimiento": n_nacimiento_inv.strftime("%Y-%m-%d")
+                        }
+                        guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
+
                     str_fecha = fecha_visita.strftime("%Y-%m-%d")
                     id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
                     BASE_DATOS_INVITACIONES[id_unico] = {
@@ -343,6 +389,8 @@ else:
                     buffer = BytesIO()
                     img.save(buffer, format="PNG")
                     st.success(f"✅ Pase generado para {n_nombre_inv}.")
+                    if guardar_contacto:
+                        st.info(f"⭐ Datos de {n_nombre_inv} guardados en el directorio.")
                     col_A, col_B, col_C = st.columns([1,2,1])
                     with col_B:
                         st.image(buffer.getvalue(), caption="Comparte este QR con tu invitado", width=250)
@@ -390,7 +438,7 @@ else:
             else:
                 st.warning("⚠️ No se detectó un código válido.")
 
-    # --- MÓDULO 5: ADMINISTRACIÓN (100% RESTAURADO) ---
+    # --- MÓDULO 5: ADMINISTRACIÓN ---
     elif modulo_seleccionado == "Portal de Administración":
         st.title("⚙️ Administración General")
         
@@ -486,7 +534,6 @@ else:
                             if st.button("✅ Aprobar Pago & Liberar Acceso", key=f"apr_{p_id}"):
                                 BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"
                                 guardar_bd_pagos(BASE_DATOS_PAGOS)
-                                # CORRECCIÓN DEL BUG DE TIPOS DE DATOS (str vs int)
                                 for ced, socio_info in BASE_DATOS_SOCIOS.items():
                                     if str(socio_info["accion"]) == str(p_info["accion"]):
                                         BASE_DATOS_SOCIOS[ced]["solvencia"] = "Al dia"

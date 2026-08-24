@@ -9,14 +9,10 @@ import json
 import pandas as pd
 import uuid
 
-# --- NUEVAS LIBRERÍAS PARA GOOGLE DRIVE ---
-from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
-
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Ventry - Control de Acceso", page_icon="🔑", layout="centered")
 
+# --- CSS AVANZADO (AQUÍ ESTÁ LA MAGIA DEL CARNET VIP) ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -30,57 +26,109 @@ st.markdown("""
     .pago-card {
         background-color: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;
     }
+    
+    /* ESTILOS DEL CARNET VIP */
+    .carnet-container {
+        background: linear-gradient(135deg, #001f3f 0%, #003366 100%);
+        padding: 25px;
+        border-radius: 20px;
+        box-shadow: 0 15px 25px rgba(0,0,0,0.2);
+        border: 2px solid #d4af37; /* Borde Dorado */
+        text-align: center;
+        color: white;
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+    }
+    .carnet-logo {
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: 3px;
+        color: #d4af37; /* Dorado */
+        text-transform: uppercase;
+        margin-bottom: 15px;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+        padding-bottom: 10px;
+    }
+    .carnet-nombre {
+        font-size: 26px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .carnet-rol {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #a0b8d1;
+        margin-bottom: 20px;
+    }
+    .carnet-datos {
+        display: flex;
+        justify-content: space-between;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+    .dato-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .dato-label {
+        font-size: 11px;
+        color: #d4af37;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .dato-valor {
+        font-size: 16px;
+        font-weight: bold;
+    }
+    .qr-container {
+        background-color: white;
+        padding: 15px;
+        border-radius: 15px;
+        display: inline-block;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    .estatus-badge {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 14px;
+        margin-top: 15px;
+    }
+    .badge-aldia { background-color: #28a745; color: white; }
+    .badge-moroso { background-color: #dc3545; color: white; }
+    .badge-pendiente { background-color: #ffc107; color: black; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- ID DE LA CARPETA DE DRIVE ---
-FOLDER_ID_DRIVE = "1e5-Zpi3w8rjmRWghL-Va0DrRJEb0a1Gv"
-
-# --- MOTOR DE BASE DE DATOS Y DRIVE (CON CACHÉ) ---
+# --- MOTOR DE BASE DE DATOS (CONEXIÓN BLINDADA CON CACHÉ) ---
 @st.cache_resource
-def inicializar_servicios_google():
+def conectar_google_sheets():
     if "google_credentials" in st.secrets:
         cred_dict = json.loads(st.secrets["google_credentials"])
-        creds_sheets = Credentials.from_service_account_info(cred_dict, scopes=['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'])
+        gc = gspread.service_account_from_dict(cred_dict)
     else:
-        creds_sheets = Credentials.from_service_account_file("credenciales.json", scopes=['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'])
+        gc = gspread.service_account(filename="credenciales.json")
     
-    # Servicio de Sheets
-    gc = gspread.authorize(creds_sheets)
     doc = gc.open("Ventry_BD")
-    
-    # Servicio de Drive
-    drive_service = build('drive', 'v3', credentials=creds_sheets)
-    
     return (
         doc.worksheet("Socios Magnum City Club"),
         doc.worksheet("Invitaciones"),
         doc.worksheet("Pagos"),
         doc.worksheet("Directorio"),
-        doc.worksheet("Historial"),
-        drive_service
+        doc.worksheet("Historial")
     )
 
 try:
-    hoja_bd, hoja_invitaciones, hoja_pagos, hoja_directorio, hoja_historial, drive_service = inicializar_servicios_google()
+    hoja_bd, hoja_invitaciones, hoja_pagos, hoja_directorio, hoja_historial = conectar_google_sheets()
 except Exception as e:
-    st.error(f"Error conectando a Google: {e}")
+    st.error(f"Error conectando a Google Sheets: {e}")
     st.stop()
-
-# --- FUNCIÓN PARA SUBIR A DRIVE ---
-def subir_foto_a_drive(file_buffer, filename):
-    try:
-        file_metadata = {'name': filename, 'parents': [FOLDER_ID_DRIVE]}
-        media = MediaIoBaseUpload(file_buffer, mimetype='image/jpeg', resumable=True)
-        file = drive_service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
-        
-        # Le damos permiso de lectura para que puedas verlo desde el Sheets sin loguearte de nuevo
-        drive_service.permissions().create(fileId=file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
-        
-        return file.get('webViewLink')
-    except Exception as e:
-        st.error(f"Error subiendo documento a Drive: {e}")
-        return ""
 
 # --- FUNCIONES DE CÁLCULO Y AUDITORÍA ---
 def calcular_edad(fecha_nac_str):
@@ -131,9 +179,8 @@ def cargar_invitaciones():
     except: return {}
 
 def guardar_bd_invitaciones(datos):
-    filas = [["id_qr", "accion", "fecha_visita", "cedula_invitado", "nombre_invitado", "fecha_nacimiento", "correo", "estatus", "link_cedula"]]
-    for k, v in datos.items(): 
-        filas.append([k, v["accion"], v["fecha_visita"], v["cedula_invitado"], v["nombre_invitado"], v.get("fecha_nacimiento", ""), v.get("correo", ""), v["estatus"], v.get("link_cedula", "")])
+    filas = [["id_qr", "accion", "fecha_visita", "cedula_invitado", "nombre_invitado", "fecha_nacimiento", "correo", "estatus"]]
+    for k, v in datos.items(): filas.append([k, v["accion"], v["fecha_visita"], v["cedula_invitado"], v["nombre_invitado"], v.get("fecha_nacimiento", ""), v.get("correo", ""), v["estatus"]])
     hoja_invitaciones.clear()
     hoja_invitaciones.update(values=filas, range_name="A1")
     st.session_state.db_invitaciones = datos
@@ -306,38 +353,74 @@ else:
         st.session_state.usuario_actual = None
         st.rerun()
 
-    # --- MÓDULO 1: CARNET DIGITAL ---
+    # --- MÓDULO 1: CARNET DIGITAL (VIP) ---
     if modulo_seleccionado == "Mi Carnet Digital":
-        st.subheader("Club Exclusivo Magnum")
+        
+        # Alertas de estatus que se muestran arriba del carnet
         if socio_actual['solvencia'] == "Moroso":
             st.error("⚠️ ATENCIÓN: Tu grupo familiar presenta un saldo pendiente.")
             st.warning("Tu acceso a las instalaciones está restringido. Por favor, regulariza tu estatus en el Módulo de Pagos.")
         elif socio_actual['solvencia'] == "Pendiente":
             st.warning("⏳ Tu cuenta se encuentra en revisión administrativa. El código QR no será válido hasta ser aprobado.")
 
-        st.markdown("<div class='pago-card'>", unsafe_allow_html=True)
-        st.markdown("### 🎫 Tu Carnet Digital")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"**Acción:** `{socio_actual['accion']}`")
-            st.markdown(f"**Edad:** `{calcular_edad(socio_actual.get('fecha_nacimiento', ''))} años`")
-        with col2:
-            st.markdown(f"**Cédula:** `{socio_actual['cedula']}`")
-            color_estatus = "✅ Al dia" if socio_actual['solvencia'] == "Al dia" else f"❌ {socio_actual['solvencia'].upper()}"
-            if socio_actual['solvencia'] == "Pendiente": color_estatus = "⏳ PENDIENTE"
-            st.markdown(f"**Estatus:** `{color_estatus}`")
-        st.write("---")
+        # Calculo de datos para inyectar en el HTML
+        edad_socio = calcular_edad(socio_actual.get('fecha_nacimiento', ''))
         
+        # Determinar clase del badge de estatus
+        if socio_actual['solvencia'] == "Al dia":
+            clase_badge = "badge-aldia"
+            texto_badge = "✅ AL DÍA"
+        elif socio_actual['solvencia'] == "Pendiente":
+            clase_badge = "badge-pendiente"
+            texto_badge = "⏳ PENDIENTE"
+        else:
+            clase_badge = "badge-moroso"
+            texto_badge = "❌ MOROSO"
+
+        # Generación de la imagen QR en formato base64 para inyectar en HTML
         datos_qr = f"CEDULA:{socio_actual['cedula']}|VENTRY|{socio_actual['nombre']}|{socio_actual['accion']}"
         img = qrcode.make(datos_qr)
         buffer = BytesIO()
         img.save(buffer, format="PNG")
+        img_str = base64.b64encode(buffer.getvalue()).decode()
+
+        # ESTRUCTURA HTML DEL CARNET VIP
+        carnet_html = f"""
+        <div class="carnet-container">
+            <div class="carnet-logo">Magnum City Club</div>
+            <div class="carnet-nombre">{socio_actual['nombre']}</div>
+            <div class="carnet-rol">{socio_actual['rol']} {socio_actual['parentesco'] if socio_actual['parentesco'] != "N/A (Titular)" else ""}</div>
+            
+            <div class="carnet-datos">
+                <div class="dato-item">
+                    <span class="dato-label">Acción</span>
+                    <span class="dato-valor">{socio_actual['accion']}</span>
+                </div>
+                <div class="dato-item">
+                    <span class="dato-label">Cédula</span>
+                    <span class="dato-valor">{socio_actual['cedula']}</span>
+                </div>
+                <div class="dato-item">
+                    <span class="dato-label">Edad</span>
+                    <span class="dato-valor">{edad_socio}</span>
+                </div>
+            </div>
+            
+            <div class="qr-container">
+                <img src="data:image/png;base64,{img_str}" width="180">
+            </div>
+            
+            <div>
+                <span class="estatus-badge {clase_badge}">{texto_badge}</span>
+            </div>
+        </div>
+        """
         
-        col_A, col_B, col_C = st.columns([1,2,1])
-        with col_B:
-            st.image(buffer.getvalue(), caption="Muestre este código en Garita", width=220)
-            if socio_actual['solvencia'] != "Al dia": st.error("❌ Código Inactivo.")
-        st.markdown("</div>", unsafe_allow_html=True)
+        # Renderizamos el carnet en pantalla
+        st.markdown(carnet_html, unsafe_allow_html=True)
+        
+        if socio_actual['solvencia'] != "Al dia":
+            st.error("❌ Código Inactivo en Garita.")
 
     # --- MÓDULO 2: PAGOS ---
     elif modulo_seleccionado == "Módulo de Pagos":
@@ -374,7 +457,7 @@ else:
                 guardar_bd_pagos(BASE_DATOS_PAGOS)
                 st.success("✅ Pago reportado con éxito. En breve será validado.")
 
-    # --- MÓDULO 3: PASES DE INVITADOS (CON FOTO Y DRIVE) ---
+    # --- MÓDULO 3: PASES DE INVITADOS ---
     elif modulo_seleccionado == "Pases de Invitados":
         st.subheader("🎫 Generar Pase de Invitado")
         if socio_actual["solvencia"] != "Al dia":
@@ -406,53 +489,34 @@ else:
                 with col_b:
                     n_correo_inv = st.text_input("Correo Electrónico", value=n_correo_def)
                     n_nacimiento_inv = st.date_input("Fecha de Nacimiento", value=n_nacimiento_def, min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
-                
-                st.write("---")
-                st.markdown("#### 📸 Documento de Identidad")
-                # Archivo listo para subir
-                foto_cedula = st.file_uploader("Sube la foto de la Cédula", type=["jpg", "png", "jpeg"])
-                st.write("---")
-                
                 fecha_visita = st.date_input("Fecha de la visita (Válido por todo el día)", min_value=datetime.today(), format="DD/MM/YYYY")
+                st.write("---")
                 guardar_contacto = st.checkbox("⭐ Guardar/Actualizar en mi directorio de invitados frecuentes", value=False if modo_ingreso == "Directorio de Favoritos" else True)
                 btn_generar = st.form_submit_button("Generar Pase QR")
                 
             if btn_generar:
                 if not n_cedula_inv or not n_nombre_inv: st.error("⚠️ Debes ingresar al menos la Cédula y el Nombre.")
                 else:
-                    id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
-                    link_documento = ""
-                    
-                    # PROCESAMIENTO A DRIVE
-                    if foto_cedula is not None:
-                        with st.spinner("Subiendo documento a la bóveda segura..."):
-                            nombre_archivo = f"CEDULA_{n_cedula_inv}_Pase_{id_unico}.jpg"
-                            link_documento = subir_foto_a_drive(foto_cedula, nombre_archivo)
-                    
                     if guardar_contacto:
                         if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
                         BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {
                             "nombre": n_nombre_inv, "correo": n_correo_inv, "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y")
                         }
                         guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
-                        
                     str_fecha = fecha_visita.strftime("%d/%m/%Y")
+                    id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
                     BASE_DATOS_INVITACIONES[id_unico] = {
                         "accion": socio_actual["accion"], "fecha_visita": str_fecha,
                         "cedula_invitado": n_cedula_inv, "nombre_invitado": n_nombre_inv,
-                        "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y"), "correo": n_correo_inv, 
-                        "estatus": "Activo", "link_cedula": link_documento
+                        "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y"), "correo": n_correo_inv, "estatus": "Activo"
                     }
                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
-                    
                     datos_qr = f"INVITADO|{id_unico}"
                     img = qrcode.make(datos_qr)
                     buffer = BytesIO()
                     img.save(buffer, format="PNG")
                     st.success(f"✅ Pase generado para {n_nombre_inv}.")
                     if guardar_contacto: st.info(f"⭐ Datos de {n_nombre_inv} guardados en el directorio.")
-                    if link_documento: st.info("📎 Documento de identidad guardado correctamente.")
-                    
                     col_A, col_B, col_C = st.columns([1,2,1])
                     with col_B: st.image(buffer.getvalue(), caption="Comparte este QR con tu invitado", width=250)
 

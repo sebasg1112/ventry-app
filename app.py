@@ -197,16 +197,19 @@ if not st.session_state.logueado:
             elif r_cedula in BASE_DATOS_SOCIOS:
                 st.error("⚠️ Esta cédula ya se encuentra registrada.")
             else:
+                # Normalizamos la acción para evitar el truco del '0393'
+                r_acc_norm = r_accion.strip().lstrip('0') or "0"
                 titular_existente = False
+                
                 if r_rol == "Titular":
                     for info in BASE_DATOS_SOCIOS.values():
-                        if info["accion"] == r_accion and info["rol"] == "Titular":
+                        if info["accion"] == r_acc_norm and info["rol"] == "Titular":
                             titular_existente = True
                             break
                 if titular_existente:
-                    st.error(f"⚠️ La Acción {r_accion} ya tiene un Titular.")
+                    st.error(f"⚠️ Operación Denegada: La Acción {r_acc_norm} ya tiene un Titular registrado.")
                 else:
-                    BASE_DATOS_SOCIOS[r_cedula] = {"nombre": r_nombre, "clave": r_clave, "accion": r_accion, "rol": r_rol, "parentesco": r_parentesco, "solvencia": "Pendiente", "cedula": r_cedula}
+                    BASE_DATOS_SOCIOS[r_cedula] = {"nombre": r_nombre, "clave": r_clave, "accion": r_acc_norm, "rol": r_rol, "parentesco": r_parentesco, "solvencia": "Pendiente", "cedula": r_cedula}
                     guardar_bd(BASE_DATOS_SOCIOS)
                     st.success("✅ ¡Registro exitoso! Ya puedes iniciar sesión.")
 
@@ -298,7 +301,7 @@ else:
         with st.form("form_pago"):
             n_referencia = st.text_input("Número de Referencia (Últimos 6 dígitos)")
             n_monto = st.number_input("Monto Pagado ($ o Bs según método)", min_value=1.0)
-            n_fecha_pago = st.date_input("Fecha de la transacción", max_value=datetime.today())
+            n_fecha_pago = st.date_input("Fecha de la transacción", max_value=datetime.today(), format="DD/MM/YYYY")
             btn_reportar = st.form_submit_button("Reportar Pago")
             
         if btn_reportar:
@@ -317,7 +320,7 @@ else:
                 guardar_bd_pagos(BASE_DATOS_PAGOS)
                 st.success("✅ Pago reportado con éxito. En breve será validado.")
 
-    # --- MÓDULO 3: PASES DE INVITADOS (FULL DATA) ---
+    # --- MÓDULO 3: PASES DE INVITADOS ---
     elif modulo_seleccionado == "Pases de Invitados":
         st.subheader("🎫 Generar Pase de Invitado")
         if socio_actual["solvencia"] != "Al dia":
@@ -353,9 +356,10 @@ else:
                     n_nombre_inv = st.text_input("Nombre del Invitado", value=n_nombre_def)
                 with col_b:
                     n_correo_inv = st.text_input("Correo Electrónico", value=n_correo_def)
-                    n_nacimiento_inv = st.date_input("Fecha de Nacimiento", value=n_nacimiento_def, min_value=datetime(1920, 1, 1), max_value=datetime.today())
+                    # Formato DD/MM/YYYY aplicado
+                    n_nacimiento_inv = st.date_input("Fecha de Nacimiento", value=n_nacimiento_def, min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
                 
-                fecha_visita = st.date_input("Fecha de la visita (Válido por todo el día)", min_value=datetime.today())
+                fecha_visita = st.date_input("Fecha de la visita (Válido por todo el día)", min_value=datetime.today(), format="DD/MM/YYYY")
                 st.write("---")
                 guardar_contacto = st.checkbox("⭐ Guardar/Actualizar en mi directorio de invitados frecuentes", value=False if modo_ingreso == "Directorio de Favoritos" else True)
                 btn_generar = st.form_submit_button("Generar Pase QR")
@@ -456,9 +460,21 @@ else:
                 n_solvencia = st.selectbox("Estatus", ["Al dia", "Moroso", "Pendiente"])
                 if st.form_submit_button("Guardar"):
                     if n_cedula and n_nombre:
-                        BASE_DATOS_SOCIOS[n_cedula] = {"nombre": n_nombre, "clave": n_clave, "accion": n_accion, "rol": n_rol, "parentesco": n_parentesco, "solvencia": n_solvencia, "cedula": n_cedula}
-                        guardar_bd(BASE_DATOS_SOCIOS)
-                        st.success("✅ Guardado.")
+                        n_acc_norm = n_accion.strip().lstrip('0') or "0"
+                        titular_existente = False
+                        
+                        if n_rol == "Titular":
+                            for info in BASE_DATOS_SOCIOS.values():
+                                if info["accion"] == n_acc_norm and info["rol"] == "Titular":
+                                    titular_existente = True
+                                    break
+                                    
+                        if titular_existente:
+                            st.error(f"⚠️ Operación Denegada: La Acción {n_acc_norm} ya tiene un Titular registrado.")
+                        else:
+                            BASE_DATOS_SOCIOS[n_cedula] = {"nombre": n_nombre, "clave": n_clave, "accion": n_acc_norm, "rol": n_rol, "parentesco": n_parentesco, "solvencia": n_solvencia, "cedula": n_cedula}
+                            guardar_bd(BASE_DATOS_SOCIOS)
+                            st.success("✅ Guardado.")
 
         with tab2:
             st.markdown("### ✏️ Modificar Datos")
@@ -482,7 +498,7 @@ else:
                     if st.form_submit_button("Guardar Cambios"):
                         BASE_DATOS_SOCIOS[socio_a_editar]["nombre"] = e_nombre
                         BASE_DATOS_SOCIOS[socio_a_editar]["clave"] = e_clave
-                        BASE_DATOS_SOCIOS[socio_a_editar]["accion"] = e_accion
+                        BASE_DATOS_SOCIOS[socio_a_editar]["accion"] = e_accion.strip().lstrip('0') or "0"
                         BASE_DATOS_SOCIOS[socio_a_editar]["rol"] = e_rol
                         BASE_DATOS_SOCIOS[socio_a_editar]["parentesco"] = e_parentesco
                         BASE_DATOS_SOCIOS[socio_a_editar]["solvencia"] = e_solvencia

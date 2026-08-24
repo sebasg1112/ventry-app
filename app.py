@@ -72,14 +72,10 @@ def cargar_bd():
         ced = str(fila.get("cedula", ""))
         if ced:
             datos[ced] = {
-                "nombre": str(fila.get("nombre", "")),
-                "clave": str(fila.get("clave", "")),
-                "accion": str(fila.get("accion", "")),
-                "rol": str(fila.get("rol", "")),
-                "parentesco": str(fila.get("parentesco", "N/A")),
-                "fecha_nacimiento": str(fila.get("fecha_nacimiento", "")),
-                "solvencia": str(fila.get("solvencia", "")),
-                "cedula": ced
+                "nombre": str(fila.get("nombre", "")), "clave": str(fila.get("clave", "")),
+                "accion": str(fila.get("accion", "")), "rol": str(fila.get("rol", "")),
+                "parentesco": str(fila.get("parentesco", "N/A")), "fecha_nacimiento": str(fila.get("fecha_nacimiento", "")),
+                "solvencia": str(fila.get("solvencia", "")), "cedula": ced
             }
     return datos
 
@@ -91,6 +87,7 @@ def guardar_bd(datos):
         filas_a_subir.append([socio["cedula"], socio["nombre"], socio["clave"], socio["accion"], socio["rol"], socio["parentesco"], socio.get("fecha_nacimiento", ""), socio["solvencia"]])
     hoja_bd.clear()
     hoja_bd.update(values=filas_a_subir, range_name="A1")
+    st.session_state.db_socios = datos
 
 def cargar_invitaciones():
     try: return {str(f["id_qr"]): f for f in hoja_invitaciones.get_all_records() if str(f.get("id_qr", ""))}
@@ -101,6 +98,7 @@ def guardar_bd_invitaciones(datos):
     for k, v in datos.items(): filas.append([k, v["accion"], v["fecha_visita"], v["cedula_invitado"], v["nombre_invitado"], v.get("fecha_nacimiento", ""), v.get("correo", ""), v["estatus"]])
     hoja_invitaciones.clear()
     hoja_invitaciones.update(values=filas, range_name="A1")
+    st.session_state.db_invitaciones = datos
 
 def cargar_pagos():
     try: 
@@ -110,12 +108,9 @@ def cargar_pagos():
             id_p = str(f.get("id_pago", ""))
             if id_p:
                 datos[id_p] = {
-                    "accion": str(f.get("accion", "")),
-                    "metodo": str(f.get("metodo", "")),
-                    "referencia": str(f.get("referencia", "")),
-                    "monto": str(f.get("monto", "")),
-                    "fecha_reporte": str(f.get("fecha_reporte", "")),
-                    "estatus": str(f.get("estatus", ""))
+                    "accion": str(f.get("accion", "")), "metodo": str(f.get("metodo", "")),
+                    "referencia": str(f.get("referencia", "")), "monto": str(f.get("monto", "")),
+                    "fecha_reporte": str(f.get("fecha_reporte", "")), "estatus": str(f.get("estatus", ""))
                 }
         return datos
     except: return {}
@@ -125,6 +120,7 @@ def guardar_bd_pagos(datos):
     for k, v in datos.items(): filas.append([k, v["accion"], v["metodo"], v["referencia"], v["monto"], v["fecha_reporte"], v["estatus"]])
     hoja_pagos.clear()
     hoja_pagos.update(values=filas, range_name="A1")
+    st.session_state.db_pagos = datos
 
 def cargar_directorio():
     try:
@@ -136,8 +132,7 @@ def cargar_directorio():
             if acc and ced:
                 if acc not in datos: datos[acc] = {}
                 datos[acc][ced] = {
-                    "nombre": str(f.get("nombre_invitado", "")),
-                    "correo": str(f.get("correo", "")),
+                    "nombre": str(f.get("nombre_invitado", "")), "correo": str(f.get("correo", "")),
                     "fecha_nacimiento": str(f.get("fecha_nacimiento", ""))
                 }
         return datos
@@ -150,13 +145,22 @@ def guardar_bd_directorio(datos):
             filas.append([acc, ced, info["nombre"], info["correo"], info.get("fecha_nacimiento", "")])
     hoja_directorio.clear()
     hoja_directorio.update(values=filas, range_name="A1")
+    st.session_state.db_directorio = datos
 
-BASE_DATOS_SOCIOS = cargar_bd()
-BASE_DATOS_INVITACIONES = cargar_invitaciones()
-BASE_DATOS_PAGOS = cargar_pagos()
-BASE_DATOS_DIRECTORIO = cargar_directorio()
+# --- INICIALIZACIÓN DE MEMORIA LOCAL (ANTI-CRASH DE GOOGLE SHEETS) ---
+if "datos_cargados" not in st.session_state:
+    st.session_state.db_socios = cargar_bd()
+    st.session_state.db_invitaciones = cargar_invitaciones()
+    st.session_state.db_pagos = cargar_pagos()
+    st.session_state.db_directorio = cargar_directorio()
+    st.session_state.datos_cargados = True
 
-# --- INICIALIZACIÓN DE MEMORIA LOCAL ---
+# Apuntamos las variables globales a la memoria RAM de la sesión
+BASE_DATOS_SOCIOS = st.session_state.db_socios
+BASE_DATOS_INVITACIONES = st.session_state.db_invitaciones
+BASE_DATOS_PAGOS = st.session_state.db_pagos
+BASE_DATOS_DIRECTORIO = st.session_state.db_directorio
+
 if "logueado" not in st.session_state:
     st.session_state.logueado = False
 if "usuario_actual" not in st.session_state:
@@ -164,7 +168,7 @@ if "usuario_actual" not in st.session_state:
 if "historial" not in st.session_state:
     st.session_state.historial = []
 if "ubicacion_socios" not in st.session_state:
-    st.session_state.ubicacion_socios = {} # Memoria para saber si el socio está adentro o afuera
+    st.session_state.ubicacion_socios = {} 
 
 # ==========================================
 # PANTALLA INICIAL: LOGIN Y AUTO-REGISTRO
@@ -248,6 +252,17 @@ else:
     st.sidebar.image("https://cdn-icons-png.flaticon.com/512/6195/6195699.png", width=100)
     st.sidebar.title(f"Hola, {socio_actual['nombre']}")
     st.sidebar.write(f"Rol: **{rol_actual}**")
+    
+    # Botón exclusivo para administradores para refrescar datos desde Google Sheets
+    if rol_actual == "Administrador":
+        if st.sidebar.button("🔄 Sincronizar Nube"):
+            st.session_state.db_socios = cargar_bd()
+            st.session_state.db_invitaciones = cargar_invitaciones()
+            st.session_state.db_pagos = cargar_pagos()
+            st.session_state.db_directorio = cargar_directorio()
+            st.sidebar.success("Base de datos sincronizada")
+            st.rerun()
+            
     st.sidebar.write("---")
     
     opciones_menu = []
@@ -398,7 +413,7 @@ else:
                     col_A, col_B, col_C = st.columns([1,2,1])
                     with col_B: st.image(buffer.getvalue(), caption="Comparte este QR con tu invitado", width=250)
 
-    # --- MÓDULO 4: GARITA (100% AUTOMATIZADA) ---
+    # --- MÓDULO 4: GARITA ---
     elif modulo_seleccionado == "Panel de Garita":
         st.title("🛡️ Módulo de Garita (Automático)")
         st.write("---")
@@ -410,14 +425,12 @@ else:
             datos_decodificados, bbox, _ = detector.detectAndDecode(cv2_img)
             
             if datos_decodificados:
-                # 1. LÓGICA DE SOCIOS (Se basa en la memoria de ubicación)
                 if "CEDULA:" in datos_decodificados:
                     cedula_escaneada = datos_decodificados.split("|")[0].replace("CEDULA:", "")
                     if cedula_escaneada in BASE_DATOS_SOCIOS:
                         socio = BASE_DATOS_SOCIOS[cedula_escaneada]
                         if socio["solvencia"] == "Al dia":
                             estado_actual = st.session_state.ubicacion_socios.get(cedula_escaneada, "Afuera")
-                            
                             if estado_actual == "Afuera":
                                 st.success("✅ ENTRADA PERMITIDA (Socio)")
                                 st.session_state.ubicacion_socios[cedula_escaneada] = "Adentro"
@@ -435,12 +448,10 @@ else:
                     else:
                         st.error("⚠️ El socio ya no existe en la BD.")
                         
-                # 2. LÓGICA DE INVITADOS (Se basa en el estatus del QR en Google Sheets)
                 elif "INVITADO|" in datos_decodificados:
                     id_qr = datos_decodificados.split("|")[1]
                     if id_qr in BASE_DATOS_INVITACIONES:
                         pase = BASE_DATOS_INVITACIONES[id_qr]
-                        
                         if pase["estatus"] == "Activo":
                             if datetime.now().strftime("%d/%m/%Y") == pase["fecha_visita"]:
                                 socio_solvente = any(str(s["accion"]) == str(pase["accion"]) and s["solvencia"] == "Al dia" for s in BASE_DATOS_SOCIOS.values())
@@ -449,23 +460,16 @@ else:
                                     BASE_DATOS_INVITACIONES[id_qr]["estatus"] = "Adentro"
                                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
                                     registrar_acceso(f"Inv: {pase['nombre_invitado']}", pase["accion"], "QR (Invitado)", "Entrada")
-                                else:
-                                    st.error("❌ ACCESO DENEGADO - La Acción que emitió este pase no está solvente.")
-                            else:
-                                st.error("❌ ACCESO DENEGADO - Este pase no es para el día de hoy.")
-                                
+                                else: st.error("❌ ACCESO DENEGADO - La Acción que emitió este pase no está solvente.")
+                            else: st.error("❌ ACCESO DENEGADO - Este pase no es para el día de hoy.")
                         elif pase["estatus"] in ["Adentro", "Usado"]: 
                             st.success(f"✅ SALIDA REGISTRADA (Invitado: {pase['nombre_invitado']})")
                             BASE_DATOS_INVITACIONES[id_qr]["estatus"] = "Salió"
                             guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
                             registrar_acceso(f"Inv: {pase['nombre_invitado']}", pase["accion"], "QR (Invitado)", "Salida")
-                            
-                        else:
-                            st.error(f"❌ ACCESO DENEGADO - Este QR ya registra el estatus: {pase['estatus']}.")
-                    else:
-                        st.warning("⚠️ Código de invitado no encontrado.")
-            else:
-                st.warning("⚠️ No se detectó un código válido.")
+                        else: st.error(f"❌ ACCESO DENEGADO - Este QR ya registra el estatus: {pase['estatus']}.")
+                    else: st.warning("⚠️ Código de invitado no encontrado.")
+            else: st.warning("⚠️ No se detectó un código válido.")
         
         st.write("---")
         st.markdown("### 📊 Registro de Tránsito (En Vivo)")
@@ -643,7 +647,6 @@ else:
                 })
                 st.bar_chart(data=df_grafico, x="Estatus", y="Cantidad", color="Color")
                 
-                # --- BOTONES DE DESCARGA ---
                 st.write("---")
                 st.markdown("#### 📥 Exportar Reportes (CSV)")
                 colA, colB = st.columns(2)

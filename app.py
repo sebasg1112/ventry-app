@@ -13,6 +13,43 @@ import base64
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Ventry - Control de Acceso", page_icon="🔑", layout="centered")
 
+# --- CONVERSIÓN A PWA (APP MÓVIL NATIVA) ---
+# Adapté el link que me pasaste al formato de descarga directa de ImgBB
+icono_url = "https://i.ibb.co/t7xWXXR/logo.png"
+
+manifest_json = f"""
+{{
+  "name": "Ventry Magnum City Club",
+  "short_name": "Ventry",
+  "theme_color": "#121826",
+  "background_color": "#121826",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {{
+      "src": "{icono_url}",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }}
+  ]
+}}
+"""
+manifest_b64 = base64.b64encode(manifest_json.encode('utf-8')).decode('utf-8')
+
+st.markdown(f"""
+    <head>
+        <link rel="manifest" href="data:application/json;base64,{manifest_b64}">
+        <meta name="theme-color" content="#121826">
+        <link rel="apple-touch-icon" href="{icono_url}">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="Ventry">
+    </head>
+""", unsafe_allow_html=True)
+
 # --- CSS AVANZADO (GLASSMORPHISM Y DARK MODE) ---
 st.markdown("""
     <style>
@@ -421,7 +458,7 @@ else:
         img.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue()).decode()
 
-        # HTML ALINEADO A LA IZQUIERDA PARA EVITAR EL BUG DE STREAMLIT (MARKDOWN CODE BLOCK)
+        # HTML ALINEADO A LA IZQUIERDA PARA EVITAR EL BUG DE STREAMLIT
         carnet_html = f"""
 <div class="dark-wrapper">
 <div class="glass-card">

@@ -11,12 +11,11 @@ import uuid
 import base64
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
-st.set_page_config(page_title="Ventry - Control de Acceso", page_icon="🔑", layout="centered")
+# Aquí inyectamos el logo directamente para "matar" la corona de Streamlit
+icono_url = "https://i.ibb.co/t7xWXXR/logo.png"
+st.set_page_config(page_title="Ventry - Control de Acceso", page_icon=icono_url, layout="centered")
 
 # --- CONVERSIÓN A PWA (APP MÓVIL NATIVA) ---
-# Adapté el link que me pasaste al formato de descarga directa de ImgBB
-icono_url = "https://i.ibb.co/t7xWXXR/logo.png"
-
 manifest_json = f"""
 {{
   "name": "Ventry Magnum City Club",

@@ -52,54 +52,66 @@ st.markdown(f"""
 # --- CSS AVANZADO ---
 st.markdown("""
     <style>
+    /* Ocultamos marca de agua y menú derecho de Streamlit, pero DEJAMOS el header para el menú móvil */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
+    /* header {visibility: hidden;} <-- ELIMINADO PARA ARREGLAR EL BUG DEL MENÚ MÓVIL */
     
     .stApp { background-color: #f0f2f6; } 
     
     .stButton>button { 
-        width: 100%; border-radius: 12px; background-color: #0d1117; color: white; font-weight: bold; border: none; padding: 10px;
+        width: 100%; 
+        border-radius: 12px; 
+        background-color: #0d1117; 
+        color: white; 
+        font-weight: bold; 
+        border: none; 
+        padding: 10px;
     }
     h1, h2, h3 { color: #0d1117; }
-    .pago-card {
-        background-color: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;
+    
+    .pago-card { 
+        background-color: white; 
+        padding: 20px; 
+        border-radius: 15px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+        margin-bottom: 20px; 
     }
     
-    /* ESTILOS DEL CARNET TIPO CANVA (GLASSMORPHISM) */
-    .dark-wrapper {
+    /* ESTILOS DEL CARNET GLASSMORPHISM */
+    .dark-wrapper { 
         background-color: #121826; 
-        padding: 40px 20px;
-        border-radius: 24px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 30px;
-        box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+        padding: 40px 20px; 
+        border-radius: 24px; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        margin-bottom: 30px; 
+        box-shadow: inset 0 0 50px rgba(0,0,0,0.5); 
     }
-    .glass-card {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 40px 30px;
-        width: 100%;
-        max-width: 360px;
-        color: white;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-        position: relative;
-        overflow: hidden;
+    .glass-card { 
+        background: rgba(255, 255, 255, 0.03); 
+        backdrop-filter: blur(16px); 
+        -webkit-backdrop-filter: blur(16px); 
+        border: 1px solid rgba(255, 255, 255, 0.1); 
+        border-radius: 20px; 
+        padding: 40px 30px; 
+        width: 100%; 
+        max-width: 360px; 
+        color: white; 
+        box-shadow: 0 15px 35px rgba(0,0,0,0.4); 
+        position: relative; 
+        overflow: hidden; 
     }
-    .glow-effect {
-        position: absolute;
-        top: -20%;
-        left: -20%;
-        width: 140%;
-        height: 140%;
-        background: radial-gradient(circle at center, rgba(0, 123, 255, 0.15) 0%, transparent 60%);
-        z-index: 0;
-        pointer-events: none;
+    .glow-effect { 
+        position: absolute; 
+        top: -20%; 
+        left: -20%; 
+        width: 140%; 
+        height: 140%; 
+        background: radial-gradient(circle at center, rgba(0, 123, 255, 0.15) 0%, transparent 60%); 
+        z-index: 0; 
+        pointer-events: none; 
     }
     .glass-content { position: relative; z-index: 1; }
     .magnum-logo { text-align: center; margin-bottom: 35px; }
@@ -108,38 +120,20 @@ st.markdown("""
     .logo-city { font-size: 9px; letter-spacing: 2px; color: #8892b0; margin: 0; text-transform: uppercase; }
     .logo-line { width: 30px; height: 1px; background-color: #8892b0; margin: 15px auto 0 auto; }
     
-    .info-group {
-        margin-bottom: 18px;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-        padding-bottom: 8px;
-    }
+    .info-group { margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
     .info-label { font-size: 12px; color: #8892b0; margin-bottom: 4px; letter-spacing: 0.5px; }
     .info-value { font-size: 18px; font-weight: 500; color: #e6f1ff; }
     
     .qr-container { text-align: center; margin-top: 30px; }
-    .qr-box {
-        background: rgba(255,255,255,0.9);
-        padding: 10px;
-        border-radius: 12px;
-        display: inline-block;
-        margin-bottom: 15px;
-    }
+    .qr-box { background: rgba(255,255,255,0.9); padding: 10px; border-radius: 12px; display: inline-block; margin-bottom: 15px; }
     .qr-box img { width: 140px; display: block; }
     
-    .status-badge {
-        display: inline-block;
-        padding: 6px 18px;
-        border-radius: 30px;
-        font-size: 12px;
-        font-weight: bold;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-    }
+    .status-badge { display: inline-block; padding: 6px 18px; border-radius: 30px; font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
     .badge-aldia { background: rgba(40, 167, 69, 0.15); color: #4ade80; border: 1px solid rgba(40, 167, 69, 0.3); }
     .badge-moroso { background: rgba(220, 53, 69, 0.15); color: #ff6b6b; border: 1px solid rgba(220, 53, 69, 0.3); }
     .badge-pendiente { background: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3); }
     
-    /* Botón WhatsApp */
+    /* Botón WhatsApp Fricción Cero */
     .whatsapp-btn {
         display: block; 
         width: 100%; 
@@ -151,6 +145,7 @@ st.markdown("""
         text-decoration: none; 
         font-weight: bold; 
         margin-top: 15px;
+        box-shadow: 0 4px 6px rgba(37,211,102,0.3);
     }
     .whatsapp-btn:hover { background-color: #128C7E; color: white; }
     </style>
@@ -180,7 +175,7 @@ except Exception as e:
     st.error(f"Error conectando a Google Sheets: {e}")
     st.stop()
 
-# --- FUNCIONES DE CÁLCULO Y AUDITORÍA ---
+# --- FUNCIONES BÁSICAS ---
 def calcular_edad(fecha_nac_str):
     if not fecha_nac_str: 
         return "N/A"
@@ -207,20 +202,19 @@ def registrar_acceso(nombre, accion, via, movimiento):
         "movimiento": movimiento
     })
 
-# --- FUNCIONES DE LECTURA/ESCRITURA ---
 def cargar_bd():
     registros = hoja_bd.get_all_records()
     datos = {}
     for fila in registros:
         ced = str(fila.get("cedula", ""))
-        if ced:
+        if ced: 
             datos[ced] = {
                 "nombre": str(fila.get("nombre", "")), 
-                "clave": str(fila.get("clave", "")),
+                "clave": str(fila.get("clave", "")), 
                 "accion": str(fila.get("accion", "")), 
-                "rol": str(fila.get("rol", "")),
+                "rol": str(fila.get("rol", "")), 
                 "parentesco": str(fila.get("parentesco", "N/A")), 
-                "fecha_nacimiento": str(fila.get("fecha_nacimiento", "")),
+                "fecha_nacimiento": str(fila.get("fecha_nacimiento", "")), 
                 "solvencia": str(fila.get("solvencia", "")), 
                 "cedula": ced
             }
@@ -230,10 +224,16 @@ def guardar_bd(datos):
     lista_socios = list(datos.values())
     lista_socios.sort(key=lambda x: (x.get("accion", ""), x.get("rol", "")), reverse=True) 
     filas_a_subir = [["cedula", "nombre", "clave", "accion", "rol", "parentesco", "fecha_nacimiento", "solvencia"]]
-    for socio in lista_socios:
+    for socio in lista_socios: 
         filas_a_subir.append([
-            socio["cedula"], socio["nombre"], socio["clave"], socio["accion"], 
-            socio["rol"], socio["parentesco"], socio.get("fecha_nacimiento", ""), socio["solvencia"]
+            socio["cedula"], 
+            socio["nombre"], 
+            socio["clave"], 
+            socio["accion"], 
+            socio["rol"], 
+            socio["parentesco"], 
+            socio.get("fecha_nacimiento", ""), 
+            socio["solvencia"]
         ])
     hoja_bd.clear()
     hoja_bd.update(values=filas_a_subir, range_name="A1")
@@ -249,8 +249,14 @@ def guardar_bd_invitaciones(datos):
     filas = [["id_qr", "accion", "fecha_visita", "cedula_invitado", "nombre_invitado", "fecha_nacimiento", "correo", "estatus"]]
     for k, v in datos.items(): 
         filas.append([
-            k, v["accion"], v["fecha_visita"], v["cedula_invitado"], 
-            v["nombre_invitado"], v.get("fecha_nacimiento", ""), v.get("correo", ""), v["estatus"]
+            k, 
+            v["accion"], 
+            v["fecha_visita"], 
+            v["cedula_invitado"], 
+            v["nombre_invitado"], 
+            v.get("fecha_nacimiento", ""), 
+            v.get("correo", ""), 
+            v["estatus"]
         ])
     hoja_invitaciones.clear()
     hoja_invitaciones.update(values=filas, range_name="A1")
@@ -262,12 +268,12 @@ def cargar_pagos():
         datos = {}
         for f in registros:
             id_p = str(f.get("id_pago", ""))
-            if id_p:
+            if id_p: 
                 datos[id_p] = {
                     "accion": str(f.get("accion", "")), 
-                    "metodo": str(f.get("metodo", "")),
+                    "metodo": str(f.get("metodo", "")), 
                     "referencia": str(f.get("referencia", "")), 
-                    "monto": str(f.get("monto", "")),
+                    "monto": str(f.get("monto", "")), 
                     "fecha_reporte": str(f.get("fecha_reporte", "")), 
                     "estatus": str(f.get("estatus", ""))
                 }
@@ -279,8 +285,13 @@ def guardar_bd_pagos(datos):
     filas = [["id_pago", "accion", "metodo", "referencia", "monto", "fecha_reporte", "estatus"]]
     for k, v in datos.items(): 
         filas.append([
-            k, v["accion"], v["metodo"], v["referencia"], 
-            v["monto"], v["fecha_reporte"], v["estatus"]
+            k, 
+            v["accion"], 
+            v["metodo"], 
+            v["referencia"], 
+            v["monto"], 
+            v["fecha_reporte"], 
+            v["estatus"]
         ])
     hoja_pagos.clear()
     hoja_pagos.update(values=filas, range_name="A1")
@@ -294,10 +305,11 @@ def cargar_directorio():
             acc = str(f.get("accion", ""))
             ced = str(f.get("cedula_invitado", ""))
             if acc and ced:
-                if acc not in datos: datos[acc] = {}
+                if acc not in datos: 
+                    datos[acc] = {}
                 datos[acc][ced] = {
                     "nombre": str(f.get("nombre_invitado", "")), 
-                    "correo": str(f.get("correo", "")),
+                    "correo": str(f.get("correo", "")), 
                     "fecha_nacimiento": str(f.get("fecha_nacimiento", ""))
                 }
         return datos
@@ -307,9 +319,13 @@ def cargar_directorio():
 def guardar_bd_directorio(datos):
     filas = [["accion", "cedula_invitado", "nombre_invitado", "correo", "fecha_nacimiento"]]
     for acc, invitados in datos.items():
-        for ced, info in invitados.items():
+        for ced, info in invitados.items(): 
             filas.append([
-                acc, ced, info["nombre"], info["correo"], info.get("fecha_nacimiento", "")
+                acc, 
+                ced, 
+                info["nombre"], 
+                info["correo"], 
+                info.get("fecha_nacimiento", "")
             ])
     hoja_directorio.clear()
     hoja_directorio.update(values=filas, range_name="A1")
@@ -336,6 +352,90 @@ if "historial" not in st.session_state:
     st.session_state.historial = []
 if "ubicacion_socios" not in st.session_state: 
     st.session_state.ubicacion_socios = {} 
+
+
+# ==========================================
+# 🛑 INTERCEPTOR DE PASES DIGITALES (GUEST VIEW)
+# ==========================================
+# Si un invitado abre el link de WhatsApp, Ventry muestra su pase y no el login.
+params = st.query_params
+if "pase" in params:
+    id_pase_url = params["pase"]
+    
+    if id_pase_url in BASE_DATOS_INVITACIONES:
+        pase = BASE_DATOS_INVITACIONES[id_pase_url]
+        
+        # Generar QR del pase
+        datos_qr = f"INVITADO|{id_pase_url}"
+        img = qrcode.make(datos_qr)
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        img_str = base64.b64encode(buffer.getvalue()).decode()
+        
+        # Validaciones de estatus visuales
+        if pase["estatus"] == "Activo": 
+            clase_badge = "badge-aldia"
+            texto_badge = "PASE VÁLIDO"
+        elif pase["estatus"] == "Adentro": 
+            clase_badge = "badge-aldia"
+            texto_badge = "EN INSTALACIONES"
+        else: 
+            clase_badge = "badge-moroso"
+            texto_badge = pase["estatus"].upper()
+            
+        if pase["fecha_visita"] != datetime.now().strftime("%d/%m/%Y") and pase["estatus"] == "Activo":
+            clase_badge = "badge-pendiente"
+            texto_badge = "FECHA INVÁLIDA"
+
+        st.markdown(f"""
+        <div class="dark-wrapper" style="margin-top: 50px;">
+            <div class="glass-card">
+                <div class="glow-effect"></div>
+                <div class="glass-content">
+                    <div class="magnum-logo">
+                        <p class="logo-m">M</p>
+                        <p class="logo-magnum">MAGNUM</p>
+                        <p class="logo-city">CITY CLUB</p>
+                        <div class="logo-line"></div>
+                    </div>
+                    
+                    <div style="text-align:center; color:#d4af37; font-size:12px; font-weight:bold; letter-spacing:2px; margin-bottom:20px;">
+                        PASE DE INVITADO
+                    </div>
+                    
+                    <div class="info-group">
+                        <p class="info-label">Invitado</p>
+                        <p class="info-value">{pase['nombre_invitado']}</p>
+                    </div>
+                    
+                    <div class="info-group">
+                        <p class="info-label">Válido para el día</p>
+                        <p class="info-value">{pase['fecha_visita']}</p>
+                    </div>
+                    
+                    <div class="info-group">
+                        <p class="info-label">Autorizado por (Acción)</p>
+                        <p class="info-value">{pase['accion']}</p>
+                    </div>
+                    
+                    <div class="qr-container">
+                        <div class="qr-box">
+                            <img src="data:image/png;base64,{img_str}">
+                        </div>
+                        <br>
+                        <span class="status-badge {clase_badge}">{texto_badge}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.info("💡 Muestra esta pantalla directamente en la garita de seguridad del club.")
+    else:
+        st.error("❌ Enlace de pase inválido o no encontrado.")
+        
+    st.stop() # Detiene la ejecución para que no cargue el Login regular
+
 
 # ==========================================
 # PANTALLA INICIAL: LOGIN Y AUTO-REGISTRO
@@ -378,6 +478,7 @@ if not st.session_state.logueado:
                 r_rol = st.selectbox("Rol en la Acción", ["Titular", "Familiar"])
             with col2:
                 r_parentesco = st.selectbox("Parentesco", ["N/A (Titular)", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"])
+            
             r_clave = st.text_input("Crea una Contraseña", type="password")
             r_clave_conf = st.text_input("Confirma tu Contraseña", type="password")
             btn_registrar = st.form_submit_button("Enviar Solicitud")
@@ -408,7 +509,7 @@ if not st.session_state.logueado:
                         "accion": r_acc_norm, 
                         "rol": r_rol, 
                         "parentesco": r_parentesco, 
-                        "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"),
+                        "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"), 
                         "solvencia": "Pendiente", 
                         "cedula": r_cedula
                     }
@@ -438,37 +539,37 @@ else:
     st.sidebar.write("---")
     
     opciones_menu = []
-    if rol_actual in ["Titular", "Familiar"]:
+    if rol_actual in ["Titular", "Familiar"]: 
         opciones_menu = ["Mi Carnet Digital", "Módulo de Pagos", "Pases de Invitados"]
-    elif rol_actual == "Vigilante":
+    elif rol_actual == "Vigilante": 
         opciones_menu = ["Panel de Garita"]
-    elif rol_actual == "Administrador":
+    elif rol_actual == "Administrador": 
         opciones_menu = ["Portal de Administración", "Panel de Garita", "Módulo de Pagos", "Mi Carnet Digital", "Pases de Invitados"]
 
     modulo_seleccionado = st.sidebar.radio("Navegación:", opciones_menu)
     
     st.sidebar.write("---")
-    if st.sidebar.button("Cerrar Sesión"):
+    if st.sidebar.button("Cerrar Sesión"): 
         st.session_state.logueado = False
         st.session_state.usuario_actual = None
         st.rerun()
 
-    # --- MÓDULO 1: CARNET DIGITAL (VIP GLASSMORPHISM) ---
+    # --- MÓDULO 1: CARNET DIGITAL ---
     if modulo_seleccionado == "Mi Carnet Digital":
         
-        if socio_actual['solvencia'] == "Moroso":
+        if socio_actual['solvencia'] == "Moroso": 
             st.error("⚠️ ATENCIÓN: Tu grupo familiar presenta un saldo pendiente.")
             st.warning("Tu acceso a las instalaciones está restringido. Por favor, regulariza tu estatus en el Módulo de Pagos.")
-        elif socio_actual['solvencia'] == "Pendiente":
+        elif socio_actual['solvencia'] == "Pendiente": 
             st.warning("⏳ Tu cuenta se encuentra en revisión administrativa. El código QR no será válido hasta ser aprobado.")
 
-        if socio_actual['solvencia'] == "Al dia":
+        if socio_actual['solvencia'] == "Al dia": 
             clase_badge = "badge-aldia"
             texto_badge = "AL DÍA"
-        elif socio_actual['solvencia'] == "Pendiente":
+        elif socio_actual['solvencia'] == "Pendiente": 
             clase_badge = "badge-pendiente"
             texto_badge = "PENDIENTE"
-        else:
+        else: 
             clase_badge = "badge-moroso"
             texto_badge = "MOROSO"
 
@@ -480,68 +581,65 @@ else:
         img.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue()).decode()
 
-        # HTML sin indentación para evitar el bug de Streamlit
         carnet_html = f"""
-<div class="dark-wrapper">
-<div class="glass-card">
-<div class="glow-effect"></div>
-<div class="glass-content">
-<div class="magnum-logo">
-<p class="logo-m">M</p>
-<p class="logo-magnum">MAGNUM</p>
-<p class="logo-city">CITY CLUB</p>
-<div class="logo-line"></div>
-</div>
-<div class="info-group">
-<p class="info-label">Nombre</p>
-<p class="info-value">{socio_actual['nombre']}</p>
-</div>
-<div class="info-group">
-<p class="info-label">ID (Cédula)</p>
-<p class="info-value">{socio_actual['cedula']}</p>
-</div>
-<div class="info-group">
-<p class="info-label">Acción</p>
-<p class="info-value">{socio_actual['accion']} <span style="font-size:12px; color:#8892b0; font-weight:normal;">({socio_actual['rol']})</span></p>
-</div>
-<div class="qr-container">
-<div class="qr-box">
-<img src="data:image/png;base64,{img_str}">
-</div>
-<br>
-<span class="status-badge {clase_badge}">{texto_badge}</span>
-</div>
-</div>
-</div>
-</div>
-"""
+        <div class="dark-wrapper">
+            <div class="glass-card">
+                <div class="glow-effect"></div>
+                <div class="glass-content">
+                    <div class="magnum-logo">
+                        <p class="logo-m">M</p>
+                        <p class="logo-magnum">MAGNUM</p>
+                        <p class="logo-city">CITY CLUB</p>
+                        <div class="logo-line"></div>
+                    </div>
+                    <div class="info-group">
+                        <p class="info-label">Nombre</p>
+                        <p class="info-value">{socio_actual['nombre']}</p>
+                    </div>
+                    <div class="info-group">
+                        <p class="info-label">ID (Cédula)</p>
+                        <p class="info-value">{socio_actual['cedula']}</p>
+                    </div>
+                    <div class="info-group">
+                        <p class="info-label">Acción</p>
+                        <p class="info-value">{socio_actual['accion']} <span style="font-size:12px; color:#8892b0; font-weight:normal;">({socio_actual['rol']})</span></p>
+                    </div>
+                    <div class="qr-container">
+                        <div class="qr-box">
+                            <img src="data:image/png;base64,{img_str}">
+                        </div>
+                        <br>
+                        <span class="status-badge {clase_badge}">{texto_badge}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """
         st.markdown(carnet_html, unsafe_allow_html=True)
         
-        if socio_actual['solvencia'] != "Al dia":
+        if socio_actual['solvencia'] != "Al dia": 
             st.error("❌ Código Inactivo en Garita.")
 
     # --- MÓDULO 2: PAGOS ---
     elif modulo_seleccionado == "Módulo de Pagos":
         st.subheader("💸 Depositar Fondos / Pagar Mensualidad")
-        
         st.markdown("<div class='pago-card'>", unsafe_allow_html=True)
         st.markdown(f"#### Acción: {socio_actual['accion']}")
         deuda = 104.00 if socio_actual['solvencia'] == "Moroso" else 0.00
         st.metric("Saldo Pendiente Estimado", f"${deuda:.2f}")
         
-        if deuda == 0:
+        if deuda == 0: 
             st.success("¡Tu grupo familiar se encuentra solvente!")
         st.markdown("</div>", unsafe_allow_html=True)
         
-        st.write("¿Cómo deseas reportar tu pago?")
-        metodo = st.radio("", ["Zelle", "Pago Móvil", "Transferencia Nacional"], horizontal=True)
+        metodo = st.radio("¿Cómo deseas reportar tu pago?", ["Zelle", "Pago Móvil", "Transferencia Nacional"], horizontal=True)
         st.write("---")
         
-        if metodo == "Zelle":
+        if metodo == "Zelle": 
             st.info("📲 **Datos Zelle:**\n\n**Correo:** pagos@clubmagnum.com\n**Titular:** Inversiones Magnum LLC")
-        elif metodo == "Pago Móvil":
+        elif metodo == "Pago Móvil": 
             st.info("📱 **Datos Pago Móvil:**\n\n**Banco:** Bancamiga (0172)\n**RIF:** J-12345678-9\n**Teléfono:** 0414-1234567")
-        else:
+        else: 
             st.info("🏦 **Cuentas Nacionales:**\n\n**Banco:** Banesco\n**Cuenta:** 0134-1234-5678-9012-3456\n**RIF:** J-12345678-9")
 
         st.markdown("### 📝 Reportar Transacción")
@@ -552,25 +650,29 @@ else:
             btn_reportar = st.form_submit_button("Reportar Pago")
             
         if btn_reportar:
-            if not n_referencia:
+            if not n_referencia: 
                 st.error("Debes ingresar un número de referencia válido.")
             else:
                 id_pago = f"PAG-{str(uuid.uuid4())[:6].upper()}"
                 BASE_DATOS_PAGOS[id_pago] = {
-                    "accion": socio_actual["accion"],
-                    "metodo": metodo,
-                    "referencia": str(n_referencia),
-                    "monto": str(n_monto),
-                    "fecha_reporte": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                    "accion": socio_actual["accion"], 
+                    "metodo": metodo, 
+                    "referencia": str(n_referencia), 
+                    "monto": str(n_monto), 
+                    "fecha_reporte": datetime.now().strftime("%d/%m/%Y %H:%M:%S"), 
                     "estatus": "En Revisión"
                 }
                 guardar_bd_pagos(BASE_DATOS_PAGOS)
                 st.success("✅ Pago reportado con éxito. En breve será validado.")
 
-    # --- MÓDULO 3: PASES DE INVITADOS CON WHATSAPP ---
+    # --- MÓDULO 3: PASES DE INVITADOS CON SMART LINKS ---
     elif modulo_seleccionado == "Pases de Invitados":
         st.subheader("🎫 Generar Pase de Invitado")
         
+        # Memoria temporal para el link de WhatsApp
+        if "ultimo_pase_generado" not in st.session_state:
+            st.session_state.ultimo_pase_generado = None
+
         if socio_actual["solvencia"] != "Al dia":
             st.error("❌ Operación Denegada. Tu grupo familiar no se encuentra solvente.")
         else:
@@ -585,43 +687,43 @@ else:
                     n_cedula_def = inv_sel
                     n_nombre_def = invitados_previos[inv_sel]['nombre']
                     n_correo_def = invitados_previos[inv_sel]['correo']
+                    
                     if invitados_previos[inv_sel].get("fecha_nacimiento"):
-                        try:
+                        try: 
                             n_nacimiento_def = datetime.strptime(invitados_previos[inv_sel]["fecha_nacimiento"], "%d/%m/%Y").date()
-                        except:
+                        except: 
                             pass
-                else:
+                else: 
                     st.info("Aún no tienes invitados guardados en tu directorio.")
 
             with st.form("form_invitacion"):
                 col_a, col_b = st.columns(2)
-                with col_a:
+                with col_a: 
                     n_cedula_inv = st.text_input("Cédula del Invitado", value=n_cedula_def)
                     n_nombre_inv = st.text_input("Nombre del Invitado", value=n_nombre_def)
-                with col_b:
+                with col_b: 
                     n_correo_inv = st.text_input("Correo Electrónico", value=n_correo_def)
                     n_nacimiento_inv = st.date_input("Fecha de Nacimiento", value=n_nacimiento_def, min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
                 
                 fecha_visita = st.date_input("Fecha de la visita (Válido por todo el día)", min_value=datetime.today(), format="DD/MM/YYYY")
                 
-                # LÓGICA CORREGIDA: Solo mostrar checkbox si es invitado nuevo
                 guardar_contacto = False
                 if modo_ingreso == "Nuevo Invitado":
                     st.write("---")
                     guardar_contacto = st.checkbox("⭐ Guardar en mi directorio de invitados frecuentes", value=True)
                 
-                btn_generar = st.form_submit_button("Generar Pase QR")
+                btn_generar = st.form_submit_button("Generar Pase Digital")
                 
             if btn_generar:
-                if not n_cedula_inv or not n_nombre_inv:
+                if not n_cedula_inv or not n_nombre_inv: 
                     st.error("⚠️ Debes ingresar al menos la Cédula y el Nombre.")
                 else:
                     if guardar_contacto:
-                        if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO:
+                        if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: 
                             BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
                         BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {
-                            "nombre": n_nombre_inv,
-                            "correo": n_correo_inv,
+                            "nombre": n_nombre_inv, 
+                            "correo": n_correo_inv, 
                             "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y")
                         }
                         guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
@@ -629,43 +731,42 @@ else:
                     str_fecha = fecha_visita.strftime("%d/%m/%Y")
                     id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
                     BASE_DATOS_INVITACIONES[id_unico] = {
-                        "accion": socio_actual["accion"],
-                        "fecha_visita": str_fecha,
-                        "cedula_invitado": n_cedula_inv,
-                        "nombre_invitado": n_nombre_inv,
-                        "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y"),
-                        "correo": n_correo_inv,
+                        "accion": socio_actual["accion"], 
+                        "fecha_visita": str_fecha, 
+                        "cedula_invitado": n_cedula_inv, 
+                        "nombre_invitado": n_nombre_inv, 
+                        "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y"), 
+                        "correo": n_correo_inv, 
                         "estatus": "Activo"
                     }
                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
                     
-                    datos_qr = f"INVITADO|{id_unico}"
-                    img = qrcode.make(datos_qr)
-                    buffer = BytesIO()
-                    img.save(buffer, format="PNG")
-                    
-                    st.success(f"✅ Pase generado para {n_nombre_inv}.")
-                    
-                    col_A, col_B, col_C = st.columns([1,2,1])
-                    with col_B: 
-                        st.image(buffer.getvalue(), caption="Comparte este QR con tu invitado", width=250)
-                        
-                        # --- BOTÓN PARA DESCARGAR LA IMAGEN ---
-                        st.download_button(
-                            label="📥 Descargar Imagen QR",
-                            data=buffer.getvalue(),
-                            file_name=f"Pase_Magnum_{id_unico}.png",
-                            mime="image/png",
-                            use_container_width=True
-                        )
-                        
-                        # --- GENERADOR DEL ENLACE DE WHATSAPP ---
-                        mensaje_ws = f"¡Hola {n_nombre_inv}! 🏌️‍♂️\n\nAquí tienes tu Pase de Invitado para el *Magnum City Club*.\n\n*Fecha válida:* {str_fecha}\n*ID de Pase:* {id_unico}\n\n⚠️ *IMPORTANTE:* Te acabo de enviar la imagen del código QR. Por favor, muéstrala en la garita principal para tu acceso."
-                        mensaje_codificado = urllib.parse.quote(mensaje_ws)
-                        link_ws = f"https://wa.me/?text={mensaje_codificado}"
-                        
-                        st.markdown(f'<a href="{link_ws}" target="_blank" class="whatsapp-btn">💬 Enviar mensaje por WhatsApp</a>', unsafe_allow_html=True)
-                        st.caption("Paso 1: Descarga el QR. Paso 2: Envía el mensaje y adjúntalo.")
+                    # Guardamos el pase en memoria
+                    st.session_state.ultimo_pase_generado = {
+                        "id": id_unico,
+                        "nombre": n_nombre_inv,
+                        "fecha": str_fecha
+                    }
+                    st.success(f"✅ Pase digital generado para {n_nombre_inv}.")
+            
+            # MOSTRAR EL BOTÓN SI HAY UN PASE RECIÉN GENERADO
+            if st.session_state.ultimo_pase_generado:
+                pase_temp = st.session_state.ultimo_pase_generado
+                
+                # IMPORTANTE: CAMBIA ESTA URL SI TU LINK DE STREAMLIT ES DISTINTO
+                url_base = "https://ventry.streamlit.app" 
+                link_pase_digital = f"{url_base}/?pase={pase_temp['id']}"
+                
+                st.info("🎟️ **PASE LISTO PARA ENVIAR**")
+                
+                # Mensaje inteligente para WhatsApp
+                mensaje_ws = f"¡Hola {pase_temp['nombre']}! 🏌️‍♂️\n\nAquí tienes tu Pase de Invitado para el *Magnum City Club*.\n\n*Fecha válida:* {pase_temp['fecha']}\n\n👉 *Toca este enlace para abrir tu pase digital y mostrarlo en garita:*\n{link_pase_digital}"
+                mensaje_codificado = urllib.parse.quote(mensaje_ws)
+                link_ws = f"https://wa.me/?text={mensaje_codificado}"
+                
+                # Botón directo de WhatsApp
+                st.markdown(f'<a href="{link_ws}" target="_blank" class="whatsapp-btn">💬 Enviar Link por WhatsApp</a>', unsafe_allow_html=True)
+                st.caption("Esto enviará un enlace seguro. Cuando el invitado lo abra, verá su código QR automáticamente en su celular.")
 
     # --- MÓDULO 4: GARITA ---
     elif modulo_seleccionado == "Panel de Garita":
@@ -686,20 +787,20 @@ else:
                         socio = BASE_DATOS_SOCIOS[cedula_escaneada]
                         if socio["solvencia"] == "Al dia":
                             estado_actual = st.session_state.ubicacion_socios.get(cedula_escaneada, "Afuera")
-                            if estado_actual == "Afuera":
+                            if estado_actual == "Afuera": 
                                 st.success("✅ ENTRADA PERMITIDA (Socio)")
                                 st.session_state.ubicacion_socios[cedula_escaneada] = "Adentro"
                                 sentido_str = "Entrada"
-                            else:
+                            else: 
                                 st.success("✅ SALIDA REGISTRADA (Socio)")
                                 st.session_state.ubicacion_socios[cedula_escaneada] = "Afuera"
                                 sentido_str = "Salida"
-                            
+                                
                             st.info(f"**Socio:** {socio['nombre']} | **Acción:** {socio['accion']}")
                             registrar_acceso(socio["nombre"], socio["accion"], "QR (Socio)", sentido_str)
-                        else:
+                        else: 
                             st.error(f"❌ ACCESO DENEGADO - SOCIO {socio['solvencia'].upper()}")
-                    else:
+                    else: 
                         st.error("⚠️ El socio ya no existe en la BD.")
                         
                 elif "INVITADO|" in datos_decodificados:
@@ -714,20 +815,20 @@ else:
                                     BASE_DATOS_INVITACIONES[id_qr]["estatus"] = "Adentro"
                                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
                                     registrar_acceso(f"Inv: {pase['nombre_invitado']}", pase["accion"], "QR (Invitado)", "Entrada")
-                                else:
+                                else: 
                                     st.error("❌ ACCESO DENEGADO - La Acción no está solvente.")
-                            else:
+                            else: 
                                 st.error("❌ ACCESO DENEGADO - Pase inválido hoy.")
                         elif pase["estatus"] in ["Adentro", "Usado"]: 
                             st.success(f"✅ SALIDA REGISTRADA (Invitado: {pase['nombre_invitado']})")
                             BASE_DATOS_INVITACIONES[id_qr]["estatus"] = "Salió"
                             guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
                             registrar_acceso(f"Inv: {pase['nombre_invitado']}", pase["accion"], "QR (Invitado)", "Salida")
-                        else:
+                        else: 
                             st.error(f"❌ ACCESO DENEGADO - Estatus: {pase['estatus']}.")
-                    else:
+                    else: 
                         st.warning("⚠️ Código de invitado no encontrado.")
-            else:
+            else: 
                 st.warning("⚠️ No se detectó un código válido.")
         
         st.write("---")
@@ -740,7 +841,6 @@ else:
     # --- MÓDULO 5: ADMINISTRACIÓN ---
     elif modulo_seleccionado == "Portal de Administración":
         st.title("⚙️ Administración General")
-        
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["➕ Nuevo Usuario", "✏️ Editar Perfil", "📝 Gestión Familiar", "💳 Conciliación", "🗃️ Base de Datos", "📈 Analítica"])
 
         with tab1:

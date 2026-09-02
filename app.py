@@ -49,25 +49,18 @@ st.markdown(f"""
     </head>
 """, unsafe_allow_html=True)
 
-# --- CSS AVANZADO: DISEÑO PREMIUM Y BLINDAJE DE FORMULARIOS ---
+# --- CSS AVANZADO: DISEÑO PREMIUM Y BLINDAJE ---
 st.markdown("""
     <style>
-    /* Ocultamos rastros de Streamlit web */
     #MainMenu {display: none;}
     footer {display: none;}
     [data-testid="collapsedControl"] {display: none;} 
     section[data-testid="stSidebar"] {display: none !important;} 
     
-    /* 1. FONDO GLOBAL VENTRY */
-    .stApp { 
-        background-color: #0d0d0d; 
-        color: #f5f5f5;
-    }
-    
-    /* 2. TIPOGRAFÍA GLOBAL */
+    .stApp { background-color: #0d0d0d; color: #f5f5f5; }
     h1, h2, h3, h4, h5, h6, p, span, label, div { color: #f5f5f5 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     
-    /* 3. BLINDAJE ABSOLUTO DE FORMULARIOS Y CAJAS DE TEXTO (DARK MODE FORZADO) */
+    /* BLINDAJE DE FORMULARIOS */
     [data-testid="stForm"] {
         background-color: #0d0d0d !important;
         border: 1px solid #333 !important;
@@ -79,9 +72,7 @@ st.markdown("""
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
     }
-    div[data-baseweb="input"] > div, 
-    div[data-baseweb="select"] > div, 
-    div[data-baseweb="base-input"] {
+    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, div[data-baseweb="base-input"] {
         background-color: #1a1a1a !important;
         border-radius: 10px !important;
         border: 1px solid #333 !important;
@@ -90,24 +81,12 @@ st.markdown("""
         border-color: #FF6600 !important;
         box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important;
     }
-    /* Forzar fondo oscuro en menús desplegables (Selectbox) */
     div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"], li[role="option"] {
         background-color: #1a1a1a !important;
         color: #ffffff !important;
     }
 
-    /* 4. PESTAÑAS (TABS) PARA LOGIN / REGISTRO */
-    [data-testid="stTabs"] button {
-        color: #888888 !important;
-        font-weight: 600;
-        font-size: 16px;
-    }
-    [data-testid="stTabs"] button[aria-selected="true"] {
-        color: #ffffff !important;
-        border-bottom-color: #FF6600 !important;
-    }
-
-    /* 5. BOTÓN PRINCIPAL NARANJA ELÉCTRICO */
+    /* BOTÓN PRINCIPAL NARANJA */
     .stButton>button, .stFormSubmitButton>button { 
         width: 100%; 
         border-radius: 20px !important; 
@@ -120,25 +99,23 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3) !important;
         transition: all 0.2s ease-in-out;
     }
-    .stButton>button:active, .stFormSubmitButton>button:active {
-        background: #e65c00 !important;
-        transform: scale(0.98);
-    }
+    .stButton>button:active, .stFormSubmitButton>button:active { background: #e65c00 !important; transform: scale(0.98); }
     
+    /* BOTÓN SECUNDARIO (CREAR CUENTA / VOLVER) */
+    .btn-secundario>button {
+        background: transparent !important;
+        border: 1px solid #444 !important;
+        color: #FF6600 !important;
+        box-shadow: none !important;
+    }
     .btn-peligro>button {
         background: rgba(220, 53, 69, 0.1) !important;
         border: 1px solid rgba(220, 53, 69, 0.5) !important;
         color: #ff6b6b !important;
         box-shadow: none !important;
     }
-    .btn-secundario>button {
-        background: transparent !important;
-        border: 1px solid #555 !important;
-        color: #aaa !important;
-        box-shadow: none !important;
-    }
     
-    /* 6. BOTTOM NAVIGATION BAR (MENÚ INFERIOR) */
+    /* BOTTOM NAVIGATION BAR */
     .block-container { padding-bottom: 120px !important; }
     div.stRadio {
         position: fixed !important;
@@ -151,66 +128,19 @@ st.markdown("""
         padding: 15px 0px 25px 0px !important;
         z-index: 99999 !important;
     }
-    div.stRadio > div[role="radiogroup"] {
-        display: flex !important;
-        flex-direction: row !important;
-        justify-content: space-evenly !important;
-        align-items: center !important;
-        gap: 0 !important;
-    }
-    div.stRadio > div[role="radiogroup"] > label {
-        background: transparent !important;
-        border: none !important;
-        padding: 5px 10px !important;
-        margin: 0 !important;
-        cursor: pointer;
-    }
-    div.stRadio > div[role="radiogroup"] > label > div:first-child, 
-    div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"],
-    div.stRadio > div[role="radiogroup"] > label div[data-baseweb="radio"] {
-        display: none !important;
-    }
-    div.stRadio > div[role="radiogroup"] > label div {
-        color: #777777 !important;
-        font-size: 11px !important;
-        font-weight: 600 !important;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div {
-        color: #FF6600 !important;
-        font-weight: 800 !important;
-    }
+    div.stRadio > div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-evenly !important; align-items: center !important; gap: 0 !important; }
+    div.stRadio > div[role="radiogroup"] > label { background: transparent !important; border: none !important; padding: 5px 10px !important; margin: 0 !important; cursor: pointer; }
+    div.stRadio > div[role="radiogroup"] > label > div:first-child, div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"], div.stRadio > div[role="radiogroup"] > label div[data-baseweb="radio"] { display: none !important; }
+    div.stRadio > div[role="radiogroup"] > label div { color: #777777 !important; font-size: 11px !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: 1px; }
+    div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div { color: #FF6600 !important; font-weight: 800 !important; }
 
-    /* 7. BOTÓN GIGANTE DE ABRIR PUERTA */
+    /* BOTÓN ABRIR PUERTA */
     .open-button-container { display: flex; justify-content: center; margin-top: 40px; margin-bottom: 20px;}
-    .open-button-glow {
-        border-radius: 50%;
-        padding: 8px;
-        background: radial-gradient(circle, rgba(255,102,0,0.4) 0%, rgba(0,0,0,0) 70%);
-        box-shadow: 0 0 60px rgba(255,102,0,0.3);
-    }
-    .open-button {
-        background: linear-gradient(145deg, #222222, #0a0a0a);
-        border: 2px solid #FF6600;
-        border-radius: 50%;
-        width: 200px;
-        height: 200px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        color: white;
-        cursor: pointer;
-        box-shadow: inset 0 0 25px rgba(0,0,0,0.9);
-        transition: transform 0.1s ease;
-    }
-    .open-button:active {
-        background: #FF6600;
-        transform: scale(0.96);
-    }
+    .open-button-glow { border-radius: 50%; padding: 8px; background: radial-gradient(circle, rgba(255,102,0,0.4) 0%, rgba(0,0,0,0) 70%); box-shadow: 0 0 60px rgba(255,102,0,0.3); }
+    .open-button { background: linear-gradient(145deg, #222222, #0a0a0a); border: 2px solid #FF6600; border-radius: 50%; width: 200px; height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; cursor: pointer; box-shadow: inset 0 0 25px rgba(0,0,0,0.9); transition: transform 0.1s ease; }
+    .open-button:active { background: #FF6600; transform: scale(0.96); }
     
-    /* 8. CARNET MAGNUM CLUB (WHITE LABEL) */
+    /* CARNET & KPIS */
     .dark-wrapper { background-color: transparent; padding: 20px 0px; display: flex; justify-content: center; margin-bottom: 30px; }
     .glass-card { background: rgba(0, 25, 51, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 20px; padding: 40px 30px; width: 100%; max-width: 360px; box-shadow: 0 15px 35px rgba(0,0,0,0.8); position: relative; overflow: hidden; }
     .magnum-logo { text-align: center; margin-bottom: 35px; }
@@ -228,16 +158,7 @@ st.markdown("""
     .badge-aldia { background: #4ade80 !important; }
     .badge-moroso { background: #ff6b6b !important; color: white !important;}
     .badge-pendiente { background: #ffc107 !important; }
-    
-    /* 9. TARJETAS KPI ADMIN */
-    .kpi-card {
-        background: #1a1a1a;
-        padding: 20px;
-        border-radius: 15px;
-        border-left: 4px solid #FF6600;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        margin-bottom: 15px;
-    }
+    .kpi-card { background: #1a1a1a; padding: 20px; border-radius: 15px; border-left: 4px solid #FF6600; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 15px; }
     .kpi-title { color: #888; font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
     .kpi-value { color: #fff; font-size: 28px; font-weight: 800; margin: 0; }
     </style>
@@ -356,9 +277,7 @@ BASE_DATOS_DIRECTORIO = st.session_state.db_directorio
 
 if "logueado" not in st.session_state: st.session_state.logueado = False
 if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = None
-if "historial" not in st.session_state: st.session_state.historial = []
-if "ubicacion_socios" not in st.session_state: st.session_state.ubicacion_socios = {} 
-
+if "pantalla_auth" not in st.session_state: st.session_state.pantalla_auth = "login"
 
 # ==========================================
 # 🛑 INTERCEPTOR DE PASES DIGITALES (VISTA INVITADO)
@@ -403,7 +322,7 @@ if "pase" in params:
 
 
 # ==========================================
-# PANTALLA INICIAL: LOGIN Y REGISTRO PREMIUM
+# PANTALLA INICIAL: LOGIN Y REGISTRO (FLUJO MEJORADO)
 # ==========================================
 if not st.session_state.logueado:
     st.markdown("""
@@ -414,37 +333,52 @@ if not st.session_state.logueado:
         </div>
     """, unsafe_allow_html=True)
     
-    tab_login, tab_registro = st.tabs(["🔑 Iniciar Sesión", "📝 Solicitar Ingreso"])
-    
-    with tab_login:
+    # ---- PANTALLA DE LOGIN ----
+    if st.session_state.pantalla_auth == "login":
         with st.form("login_form"):
             cedula_ingresada = st.text_input("Email o ID (Cédula)")
             clave_ingresada = st.text_input("Contraseña", type="password")
-            
             st.markdown("<br>", unsafe_allow_html=True)
             boton_entrar = st.form_submit_button("INICIAR SESIÓN")
-            
+        
+        # Opciones secundarias debajo del login
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+            if st.button("Crear cuenta"):
+                st.session_state.pantalla_auth = "registro"
+                st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+        with col2:
             st.markdown("""
-                <div style="text-align: center; margin-top: 20px;">
-                    <span style="border: 1px solid #333; padding: 8px 15px; border-radius: 20px; color: #aaa; font-size: 12px; cursor: pointer; transition: all 0.3s;" onclick="alert('FaceID/TouchID se activará en la Fase 3 de compilación nativa.')">
-                        🔒 Ingresar con Biometría
+                <div style="text-align: center;">
+                    <span style="border: 1px solid #333; padding: 11px 0px; border-radius: 20px; color: #aaa; font-size: 13px; cursor: pointer; display:block; margin-top: 1px;" onclick="alert('FaceID/TouchID se activará en la Fase 3 de compilación nativa.')">
+                        🔒 FaceID
                     </span>
                 </div>
-                <p style='text-align:center; color:#FF6600; font-size:12px; margin-top:25px; cursor:pointer;'>¿Olvidaste tu contraseña?</p>
             """, unsafe_allow_html=True)
+            
+        st.markdown("<p style='text-align:center; color:#888; font-size:12px; margin-top:25px; cursor:pointer;'>¿Olvidaste tu contraseña?</p>", unsafe_allow_html=True)
 
+        # Lógica estricta de validación
         if boton_entrar:
             if cedula_ingresada in BASE_DATOS_SOCIOS:
                 socio = BASE_DATOS_SOCIOS[cedula_ingresada]
                 if clave_ingresada == str(socio["clave"]):
-                    st.session_state.logueado = True; st.session_state.usuario_actual = socio; st.rerun()
-                else: st.error("❌ Contraseña incorrecta.")
-            else: st.error("⚠️ Usuario no registrado.")
+                    # AQUÍ ESTÁ EL MURO DE SEGURIDAD PARA NUEVOS REGISTROS
+                    if socio.get("solvencia", "") == "En revision":
+                        st.warning("⏳ Su cuenta fue creada y está en revisión. Debe esperar aprobación administrativa.")
+                    else:
+                        st.session_state.logueado = True; st.session_state.usuario_actual = socio; st.rerun()
+                else: 
+                    st.error("❌ Contraseña incorrecta.")
+            else: 
+                st.error("⚠️ Usuario no registrado.")
 
-    # LA PESTAÑA PERDIDA: AQUÍ VUELVE EL REGISTRO
-    with tab_registro:
-        st.info("💡 Tu cuenta quedará en estatus Pendiente hasta ser validada por la Administración.")
+    # ---- PANTALLA DE REGISTRO ----
+    elif st.session_state.pantalla_auth == "registro":
         with st.form("registro_form"):
+            st.markdown("<h3 style='text-align:center; font-size:18px; margin-bottom:20px;'>Solicitud de Ingreso</h3>", unsafe_allow_html=True)
             r_cedula = st.text_input("Cédula de Identidad")
             r_nombre = st.text_input("Nombre y Apellido")
             r_nacimiento = st.date_input("Fecha de Nacimiento", min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
@@ -461,6 +395,12 @@ if not st.session_state.logueado:
             
             st.markdown("<br>", unsafe_allow_html=True)
             btn_registrar = st.form_submit_button("ENVIAR SOLICITUD")
+            
+        st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+        if st.button("← Volver a Iniciar Sesión"):
+            st.session_state.pantalla_auth = "login"
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
             
         if btn_registrar:
             if not r_cedula or not r_nombre or not r_accion or not r_clave: 
@@ -483,11 +423,12 @@ if not st.session_state.logueado:
                         "rol": r_rol, 
                         "parentesco": r_parentesco, 
                         "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"), 
-                        "solvencia": "Pendiente", 
+                        "solvencia": "En revision",  # <-- ESTATUS DE SEGURIDAD APLICADO
                         "cedula": r_cedula
                     }
                     guardar_bd(BASE_DATOS_SOCIOS)
-                    st.success("✅ ¡Registro exitoso! Ya puedes iniciar sesión y esperar tu validación.")
+                    st.success("✅ Su cuenta fue creada, esta en revision, debe esperar aprobacion.")
+                    # Dejamos un mensaje de exito para que la persona sepa que ya terminó.
 
 # ==========================================
 # APP NATIVA INTERNA
@@ -514,9 +455,6 @@ else:
 
     modulo_seleccionado = st.radio("Nav", opciones_menu, horizontal=True, label_visibility="collapsed")
 
-    # ==========================================
-    # LOGICA DE EXPANSIÓN RESPONSIVA (HACK PARA ADMIN)
-    # ==========================================
     if modulo_seleccionado == "Admin":
         st.markdown("<style>.block-container { max-width: 95% !important; padding-top: 2rem !important; }</style>", unsafe_allow_html=True)
     else:
@@ -579,7 +517,6 @@ else:
 
     # --- MÓDULO 3: INVITADOS ---
     elif modulo_seleccionado == "Invitados":
-        
         if "ultimo_pase_generado" not in st.session_state: 
             st.session_state.ultimo_pase_generado = None
 
@@ -692,6 +629,7 @@ else:
             solvencia_s = socio.get("solvencia", socio.get("solvency", ""))
             if solvencia_s == "Moroso": acciones_morosas.add(socio["accion"])
             elif solvencia_s == "Pendiente": acciones_pendientes.add(socio["accion"])
+            elif solvencia_s == "En revision": pass # Las cuentas en revision no cuentan para las métricas financieras
             else: acciones_al_dia.add(socio["accion"])
         
         for acc in acciones_morosas: acciones_pendientes.discard(acc); acciones_al_dia.discard(acc)
@@ -707,7 +645,7 @@ else:
         with col_k1:
             st.markdown(f"""
             <div class="kpi-card">
-                <p class="kpi-title">Familias Registradas</p>
+                <p class="kpi-title">Familias Activas</p>
                 <h3 class="kpi-value">{total_acciones}</h3>
             </div>
             """, unsafe_allow_html=True)
@@ -753,12 +691,12 @@ else:
 
             st.write("")
             st.markdown("<h4 style='font-size:16px; color:#aaa;'>📥 Descargar Data (CSV)</h4>", unsafe_allow_html=True)
-            if total_acciones > 0:
+            if len(BASE_DATOS_SOCIOS) > 0:
                 df_socios = pd.DataFrame(list(BASE_DATOS_SOCIOS.values()))
                 st.download_button("Exportar Matriz de Socios", data=df_socios.to_csv(index=False).encode('utf-8'), file_name="Socios_Ventry.csv", mime="text/csv")
             
         with col_admin2:
-            st.markdown("<h4 style='font-size:16px; color:#aaa;'>📝 Gestión Rápida Familiar</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='font-size:16px; color:#aaa;'>📝 Gestión Rápida Familiar / Aprobaciones</h4>", unsafe_allow_html=True)
             acciones_disponibles = sorted(list(set(d["accion"] for d in BASE_DATOS_SOCIOS.values())))
             if acciones_disponibles:
                 accion_sel = st.selectbox("Seleccione Acción:", acciones_disponibles)
@@ -767,10 +705,16 @@ else:
                 for m in miembros_accion: 
                     icono = '👑' if m['rol'] == 'Titular' else '👤'
                     solvencia_m = m.get('solvencia', m.get('solvency', 'Desconocido'))
-                    st.markdown(f"<div style='background:#1a1a1a; padding:10px; border-radius:8px; margin-bottom:5px; font-size:13px;'>{icono} <b>{m['nombre']}</b> - {solvencia_m}</div>", unsafe_allow_html=True)
+                    
+                    # Resaltar si está en revisión
+                    color_fondo = "#FF6600" if solvencia_m == "En revision" else "#1a1a1a"
+                    color_texto = "#ffffff"
+                    
+                    st.markdown(f"<div style='background:{color_fondo}; color:{color_texto}; padding:10px; border-radius:8px; margin-bottom:5px; font-size:13px;'>{icono} <b>{m['nombre']}</b> - {solvencia_m}</div>", unsafe_allow_html=True)
                 
                 with st.form("form_estatus_rapido"):
-                    n_estatus = st.radio("Actualizar Estatus de Grupo:", ["Al dia", "Moroso", "Pendiente"], horizontal=True)
+                    # SE AÑADE LA OPCIÓN "EN REVISION" PARA QUE EL ADMIN LA GESTIONE
+                    n_estatus = st.selectbox("Actualizar Estatus de Grupo:", ["Al dia", "Moroso", "Pendiente", "En revision"])
                     if st.form_submit_button("Actualizar Todo"):
                         for ced, info in BASE_DATOS_SOCIOS.items():
                             if info["accion"] == accion_sel: BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
@@ -792,5 +736,6 @@ else:
         if st.button("Cerrar Sesión"):
             st.session_state.logueado = False
             st.session_state.usuario_actual = None
+            st.session_state.pantalla_auth = "login"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)

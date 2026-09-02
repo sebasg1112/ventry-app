@@ -49,148 +49,157 @@ st.markdown(f"""
     </head>
 """, unsafe_allow_html=True)
 
-# --- CSS AVANZADO (CORRECCIÓN TOTAL DE INPUTS Y ESTILO NATIVO) ---
+# --- CSS AVANZADO: DISEÑO PREMIUM Y CORRECCIONES ABSOLUTAS ---
 st.markdown("""
     <style>
+    /* Ocultamos rastros de Streamlit web */
     #MainMenu {display: none;}
     footer {display: none;}
     [data-testid="collapsedControl"] {display: none;} 
     section[data-testid="stSidebar"] {display: none !important;} 
     
-    /* 1. FONDO GLOBAL VENTRY */
+    /* 1. FONDO GLOBAL VENTRY (GRIS OSCURO/NEGRO) */
     .stApp { 
-        background-color: #121212; 
+        background-color: #0d0d0d; 
         color: #f5f5f5;
     }
     
-    /* 2. TIPOGRAFÍA GLOBAL Y ETIQUETAS */
-    h1, h2, h3, h4, h5, h6, p, span, label, div { color: #f5f5f5 !important; }
+    /* 2. TIPOGRAFÍA GLOBAL MINIMALISTA */
+    h1, h2, h3, h4, h5, h6, p, span, label, div { color: #f5f5f5 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     
-    /* 3. CORRECCIÓN DEFINITIVA DE INPUTS (TEXTO VISIBLE) */
-    .stTextInput input, .stSelectbox select, .stDateInput input {
+    /* 3. CORRECCIÓN DEFINITIVA DE FORMULARIOS Y CAJAS DE TEXTO */
+    /* Apuntamos a todos los niveles de divs internos de Streamlit para matar el fondo blanco */
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox select, textarea {
         background-color: #1a1a1a !important;
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
-        border: 1px solid #444 !important;
-        border-radius: 10px !important;
     }
-    div[data-baseweb="input"] > div {
+    div[data-baseweb="input"] > div, 
+    div[data-baseweb="select"] > div, 
+    div[data-baseweb="base-input"] {
         background-color: #1a1a1a !important;
         border-radius: 10px !important;
-        border: 1px solid #444 !important;
+        border: 1px solid #333 !important;
     }
-    div[data-baseweb="input"]:focus-within {
+    /* Efecto Neón Naranja al escribir */
+    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within {
         border-color: #FF6600 !important;
         box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important;
     }
 
-    /* 4. BOTÓN NARANJA VENTRY */
+    /* 4. BOTÓN PRINCIPAL NARANJA ELÉCTRICO VENTRY */
     .stButton>button, .stFormSubmitButton>button { 
         width: 100%; 
-        border-radius: 25px !important; 
+        border-radius: 20px !important; 
         background: #FF6600 !important; 
         color: #ffffff !important; 
-        font-weight: bold !important; 
-        letter-spacing: 1px;
+        font-weight: 700 !important; 
+        letter-spacing: 0.5px;
         border: none !important; 
-        padding: 10px !important;
-        box-shadow: 0 4px 15px rgba(255, 102, 0, 0.4) !important;
+        padding: 12px !important;
+        box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3) !important;
+        transition: all 0.2s ease-in-out;
     }
-    .stButton>button:hover, .stFormSubmitButton>button:hover {
+    .stButton>button:active, .stFormSubmitButton>button:active {
         background: #e65c00 !important;
+        transform: scale(0.98);
     }
     
-    /* 5. BOTTOM NAVIGATION BAR (MENÚ INFERIOR FIJO) */
+    /* 5. BOTÓN SECUNDARIO (VOLVER / CANCELAR) */
+    .btn-secundario>button {
+        background: transparent !important;
+        border: 1px solid #555 !important;
+        color: #aaa !important;
+        box-shadow: none !important;
+    }
+    
+    /* 6. BOTTOM NAVIGATION BAR (MENÚ INFERIOR ELEGANTE SIN EMOJIS) */
     .block-container {
         padding-bottom: 120px !important; 
     }
-    
     div.stRadio {
         position: fixed !important;
         bottom: 0 !important;
         left: 0 !important;
         width: 100% !important;
-        background-color: rgba(18, 18, 18, 0.95) !important;
-        backdrop-filter: blur(15px) !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
-        padding: 12px 0px 22px 0px !important;
+        background-color: rgba(13, 13, 13, 0.95) !important;
+        backdrop-filter: blur(20px) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+        padding: 15px 0px 25px 0px !important;
         z-index: 99999 !important;
     }
     div.stRadio > div[role="radiogroup"] {
         display: flex !important;
         flex-direction: row !important;
-        justify-content: space-around !important;
+        justify-content: space-evenly !important;
         align-items: center !important;
         gap: 0 !important;
     }
     div.stRadio > div[role="radiogroup"] > label {
         background: transparent !important;
         border: none !important;
-        padding: 0 !important;
+        padding: 5px 10px !important;
         margin: 0 !important;
+        cursor: pointer;
     }
     div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"] {
         display: none !important;
     }
     div.stRadio > div[role="radiogroup"] > label div {
-        color: #888888 !important;
-        font-size: 11px !important;
-        text-align: center !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        gap: 4px !important;
+        color: #777777 !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
     div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div {
         color: #FF6600 !important;
-        font-weight: bold !important;
+        font-weight: 800 !important;
     }
 
-    /* 6. BOTÓN GIGANTE DE ABRIR PUERTA */
+    /* 7. BOTÓN GIGANTE DE ABRIR PUERTA */
     .open-button-container { display: flex; justify-content: center; margin-top: 40px; margin-bottom: 20px;}
     .open-button-glow {
         border-radius: 50%;
-        padding: 5px;
-        background: radial-gradient(circle, rgba(255,102,0,0.5) 0%, rgba(0,0,0,0) 70%);
-        box-shadow: 0 0 50px rgba(255,102,0,0.4);
+        padding: 8px;
+        background: radial-gradient(circle, rgba(255,102,0,0.4) 0%, rgba(0,0,0,0) 70%);
+        box-shadow: 0 0 60px rgba(255,102,0,0.3);
     }
     .open-button {
-        background: linear-gradient(145deg, #2a2a2a, #111111);
-        border: 3px solid #FF6600;
+        background: linear-gradient(145deg, #222222, #0a0a0a);
+        border: 2px solid #FF6600;
         border-radius: 50%;
-        width: 220px;
-        height: 220px;
+        width: 200px;
+        height: 200px;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
         color: white;
-        font-weight: bold;
-        font-size: 16px;
         cursor: pointer;
-        box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        box-shadow: inset 0 0 25px rgba(0,0,0,0.9);
+        transition: transform 0.1s ease;
     }
     .open-button:active {
         background: #FF6600;
+        transform: scale(0.96);
     }
     
-    /* ========================================================= */
-    /* CARNET MAGNUM CLUB */
-    /* ========================================================= */
+    /* 8. CARNET MAGNUM CLUB (WHITE LABEL) */
     .dark-wrapper { background-color: transparent; padding: 20px 0px; display: flex; justify-content: center; margin-bottom: 30px; }
-    .glass-card { background: rgba(0, 31, 63, 0.4); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 20px; padding: 40px 30px; width: 100%; max-width: 360px; box-shadow: 0 15px 35px rgba(0,0,0,0.8); position: relative; overflow: hidden; }
+    .glass-card { background: rgba(0, 25, 51, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 20px; padding: 40px 30px; width: 100%; max-width: 360px; box-shadow: 0 15px 35px rgba(0,0,0,0.8); position: relative; overflow: hidden; }
     .magnum-logo { text-align: center; margin-bottom: 35px; }
     .logo-m { font-size: 50px; font-weight: 300; margin: 0; line-height: 1; color: #ffffff !important; }
     .logo-magnum { font-size: 16px; font-weight: 600; letter-spacing: 5px; margin: 5px 0 0 0; color: #ffffff !important; }
     .logo-city { font-size: 9px; letter-spacing: 2px; color: #d4af37 !important; margin: 0; text-transform: uppercase; } 
     .logo-line { width: 30px; height: 1px; background-color: #d4af37; margin: 15px auto 0 auto; }
     .info-group { margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
-    .info-label { font-size: 12px; color: #8892b0 !important; margin-bottom: 4px;}
+    .info-label { font-size: 12px; color: #8892b0 !important; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;}
     .info-value { font-size: 18px; font-weight: 500; color: #ffffff !important; }
     .qr-container { text-align: center; margin-top: 30px; }
     .qr-box { background: rgba(255,255,255,0.95); padding: 10px; border-radius: 12px; display: inline-block; margin-bottom: 15px; }
     .qr-box img { width: 140px; display: block; }
-    .status-badge { display: inline-block; padding: 6px 18px; border-radius: 30px; font-size: 12px; font-weight: bold; color: #000 !important; }
+    .status-badge { display: inline-block; padding: 6px 18px; border-radius: 30px; font-size: 12px; font-weight: 700; color: #000 !important; letter-spacing: 1px;}
     .badge-aldia { background: #4ade80 !important; }
     .badge-moroso { background: #ff6b6b !important; color: white !important;}
     .badge-pendiente { background: #ffc107 !important; }
@@ -315,7 +324,7 @@ if "ubicacion_socios" not in st.session_state: st.session_state.ubicacion_socios
 
 
 # ==========================================
-# 🛑 INTERCEPTOR DE PASES DIGITALES
+# 🛑 INTERCEPTOR DE PASES DIGITALES (VISTA INVITADO)
 # ==========================================
 params = st.query_params
 if "pase" in params:
@@ -351,37 +360,39 @@ if "pase" in params:
 <div class="qr-container"><div class="qr-box"><img src="data:image/png;base64,{img_str}"></div><br><span class="status-badge {clase_badge}">{texto_badge}</span></div>
 </div></div>
 """, unsafe_allow_html=True)
-        st.info("💡 Muestra esta pantalla en garita.")
-    else: st.error("❌ Enlace de pase inválido.")
+        st.info("💡 Muestra esta pantalla en garita al llegar al club.")
+    else: st.error("❌ Enlace de pase inválido o vencido.")
     st.stop()
 
 
 # ==========================================
-# PANTALLA INICIAL: LOGIN VIP
+# PANTALLA INICIAL: LOGIN PREMIUM
 # ==========================================
 if not st.session_state.logueado:
     st.markdown("""
-        <div style='text-align: center; margin-top: 20px; margin-bottom: 20px;'>
-            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="80" style="margin-bottom: 10px;">
-            <h1 style='font-weight: 800; font-size: 32px; margin-bottom: 0px;'>Ventry</h1>
+        <div style='text-align: center; margin-top: 40px; margin-bottom: 30px;'>
+            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="90" style="margin-bottom: 15px;">
+            <h1 style='font-weight: 800; font-size: 34px; margin-bottom: 0px; letter-spacing: 1px;'>VENTRY</h1>
+            <p style='color: #666; font-size: 12px; letter-spacing: 3px; text-transform: uppercase;'>Access Control</p>
         </div>
     """, unsafe_allow_html=True)
     
     with st.form("login_form"):
-        st.markdown("""
-        <div class='biometric-box'>
-            <div style='font-size: 50px; margin-bottom: 10px;'>🤳</div>
-            <p style='margin:0; font-size:14px; font-weight:600;'>Toca para ingresar con<br>Biometría</p>
-        </div>
-        <p style='text-align:center; color:#888; font-size:12px;'>o usar contraseña</p>
-        """, unsafe_allow_html=True)
-        
-        cedula_ingresada = st.text_input("Email o ID")
+        cedula_ingresada = st.text_input("Email o ID (Cédula)")
         clave_ingresada = st.text_input("Contraseña", type="password")
-        st.markdown("<br>", unsafe_allow_html=True)
-        boton_entrar = st.form_submit_button("INGRESAR")
         
-        st.markdown("<p style='text-align:center; color:#FF6600; font-size:12px; margin-top:15px;'>¿Olvidaste tu contraseña?</p>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        boton_entrar = st.form_submit_button("INICIAR SESIÓN")
+        
+        # Enlace sutil para Biometría (Diseño Premium secundario, sin caja gigante)
+        st.markdown("""
+            <div style="text-align: center; margin-top: 20px;">
+                <span style="border: 1px solid #333; padding: 8px 15px; border-radius: 20px; color: #aaa; font-size: 12px; cursor: pointer; transition: all 0.3s;" onclick="alert('FaceID/TouchID se activará en la Fase 3 de compilación nativa.')">
+                    紋 Ingresar con Biometría
+                </span>
+            </div>
+            <p style='text-align:center; color:#FF6600; font-size:12px; margin-top:25px; cursor:pointer;'>¿Olvidaste tu contraseña?</p>
+        """, unsafe_allow_html=True)
 
     if boton_entrar:
         if cedula_ingresada in BASE_DATOS_SOCIOS:
@@ -398,53 +409,56 @@ else:
     socio_actual = st.session_state.usuario_actual
     rol_actual = socio_actual["rol"]
 
+    # Header Superior Elegante
     col1, col2 = st.columns([4, 1])
     with col1:
         st.markdown(f"""
         <div style="display:flex; align-items:center; gap:10px;">
-            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="30">
-            <span style="font-size:18px; font-weight:bold;">Ventry</span>
+            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="25">
+            <span style="font-size:16px; font-weight:700; letter-spacing: 1px;">VENTRY</span>
         </div>
         """, unsafe_allow_html=True)
     with col2:
-        if st.button("🚪"): 
+        if st.button("Cerrar", use_container_width=True): 
             st.session_state.logueado = False; st.session_state.usuario_actual = None; st.rerun()
     
     st.write("")
 
+    # --- BOTTOM NAVIGATION BAR DEFINITION (Textos limpios) ---
     if rol_actual in ["Titular", "Familiar"]: 
-        opciones_menu = ["🏠\nInicio", "👥\nInvitados", "🎫\nCarnet", "💳\nPagos"]
+        opciones_menu = ["Inicio", "Invitados", "Carnet", "Pagos"]
     elif rol_actual == "Vigilante": 
-        opciones_menu = ["🛡️\nGarita"]
+        opciones_menu = ["Garita"]
     elif rol_actual == "Administrador": 
-        opciones_menu = ["🏠\nInicio", "👥\nInvitados", "🛡️\nGarita", "⚙️\nAdmin"]
+        opciones_menu = ["Inicio", "Invitados", "Garita", "Admin"]
 
     modulo_seleccionado = st.radio("Nav", opciones_menu, horizontal=True, label_visibility="collapsed")
 
     # --- MÓDULO 1: INICIO ---
-    if modulo_seleccionado == "🏠\nInicio":
+    if modulo_seleccionado == "Inicio":
         st.markdown("""
-<div style="text-align: center; margin-top: 30px;">
-<h2 style="margin-bottom: 0; font-size:24px;">Magnum City Club</h2>
-<p style="color: #888; font-size:14px;">Puerta Principal</p>
+<div style="text-align: center; margin-top: 20px;">
+<h2 style="margin-bottom: 5px; font-size:22px; font-weight:800;">Magnum City Club</h2>
+<p style="color: #666; font-size:12px; text-transform:uppercase; letter-spacing:2px;">Puerta Principal</p>
 <div class="open-button-container">
 <div class="open-button-glow">
 <div class="open-button">
-<span style="font-size: 50px; margin-bottom:5px;">🔒</span>
-<span style="font-size: 14px;">TOCA PARA<br>ABRIR</span>
+<span style="font-size: 40px; margin-bottom:10px;">⌲</span>
+<span style="font-size: 14px; letter-spacing: 1px;">TOCA PARA ABRIR</span>
 </div>
 </div>
 </div>
-<p style="color: #888; margin-top: 40px; font-size:14px;">Estado: <span style="color:#FF6600;">Cerrado</span></p>
+<p style="color: #666; margin-top: 30px; font-size:12px; text-transform:uppercase;">Estatus: <span style="color:#FF6600; font-weight:bold;">Cerrado</span></p>
 </div>
 """, unsafe_allow_html=True)
         
-        if st.button("Simular Apertura (Demo)"):
-            st.success("📡 Señal BLE enviada al hardware del torniquete.")
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("Simular Apertura (Demo ESP32)"):
+            st.success("📡 Señal enviada a garita.")
 
 
     # --- MÓDULO 2: CARNET DIGITAL ---
-    elif modulo_seleccionado == "🎫\nCarnet":
+    elif modulo_seleccionado == "Carnet":
         if socio_actual['solvencia'] == "Moroso": st.error("⚠️ Tu grupo familiar presenta un saldo pendiente.")
         if socio_actual['solvencia'] == "Al dia": clase_badge = "badge-aldia"; texto_badge = "AL DÍA"
         elif socio_actual['solvencia'] == "Pendiente": clase_badge = "badge-pendiente"; texto_badge = "PENDIENTE"
@@ -465,98 +479,126 @@ else:
 <p class="logo-city">CITY CLUB</p>
 <div class="logo-line"></div>
 </div>
-<div class="info-group"><p class="info-label">Nombre</p><p class="info-value">{socio_actual['nombre']}</p></div>
+<div class="info-group"><p class="info-label">Nombre del Socio</p><p class="info-value">{socio_actual['nombre']}</p></div>
 <div class="info-group"><p class="info-label">ID (Cédula)</p><p class="info-value">{socio_actual['cedula']}</p></div>
-<div class="info-group"><p class="info-label">Acción</p><p class="info-value">{socio_actual['accion']} ({socio_actual['rol']})</p></div>
+<div class="info-group"><p class="info-label">Acción</p><p class="info-value">{socio_actual['accion']} <span style="font-size:12px; color:#8892b0; font-weight:normal;">({socio_actual['rol']})</span></p></div>
 <div class="qr-container"><div class="qr-box"><img src="data:image/png;base64,{img_str}"></div><br><span class="status-badge {clase_badge}">{texto_badge}</span></div>
 </div></div>
 """
         st.markdown(carnet_html, unsafe_allow_html=True)
 
-    # --- MÓDULO 3: INVITADOS ---
-    elif modulo_seleccionado == "👥\nInvitados":
-        st.subheader("Generar Invitación")
+    # --- MÓDULO 3: INVITADOS (CON ESCAPE PERFECTO) ---
+    elif modulo_seleccionado == "Invitados":
         
-        if socio_actual["solvencia"] != "Al dia":
-            st.error("❌ Operación Denegada. Solvencia requerida.")
-        else:
-            invitados_previos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
-            modo_ingreso = st.radio("Tipo de registro:", ["Nuevo Invitado", "Directorio de Favoritos"], horizontal=True)
-            n_cedula_def, n_nombre_def, n_correo_def = "", "", ""
-            n_nacimiento_def = datetime.today()
-            
-            if modo_ingreso == "Directorio de Favoritos":
-                if invitados_previos:
-                    inv_sel = st.selectbox("Seleccione de su directorio:", list(invitados_previos.keys()), format_func=lambda x: f"{invitados_previos[x]['nombre']} (C.I: {x})")
-                    n_cedula_def = inv_sel
-                    n_nombre_def = invitados_previos[inv_sel]['nombre']
-                    n_correo_def = invitados_previos[inv_sel]['correo']
-                    if invitados_previos[inv_sel].get("fecha_nacimiento"):
-                        try: n_nacimiento_def = datetime.strptime(invitados_previos[inv_sel]["fecha_nacimiento"], "%d/%m/%Y").date()
-                        except: pass
-                else: st.info("Aún no tienes invitados guardados en tu directorio.")
+        if "ultimo_pase_generado" not in st.session_state: 
+            st.session_state.ultimo_pase_generado = None
 
-            with st.form("form_invitacion"):
-                n_cedula_inv = st.text_input("Cédula del Invitado", value=n_cedula_def)
-                n_nombre_inv = st.text_input("Nombre del Invitado", value=n_nombre_def)
-                fecha_visita = st.date_input("Fecha de la visita", min_value=datetime.today(), format="DD/MM/YYYY")
+        # PANTALLA DE RESULTADO: Muestra el pase generado y da la opción de volver
+        if st.session_state.ultimo_pase_generado:
+            pase_temp = st.session_state.ultimo_pase_generado
+            url_base = "https://ventry.streamlit.app" 
+            link_pase_digital = f"{url_base}/?pase={pase_temp['id']}"
+            
+            st.success(f"✅ Pase de {pase_temp['nombre']} emitido correctamente.")
+            
+            mensaje_ws = f"¡Hola {pase_temp['nombre']}! Aquí tienes tu pase para el *Magnum City Club*.\nFecha: {pase_temp['fecha']}\n👉 Abre tu código QR aquí:\n{link_pase_digital}"
+            link_ws = f"https://wa.me/?text={urllib.parse.quote(mensaje_ws)}"
+            
+            st.markdown(f'<a href="{link_ws}" target="_blank" style="display:block; text-align:center; background:#25D366; color:white; padding:15px; border-radius:20px; text-decoration:none; font-weight:800; letter-spacing:1px; margin-top:20px; margin-bottom:20px; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);">ENVIAR POR WHATSAPP</a>', unsafe_allow_html=True)
+            
+            # BOTÓN DE ESCAPE
+            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+            if st.button("← Volver a crear otra invitación"):
+                st.session_state.ultimo_pase_generado = None
+                st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
                 
-                guardar_contacto = False
-                if modo_ingreso == "Nuevo Invitado":
-                    st.write("---")
-                    guardar_contacto = st.checkbox("⭐ Guardar en mi directorio de invitados", value=True)
+        # PANTALLA DE FORMULARIO
+        else:
+            st.markdown("<h3 style='font-size:18px; font-weight:700;'>Pases y Accesos</h3>", unsafe_allow_html=True)
+            
+            if socio_actual["solvencia"] != "Al dia":
+                st.error("❌ Operación Denegada. Debes estar al día con la administración para invitar.")
+            else:
+                invitados_previos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
                 
-                st.markdown("<br>", unsafe_allow_html=True)
-                btn_generar = st.form_submit_button("GENERAR PASE")
+                # Selector minimalista
+                modo_ingreso = st.selectbox("Método de registro:", ["📝 Ingresar Nuevo Invitado", "⭐ Seleccionar de Favoritos"])
                 
-            if btn_generar and n_cedula_inv and n_nombre_inv:
-                if guardar_contacto:
-                    if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
-                    BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {"nombre": n_nombre_inv, "correo": n_correo_def, "fecha_nacimiento": n_nacimiento_def.strftime("%d/%m/%Y")}
-                    guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
+                n_cedula_def, n_nombre_def, n_correo_def = "", "", ""
+                n_nacimiento_def = datetime.today()
+                
+                if modo_ingreso == "⭐ Seleccionar de Favoritos":
+                    if invitados_previos:
+                        inv_sel = st.selectbox("Tu directorio:", list(invitados_previos.keys()), format_func=lambda x: f"{invitados_previos[x]['nombre']} (C.I: {x})")
+                        n_cedula_def = inv_sel
+                        n_nombre_def = invitados_previos[inv_sel]['nombre']
+                        n_correo_def = invitados_previos[inv_sel]['correo']
+                    else: 
+                        st.info("Aún no tienes invitados en tu directorio frecuente.")
+
+                with st.form("form_invitacion"):
+                    n_cedula_inv = st.text_input("Cédula", value=n_cedula_def)
+                    n_nombre_inv = st.text_input("Nombre y Apellido", value=n_nombre_def)
+                    fecha_visita = st.date_input("Fecha de acceso", min_value=datetime.today(), format="DD/MM/YYYY")
                     
-                str_fecha = fecha_visita.strftime("%d/%m/%Y")
-                id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
-                BASE_DATOS_INVITACIONES[id_unico] = {
-                    "accion": socio_actual["accion"], "fecha_visita": str_fecha, 
-                    "cedula_invitado": n_cedula_inv, "nombre_invitado": n_nombre_inv, 
-                    "fecha_nacimiento": "", "correo": "", "estatus": "Activo"
-                }
-                guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
-                
-                url_base = "https://ventry.streamlit.app" 
-                link_pase_digital = f"{url_base}/?pase={id_unico}"
-                
-                mensaje_ws = f"¡Hola {n_nombre_inv}! Aquí tienes tu pase para el *Magnum City Club*.\nFecha: {str_fecha}\n👉 Abre tu código QR aquí:\n{link_pase_digital}"
-                link_ws = f"https://wa.me/?text={urllib.parse.quote(mensaje_ws)}"
-                
-                st.success(f"✅ Pase digital generado con éxito para {n_nombre_inv}.")
-                st.markdown(f'<a href="{link_ws}" target="_blank" style="display:block; text-align:center; background:#FF6600; color:white; padding:12px; border-radius:15px; text-decoration:none; font-weight:bold; margin-top:10px;">📲 ENVIAR POR WHATSAPP</a>', unsafe_allow_html=True)
+                    guardar_contacto = False
+                    if modo_ingreso == "📝 Ingresar Nuevo Invitado":
+                        st.write("")
+                        guardar_contacto = st.checkbox("Guardar en mi directorio frecuente", value=True)
+                    
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    btn_generar = st.form_submit_button("GENERAR PASE DIGITAL")
+                    
+                if btn_generar and n_cedula_inv and n_nombre_inv:
+                    if guardar_contacto:
+                        if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
+                        BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {"nombre": n_nombre_inv, "correo": n_correo_def, "fecha_nacimiento": n_nacimiento_def.strftime("%d/%m/%Y")}
+                        guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
+                        
+                    str_fecha = fecha_visita.strftime("%d/%m/%Y")
+                    id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
+                    BASE_DATOS_INVITACIONES[id_unico] = {
+                        "accion": socio_actual["accion"], "fecha_visita": str_fecha, 
+                        "cedula_invitado": n_cedula_inv, "nombre_invitado": n_nombre_inv, 
+                        "fecha_nacimiento": "", "correo": "", "estatus": "Activo"
+                    }
+                    guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
+                    
+                    # Guardar estado y recargar para mostrar pantalla de resultado
+                    st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha}
+                    st.rerun()
 
     # --- MÓDULO 4: PAGOS ---
-    elif modulo_seleccionado == "💳\nPagos":
-        st.subheader("Pagos y Solvencia")
-        st.markdown("<div class='pago-card'>", unsafe_allow_html=True)
+    elif modulo_seleccionado == "Pagos":
+        st.markdown("<h3 style='font-size:18px; font-weight:700;'>Gestión de Pagos</h3>", unsafe_allow_html=True)
         deuda = 104.00 if socio_actual['solvencia'] == "Moroso" else 0.00
-        st.metric("Saldo Pendiente", f"${deuda:.2f}")
-        st.markdown("</div>", unsafe_allow_html=True)
+        
+        st.markdown(f"""
+        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid #333; margin-bottom: 20px;">
+            <p style="margin:0; color:#aaa; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Saldo Pendiente Estimado</p>
+            <h2 style="margin:0; color:{'#FF6600' if deuda > 0 else '#4ade80'}; font-size:28px;">${deuda:.2f}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
         with st.form("form_pago"):
-            metodo = st.selectbox("Método", ["Zelle", "Pago Móvil", "Transferencia"])
-            n_referencia = st.text_input("Nº de Referencia")
-            n_monto = st.number_input("Monto", min_value=1.0)
+            metodo = st.selectbox("Vía de pago", ["Zelle", "Pago Móvil", "Transferencia"])
+            n_referencia = st.text_input("Nº de Referencia (Últimos 6 dígitos)")
+            n_monto = st.number_input("Monto reportado", min_value=1.0)
+            st.markdown("<br>", unsafe_allow_html=True)
             btn_reportar = st.form_submit_button("REPORTAR PAGO")
+            
         if btn_reportar and n_referencia:
-            st.success("✅ Pago en revisión.")
+            st.success("✅ Recibo enviado a administración.")
 
     # --- MÓDULO GARITA ---
-    elif modulo_seleccionado == "🛡️\nGarita":
-        st.subheader("Escáner de Garita")
-        st.info("Apunta el QR de un Socio o Invitado:")
+    elif modulo_seleccionado == "Garita":
+        st.markdown("<h3 style='font-size:18px; font-weight:700;'>Escáner de Seguridad</h3>", unsafe_allow_html=True)
         foto_qr = st.camera_input("")
 
     # --- MÓDULO ADMIN ---
-    elif modulo_seleccionado == "⚙️\nAdmin":
-        st.subheader("Panel Administrativo")
-        st.info("Para gestionar usuarios y pagos completos se recomienda la versión de escritorio.")
-        if st.button("Sincronizar DB"):
-            st.success("Base de datos al día.")
+    elif modulo_seleccionado == "Admin":
+        st.markdown("<h3 style='font-size:18px; font-weight:700;'>Consola Administrativa</h3>", unsafe_allow_html=True)
+        st.info("Para gestionar la base de datos maestra se recomienda usar la versión de escritorio de Ventry.")
+        if st.button("Sincronizar Datos"):
+            st.success("Sincronización completada.")

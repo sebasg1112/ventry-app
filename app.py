@@ -49,7 +49,7 @@ st.markdown(f"""
     </head>
 """, unsafe_allow_html=True)
 
-# --- CSS AVANZADO: DISEÑO PREMIUM Y CORRECCIONES ABSOLUTAS ---
+# --- CSS AVANZADO: DISEÑO PREMIUM Y BLINDAJE DE FORMULARIOS ---
 st.markdown("""
     <style>
     /* Ocultamos rastros de Streamlit web */
@@ -58,16 +58,22 @@ st.markdown("""
     [data-testid="collapsedControl"] {display: none;} 
     section[data-testid="stSidebar"] {display: none !important;} 
     
-    /* 1. FONDO GLOBAL VENTRY (GRIS OSCURO/NEGRO) */
+    /* 1. FONDO GLOBAL VENTRY */
     .stApp { 
         background-color: #0d0d0d; 
         color: #f5f5f5;
     }
     
-    /* 2. TIPOGRAFÍA GLOBAL MINIMALISTA */
+    /* 2. TIPOGRAFÍA GLOBAL */
     h1, h2, h3, h4, h5, h6, p, span, label, div { color: #f5f5f5 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     
-    /* 3. CORRECCIÓN DEFINITIVA DE FORMULARIOS Y CAJAS DE TEXTO */
+    /* 3. BLINDAJE ABSOLUTO DE FORMULARIOS Y CAJAS DE TEXTO (DARK MODE FORZADO) */
+    [data-testid="stForm"] {
+        background-color: #0d0d0d !important;
+        border: 1px solid #333 !important;
+        border-radius: 15px !important;
+        padding: 20px !important;
+    }
     .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox select, textarea {
         background-color: #1a1a1a !important;
         color: #ffffff !important;
@@ -84,8 +90,24 @@ st.markdown("""
         border-color: #FF6600 !important;
         box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important;
     }
+    /* Forzar fondo oscuro en menús desplegables (Selectbox) */
+    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"], li[role="option"] {
+        background-color: #1a1a1a !important;
+        color: #ffffff !important;
+    }
 
-    /* 4. BOTÓN PRINCIPAL NARANJA ELÉCTRICO VENTRY */
+    /* 4. PESTAÑAS (TABS) PARA LOGIN / REGISTRO */
+    [data-testid="stTabs"] button {
+        color: #888888 !important;
+        font-weight: 600;
+        font-size: 16px;
+    }
+    [data-testid="stTabs"] button[aria-selected="true"] {
+        color: #ffffff !important;
+        border-bottom-color: #FF6600 !important;
+    }
+
+    /* 5. BOTÓN PRINCIPAL NARANJA ELÉCTRICO */
     .stButton>button, .stFormSubmitButton>button { 
         width: 100%; 
         border-radius: 20px !important; 
@@ -103,7 +125,12 @@ st.markdown("""
         transform: scale(0.98);
     }
     
-    /* 5. BOTÓN SECUNDARIO (VOLVER / CANCELAR) */
+    .btn-peligro>button {
+        background: rgba(220, 53, 69, 0.1) !important;
+        border: 1px solid rgba(220, 53, 69, 0.5) !important;
+        color: #ff6b6b !important;
+        box-shadow: none !important;
+    }
     .btn-secundario>button {
         background: transparent !important;
         border: 1px solid #555 !important;
@@ -111,10 +138,8 @@ st.markdown("""
         box-shadow: none !important;
     }
     
-    /* 6. BOTTOM NAVIGATION BAR (MENÚ INFERIOR ELEGANTE SIN EMOJIS) */
-    .block-container {
-        padding-bottom: 120px !important; 
-    }
+    /* 6. BOTTOM NAVIGATION BAR (MENÚ INFERIOR) */
+    .block-container { padding-bottom: 120px !important; }
     div.stRadio {
         position: fixed !important;
         bottom: 0 !important;
@@ -140,13 +165,15 @@ st.markdown("""
         margin: 0 !important;
         cursor: pointer;
     }
-    div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"] {
+    div.stRadio > div[role="radiogroup"] > label > div:first-child, 
+    div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"],
+    div.stRadio > div[role="radiogroup"] > label div[data-baseweb="radio"] {
         display: none !important;
     }
     div.stRadio > div[role="radiogroup"] > label div {
         color: #777777 !important;
-        font-size: 13px !important;
-        font-weight: 500 !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
         text-transform: uppercase;
         letter-spacing: 1px;
     }
@@ -253,7 +280,7 @@ def cargar_bd():
     datos = {}
     for fila in registros:
         ced = str(fila.get("cedula", ""))
-        if ced: datos[ced] = {"nombre": str(fila.get("nombre", "")), "clave": str(fila.get("clave", "")), "accion": str(fila.get("accion", "")), "rol": str(fila.get("rol", "")), "parentesco": str(fila.get("parentesco", "N/A")), "fecha_nacimiento": str(fila.get("fecha_nacimiento", "")), "solvency": str(fila.get("solvencia", "")), "cedula": ced}
+        if ced: datos[ced] = {"nombre": str(fila.get("nombre", "")), "clave": str(fila.get("clave", "")), "accion": str(fila.get("accion", "")), "rol": str(fila.get("rol", "")), "parentesco": str(fila.get("parentesco", "N/A")), "fecha_nacimiento": str(fila.get("fecha_nacimiento", "")), "solvencia": str(fila.get("solvencia", "")), "cedula": ced}
     return datos
 
 def guardar_bd(datos):
@@ -376,40 +403,91 @@ if "pase" in params:
 
 
 # ==========================================
-# PANTALLA INICIAL: LOGIN PREMIUM
+# PANTALLA INICIAL: LOGIN Y REGISTRO PREMIUM
 # ==========================================
 if not st.session_state.logueado:
     st.markdown("""
-        <div style='text-align: center; margin-top: 40px; margin-bottom: 30px;'>
+        <div style='text-align: center; margin-top: 40px; margin-bottom: 20px;'>
             <img src="https://i.ibb.co/t7xWXXR/logo.png" width="90" style="margin-bottom: 15px;">
             <h1 style='font-weight: 800; font-size: 34px; margin-bottom: 0px; letter-spacing: 1px;'>VENTRY</h1>
             <p style='color: #666; font-size: 12px; letter-spacing: 3px; text-transform: uppercase;'>Access Control</p>
         </div>
     """, unsafe_allow_html=True)
     
-    with st.form("login_form"):
-        cedula_ingresada = st.text_input("Email o ID (Cédula)")
-        clave_ingresada = st.text_input("Contraseña", type="password")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        boton_entrar = st.form_submit_button("INICIAR SESIÓN")
-        
-        st.markdown("""
-            <div style="text-align: center; margin-top: 20px;">
-                <span style="border: 1px solid #333; padding: 8px 15px; border-radius: 20px; color: #aaa; font-size: 12px; cursor: pointer; transition: all 0.3s;" onclick="alert('FaceID/TouchID se activará en la Fase 3 de compilación nativa.')">
-                    🔒 Ingresar con Biometría
-                </span>
-            </div>
-            <p style='text-align:center; color:#FF6600; font-size:12px; margin-top:25px; cursor:pointer;'>¿Olvidaste tu contraseña?</p>
-        """, unsafe_allow_html=True)
+    tab_login, tab_registro = st.tabs(["🔑 Iniciar Sesión", "📝 Solicitar Ingreso"])
+    
+    with tab_login:
+        with st.form("login_form"):
+            cedula_ingresada = st.text_input("Email o ID (Cédula)")
+            clave_ingresada = st.text_input("Contraseña", type="password")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            boton_entrar = st.form_submit_button("INICIAR SESIÓN")
+            
+            st.markdown("""
+                <div style="text-align: center; margin-top: 20px;">
+                    <span style="border: 1px solid #333; padding: 8px 15px; border-radius: 20px; color: #aaa; font-size: 12px; cursor: pointer; transition: all 0.3s;" onclick="alert('FaceID/TouchID se activará en la Fase 3 de compilación nativa.')">
+                        🔒 Ingresar con Biometría
+                    </span>
+                </div>
+                <p style='text-align:center; color:#FF6600; font-size:12px; margin-top:25px; cursor:pointer;'>¿Olvidaste tu contraseña?</p>
+            """, unsafe_allow_html=True)
 
-    if boton_entrar:
-        if cedula_ingresada in BASE_DATOS_SOCIOS:
-            socio = BASE_DATOS_SOCIOS[cedula_ingresada]
-            if clave_ingresada == str(socio["clave"]):
-                st.session_state.logueado = True; st.session_state.usuario_actual = socio; st.rerun()
-            else: st.error("❌ Contraseña incorrecta.")
-        else: st.error("⚠️ Usuario no registrado.")
+        if boton_entrar:
+            if cedula_ingresada in BASE_DATOS_SOCIOS:
+                socio = BASE_DATOS_SOCIOS[cedula_ingresada]
+                if clave_ingresada == str(socio["clave"]):
+                    st.session_state.logueado = True; st.session_state.usuario_actual = socio; st.rerun()
+                else: st.error("❌ Contraseña incorrecta.")
+            else: st.error("⚠️ Usuario no registrado.")
+
+    # LA PESTAÑA PERDIDA: AQUÍ VUELVE EL REGISTRO
+    with tab_registro:
+        st.info("💡 Tu cuenta quedará en estatus Pendiente hasta ser validada por la Administración.")
+        with st.form("registro_form"):
+            r_cedula = st.text_input("Cédula de Identidad")
+            r_nombre = st.text_input("Nombre y Apellido")
+            r_nacimiento = st.date_input("Fecha de Nacimiento", min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                r_accion = st.text_input("Número de Acción")
+                r_rol = st.selectbox("Rol en la Acción", ["Titular", "Familiar"])
+            with col2:
+                r_parentesco = st.selectbox("Parentesco", ["N/A (Titular)", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"])
+            
+            r_clave = st.text_input("Crea una Contraseña", type="password")
+            r_clave_conf = st.text_input("Confirma tu Contraseña", type="password")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            btn_registrar = st.form_submit_button("ENVIAR SOLICITUD")
+            
+        if btn_registrar:
+            if not r_cedula or not r_nombre or not r_accion or not r_clave: 
+                st.error("⚠️ Todos los campos son obligatorios.")
+            elif r_clave != r_clave_conf: 
+                st.error("❌ Las contraseñas no coinciden.")
+            elif r_cedula in BASE_DATOS_SOCIOS: 
+                st.error("⚠️ Esta cédula ya se encuentra registrada.")
+            else:
+                r_acc_norm = r_accion.strip().lstrip('0') or "0"
+                titular_existente = any(info["accion"] == r_acc_norm and info["rol"] == "Titular" for info in BASE_DATOS_SOCIOS.values()) if r_rol == "Titular" else False
+                
+                if titular_existente: 
+                    st.error(f"⚠️ Operación Denegada: La Acción {r_acc_norm} ya tiene un Titular registrado.")
+                else:
+                    BASE_DATOS_SOCIOS[r_cedula] = {
+                        "nombre": r_nombre, 
+                        "clave": r_clave, 
+                        "accion": r_acc_norm, 
+                        "rol": r_rol, 
+                        "parentesco": r_parentesco, 
+                        "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"), 
+                        "solvencia": "Pendiente", 
+                        "cedula": r_cedula
+                    }
+                    guardar_bd(BASE_DATOS_SOCIOS)
+                    st.success("✅ ¡Registro exitoso! Ya puedes iniciar sesión y esperar tu validación.")
 
 # ==========================================
 # APP NATIVA INTERNA
@@ -427,7 +505,6 @@ else:
     """, unsafe_allow_html=True)
 
     # --- BOTTOM NAVIGATION BAR DEFINITION ---
-    # ¡AQUÍ ESTÁ LA CORRECCIÓN! Todos los roles ahora tienen "Ajustes"
     if rol_actual in ["Titular", "Familiar"]: 
         opciones_menu = ["Inicio", "Invitados", "Carnet", "Pagos", "Ajustes"]
     elif rol_actual == "Vigilante": 
@@ -467,7 +544,6 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Simular Apertura (Demo ESP32)"):
             st.success("📡 Señal enviada a garita.")
-
 
     # --- MÓDULO 2: CARNET DIGITAL ---
     elif modulo_seleccionado == "Carnet":

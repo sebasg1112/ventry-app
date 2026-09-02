@@ -84,17 +84,20 @@ st.markdown("""
         box-shadow: 0 0 30px rgba(255, 102, 0, 0.3);
     }
     
-    /* 4. FORMULARIOS (LOGIN) */
-    .stTextInput>div>div>input {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        color: #ffffff !important;
-        border: 1px solid rgba(255, 102, 0, 0.5) !important;
-        border-radius: 25px !important;
-        padding: 10px 20px !important;
+    /* 4. FORMULARIOS (LOGIN) CORREGIDO: CAJAS OSCURAS */
+    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div {
+        background-color: #1a1a1a !important;
+        border: 1px solid #444 !important;
+        border-radius: 12px !important;
     }
-    .stTextInput>div>div:focus-within {
+    input, select, textarea {
+        color: #ffffff !important;
+        background-color: transparent !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }
+    div[data-baseweb="input"]:focus-within {
         border-color: #FF6600 !important;
-        box-shadow: 0 0 8px rgba(255, 102, 0, 0.6) !important;
+        box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important;
     }
 
     /* 5. BOTÓN NARANJA VENTRY */
@@ -115,12 +118,10 @@ st.markdown("""
     }
     
     /* 6. BOTTOM NAVIGATION BAR (MENÚ INFERIOR FIJO) */
-    /* Empujamos el contenido hacia arriba para que no lo tape la barra */
     .block-container {
         padding-bottom: 100px !important; 
     }
     
-    /* Capturamos el st.radio y lo volvemos un Bottom Nav */
     div.stRadio {
         position: fixed !important;
         bottom: 0 !important;
@@ -132,7 +133,6 @@ st.markdown("""
         padding: 15px 0px 25px 0px !important;
         z-index: 99999 !important;
     }
-    
     div.stRadio > div[role="radiogroup"] {
         display: flex !important;
         flex-direction: row !important;
@@ -140,19 +140,15 @@ st.markdown("""
         align-items: center !important;
         gap: 0 !important;
     }
-    
     div.stRadio > div[role="radiogroup"] > label {
         background: transparent !important;
         border: none !important;
         padding: 0 !important;
         margin: 0 !important;
     }
-    
-    /* Escondemos el circulito del radio button */
     div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"] {
         display: none !important;
     }
-    
     div.stRadio > div[role="radiogroup"] > label div {
         color: #888888 !important;
         font-size: 11px !important;
@@ -162,8 +158,6 @@ st.markdown("""
         align-items: center !important;
         gap: 4px !important;
     }
-    
-    /* Color cuando está seleccionado */
     div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div {
         color: #FF6600 !important;
         font-weight: bold !important;
@@ -360,6 +354,7 @@ if "pase" in params:
         if pase["fecha_visita"] != datetime.now().strftime("%d/%m/%Y") and pase["estatus"] == "Activo":
             clase_badge = "badge-pendiente"; texto_badge = "FECHA INVÁLIDA"
 
+        # Corrección de indentación HTML
         st.markdown(f"""
 <div class="dark-wrapper" style="margin-top: 50px;">
 <div class="glass-card">
@@ -393,9 +388,9 @@ if not st.session_state.logueado:
     """, unsafe_allow_html=True)
     
     with st.form("login_form"):
-        # UI Mockup Biometría (Basado en imagen)
+        # UI Mockup Biometría
         st.markdown("""
-        <div class='biometric-box'>
+        <div class='biometric-box' onclick="alert('Funcionalidad nativa (FaceID/TouchID) requiere compilación móvil en Fase 3.')">
             <div style='font-size: 50px; margin-bottom: 10px;'>🤳</div>
             <p style='margin:0; font-size:14px; font-weight:600;'>Toca para ingresar con<br>Biometría</p>
         </div>
@@ -440,7 +435,6 @@ else:
     st.write("")
 
     # --- BOTTOM NAVIGATION BAR DEFINITION ---
-    # Convertimos los menús a iconos para la barra inferior
     if rol_actual in ["Titular", "Familiar"]: 
         opciones_menu = ["🏠\nInicio", "👥\nInvitados", "🎫\nCarnet", "💳\nPagos"]
     elif rol_actual == "Vigilante": 
@@ -448,28 +442,26 @@ else:
     elif rol_actual == "Administrador": 
         opciones_menu = ["🏠\nInicio", "👥\nInvitados", "🛡️\nGarita", "⚙️\nAdmin"]
 
-    # Renderiza la barra fija al final de la pantalla mediante CSS
     modulo_seleccionado = st.radio("Nav", opciones_menu, horizontal=True, label_visibility="collapsed")
 
     # --- MÓDULO 1: INICIO (BOTÓN ABRIR PUERTA MOCKUP) ---
     if modulo_seleccionado == "🏠\nInicio":
+        # Corrección de indentación HTML
         st.markdown("""
-        <div style="text-align: center; margin-top: 30px;">
-            <h2 style="margin-bottom: 0; font-size:24px;">Magnum City Club</h2>
-            <p style="color: #888; font-size:14px;">Puerta Principal</p>
-            
-            <div class="open-button-container">
-                <div class="open-button-glow">
-                    <div class="open-button" onclick="alert('Señal enviada a Garita')">
-                        <span style="font-size: 50px; margin-bottom:5px;">🔒</span>
-                        <span style="font-size: 14px;">TOCA PARA<br>ABRIR</span>
-                    </div>
-                </div>
-            </div>
-            
-            <p style="color: #888; margin-top: 40px; font-size:14px;">Estado: <span style="color:#FF6600;">Cerrado</span></p>
-        </div>
-        """, unsafe_allow_html=True)
+<div style="text-align: center; margin-top: 30px;">
+<h2 style="margin-bottom: 0; font-size:24px;">Magnum City Club</h2>
+<p style="color: #888; font-size:14px;">Puerta Principal</p>
+<div class="open-button-container">
+<div class="open-button-glow">
+<div class="open-button" onclick="alert('Señal enviada a Garita')">
+<span style="font-size: 50px; margin-bottom:5px;">🔒</span>
+<span style="font-size: 14px;">TOCA PARA<br>ABRIR</span>
+</div>
+</div>
+</div>
+<p style="color: #888; margin-top: 40px; font-size:14px;">Estado: <span style="color:#FF6600;">Cerrado</span></p>
+</div>
+""", unsafe_allow_html=True)
         
         # Simulador del ESP32
         if st.button("Simular Apertura (Demo)"):
@@ -506,7 +498,7 @@ else:
 """
         st.markdown(carnet_html, unsafe_allow_html=True)
 
-    # --- MÓDULO 3: INVITADOS (WHATSAPP) ---
+    # --- MÓDULO 3: INVITADOS (FAVORITOS RESTAURADOS) ---
     elif modulo_seleccionado == "👥\nInvitados":
         st.subheader("Generar Invitación")
         
@@ -515,14 +507,41 @@ else:
         if socio_actual["solvencia"] != "Al dia":
             st.error("❌ Operación Denegada. Solvencia requerida.")
         else:
+            invitados_previos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
+            modo_ingreso = st.radio("Tipo de registro:", ["Nuevo Invitado", "Directorio de Favoritos"], horizontal=True)
+            n_cedula_def, n_nombre_def, n_correo_def = "", "", ""
+            n_nacimiento_def = datetime.today()
+            
+            if modo_ingreso == "Directorio de Favoritos":
+                if invitados_previos:
+                    inv_sel = st.selectbox("Seleccione de su directorio:", list(invitados_previos.keys()), format_func=lambda x: f"{invitados_previos[x]['nombre']} (C.I: {x})")
+                    n_cedula_def = inv_sel
+                    n_nombre_def = invitados_previos[inv_sel]['nombre']
+                    n_correo_def = invitados_previos[inv_sel]['correo']
+                    if invitados_previos[inv_sel].get("fecha_nacimiento"):
+                        try: n_nacimiento_def = datetime.strptime(invitados_previos[inv_sel]["fecha_nacimiento"], "%d/%m/%Y").date()
+                        except: pass
+                else: st.info("Aún no tienes invitados guardados en tu directorio.")
+
             with st.form("form_invitacion"):
-                n_cedula_inv = st.text_input("Cédula del Invitado")
-                n_nombre_inv = st.text_input("Nombre del Invitado")
+                n_cedula_inv = st.text_input("Cédula del Invitado", value=n_cedula_def)
+                n_nombre_inv = st.text_input("Nombre del Invitado", value=n_nombre_def)
                 fecha_visita = st.date_input("Fecha de la visita", min_value=datetime.today(), format="DD/MM/YYYY")
+                
+                guardar_contacto = False
+                if modo_ingreso == "Nuevo Invitado":
+                    st.write("---")
+                    guardar_contacto = st.checkbox("⭐ Guardar en mi directorio de invitados", value=True)
+                
                 st.markdown("<br>", unsafe_allow_html=True)
                 btn_generar = st.form_submit_button("GENERAR PASE")
                 
             if btn_generar and n_cedula_inv and n_nombre_inv:
+                if guardar_contacto:
+                    if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
+                    BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {"nombre": n_nombre_inv, "correo": n_correo_def, "fecha_nacimiento": n_nacimiento_def.strftime("%d/%m/%Y")}
+                    guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
+                    
                 str_fecha = fecha_visita.strftime("%d/%m/%Y")
                 id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
                 BASE_DATOS_INVITACIONES[id_unico] = {

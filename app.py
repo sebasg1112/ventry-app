@@ -16,12 +16,13 @@ icono_url = "https://i.ibb.co/t7xWXXR/logo.png"
 st.set_page_config(page_title="Ventry - Control de Acceso", page_icon=icono_url, layout="centered")
 
 # --- CONVERSIÓN A PWA (APP MÓVIL NATIVA) ---
+# theme_color ajustado al gris oscuro de Ventry
 manifest_json = f"""
 {{
-  "name": "Ventry Magnum City Club",
+  "name": "Ventry System",
   "short_name": "Ventry",
-  "theme_color": "#121826",
-  "background_color": "#121826",
+  "theme_color": "#0a0a0a",
+  "background_color": "#0a0a0a",
   "display": "standalone",
   "orientation": "portrait",
   "scope": "/",
@@ -41,7 +42,7 @@ manifest_b64 = base64.b64encode(manifest_json.encode('utf-8')).decode('utf-8')
 st.markdown(f"""
     <head>
         <link rel="manifest" href="data:application/json;base64,{manifest_b64}">
-        <meta name="theme-color" content="#121826">
+        <meta name="theme-color" content="#0a0a0a">
         <link rel="apple-touch-icon" href="{icono_url}">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,56 +50,117 @@ st.markdown(f"""
     </head>
 """, unsafe_allow_html=True)
 
-# --- CSS AVANZADO ---
+# --- CSS AVANZADO (IDENTIDAD VENTRY + CARNET CLIENTE) ---
 st.markdown("""
     <style>
-    /* Ocultamos marca de agua y menú derecho de Streamlit, pero DEJAMOS el header para el menú móvil */
+    /* Ocultamos marca de agua y menú derecho de Streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     
-    .stApp { background-color: #f0f2f6; } 
-    
-    .stButton>button { 
-        width: 100%; 
-        border-radius: 12px; 
-        background-color: #0d1117; 
-        color: white; 
-        font-weight: bold; 
-        border: none; 
-        padding: 10px;
+    /* 1. FONDO GLOBAL VENTRY (GRIS OSCURO CASI NEGRO) */
+    .stApp { 
+        background-color: #0a0a0a; 
+        background-image: radial-gradient(circle at top center, #1c1c1c 0%, #0a0a0a 100%);
+        color: #f5f5f5;
     }
-    h1, h2, h3 { color: #0d1117; }
     
+    /* 2. TIPOGRAFÍA Y TEXTOS GLOBALES */
+    h1, h2, h3, h4, h5, h6, p, span, label, div { 
+        color: #f5f5f5 !important; 
+    }
+    
+    /* 3. TABS (PESTAÑAS SUPERIORES - IDENTIDAD VENTRY) */
+    [data-testid="stTabs"] button {
+        color: #888888 !important;
+        font-weight: 600;
+        font-size: 16px;
+    }
+    [data-testid="stTabs"] button[aria-selected="true"] {
+        color: #ffffff !important;
+        border-bottom-color: #FF6600 !important; /* Naranja Eléctrico Ventry */
+    }
+    
+    /* 4. FORMULARIOS GLASSMORPHISM (LOGIN Y REGISTRO) */
+    [data-testid="stForm"] {
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 20px !important;
+        padding: 2rem !important;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.6) !important;
+    }
+    
+    /* 5. CAJAS DE TEXTO Y SELECTORES OSCUROS */
+    .stTextInput>div>div>input, .stDateInput>div>div>input, .stSelectbox>div>div>div {
+        background-color: rgba(0, 0, 0, 0.5) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 10px !important;
+    }
+    /* Borde naranja eléctrico al hacer clic en escribir */
+    .stTextInput>div>div:focus-within {
+        border-color: #FF6600 !important;
+        box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important;
+    }
+
+    /* 6. BOTONES PRINCIPALES (NARANJA ELÉCTRICO VENTRY) */
+    .stButton>button, .stFormSubmitButton>button { 
+        width: 100%; 
+        border-radius: 12px !important; 
+        background: linear-gradient(135deg, #FF8C00 0%, #FF4500 100%) !important; 
+        color: #ffffff !important; 
+        font-weight: 800 !important; 
+        letter-spacing: 1px;
+        border: none !important; 
+        padding: 12px !important;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3) !important;
+    }
+    .stButton>button:hover, .stFormSubmitButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 102, 0, 0.5) !important;
+    }
+    
+    /* 7. TARJETAS INTERNAS (PAGOS / MÉTRICAS) */
     .pago-card { 
-        background-color: white; 
+        background: rgba(255, 255, 255, 0.03); 
+        backdrop-filter: blur(10px);
         padding: 20px; 
         border-radius: 15px; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+        border: 1px solid rgba(255, 255, 255, 0.05);
         margin-bottom: 20px; 
     }
     
-    /* ESTILOS DEL CARNET GLASSMORPHISM */
+    /* 8. ALERTAS Y MENSAJES (SUCCESS, INFO, ERROR) */
+    .stAlert {
+        background-color: rgba(0,0,0,0.4) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        color: #f5f5f5 !important;
+    }
+
+    /* ========================================================= */
+    /* AISLAMIENTO VISUAL: ESTILOS EXCLUSIVOS CARNET MAGNUM CLUB */
+    /* ========================================================= */
     .dark-wrapper { 
-        background-color: #121826; 
-        padding: 40px 20px; 
-        border-radius: 24px; 
+        background-color: transparent; 
+        padding: 20px 0px; 
         display: flex; 
         justify-content: center; 
         align-items: center; 
         margin-bottom: 30px; 
-        box-shadow: inset 0 0 50px rgba(0,0,0,0.5); 
     }
     .glass-card { 
-        background: rgba(255, 255, 255, 0.03); 
+        background: rgba(0, 31, 63, 0.2); /* Tinte azul oscuro Magnum */
         backdrop-filter: blur(16px); 
         -webkit-backdrop-filter: blur(16px); 
-        border: 1px solid rgba(255, 255, 255, 0.1); 
+        border: 1px solid rgba(212, 175, 55, 0.3); /* Borde dorado Magnum */
         border-radius: 20px; 
         padding: 40px 30px; 
         width: 100%; 
         max-width: 360px; 
         color: white; 
-        box-shadow: 0 15px 35px rgba(0,0,0,0.4); 
+        box-shadow: 0 15px 35px rgba(0,0,0,0.8); 
         position: relative; 
         overflow: hidden; 
     }
@@ -114,31 +176,31 @@ st.markdown("""
     }
     .glass-content { position: relative; z-index: 1; }
     .magnum-logo { text-align: center; margin-bottom: 35px; }
-    .logo-m { font-size: 50px; font-weight: 300; margin: 0; line-height: 1; color: #ffffff; }
-    .logo-magnum { font-size: 16px; font-weight: 600; letter-spacing: 5px; margin: 5px 0 0 0; color: #ffffff; }
-    .logo-city { font-size: 9px; letter-spacing: 2px; color: #8892b0; margin: 0; text-transform: uppercase; }
-    .logo-line { width: 30px; height: 1px; background-color: #8892b0; margin: 15px auto 0 auto; }
+    .logo-m { font-size: 50px; font-weight: 300; margin: 0; line-height: 1; color: #ffffff !important; }
+    .logo-magnum { font-size: 16px; font-weight: 600; letter-spacing: 5px; margin: 5px 0 0 0; color: #ffffff !important; }
+    .logo-city { font-size: 9px; letter-spacing: 2px; color: #d4af37 !important; margin: 0; text-transform: uppercase; } /* Dorado */
+    .logo-line { width: 30px; height: 1px; background-color: #d4af37; margin: 15px auto 0 auto; }
     
     .info-group { margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
-    .info-label { font-size: 12px; color: #8892b0; margin-bottom: 4px; letter-spacing: 0.5px; }
-    .info-value { font-size: 18px; font-weight: 500; color: #e6f1ff; }
+    .info-label { font-size: 12px; color: #8892b0 !important; margin-bottom: 4px; letter-spacing: 0.5px; }
+    .info-value { font-size: 18px; font-weight: 500; color: #ffffff !important; }
     
     .qr-container { text-align: center; margin-top: 30px; }
-    .qr-box { background: rgba(255,255,255,0.9); padding: 10px; border-radius: 12px; display: inline-block; margin-bottom: 15px; }
+    .qr-box { background: rgba(255,255,255,0.95); padding: 10px; border-radius: 12px; display: inline-block; margin-bottom: 15px; }
     .qr-box img { width: 140px; display: block; }
     
-    .status-badge { display: inline-block; padding: 6px 18px; border-radius: 30px; font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
-    .badge-aldia { background: rgba(40, 167, 69, 0.15); color: #4ade80; border: 1px solid rgba(40, 167, 69, 0.3); }
-    .badge-moroso { background: rgba(220, 53, 69, 0.15); color: #ff6b6b; border: 1px solid rgba(220, 53, 69, 0.3); }
-    .badge-pendiente { background: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3); }
+    .status-badge { display: inline-block; padding: 6px 18px; border-radius: 30px; font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; color: #000 !important; }
+    .badge-aldia { background: #4ade80 !important; }
+    .badge-moroso { background: #ff6b6b !important; color: white !important;}
+    .badge-pendiente { background: #ffc107 !important; }
     
-    /* Botón WhatsApp Fricción Cero */
+    /* Botón WhatsApp */
     .whatsapp-btn {
         display: block; 
         width: 100%; 
         text-align: center; 
         background-color: #25D366; 
-        color: white;
+        color: white !important;
         padding: 12px; 
         border-radius: 12px; 
         text-decoration: none; 
@@ -146,7 +208,7 @@ st.markdown("""
         margin-top: 15px;
         box-shadow: 0 4px 6px rgba(37,211,102,0.3);
     }
-    .whatsapp-btn:hover { background-color: #128C7E; color: white; }
+    .whatsapp-btn:hover { background-color: #128C7E; color: white !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -356,7 +418,6 @@ if "ubicacion_socios" not in st.session_state:
 # ==========================================
 # 🛑 INTERCEPTOR DE PASES DIGITALES (GUEST VIEW)
 # ==========================================
-# Si un invitado abre el link de WhatsApp, Ventry muestra su pase y no el login.
 params = st.query_params
 if "pase" in params:
     id_pase_url = params["pase"]
@@ -364,14 +425,12 @@ if "pase" in params:
     if id_pase_url in BASE_DATOS_INVITACIONES:
         pase = BASE_DATOS_INVITACIONES[id_pase_url]
         
-        # Generar QR del pase
         datos_qr = f"INVITADO|{id_pase_url}"
         img = qrcode.make(datos_qr)
         buffer = BytesIO()
         img.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue()).decode()
         
-        # Validaciones de estatus visuales
         if pase["estatus"] == "Activo": 
             clase_badge = "badge-aldia"
             texto_badge = "PASE VÁLIDO"
@@ -386,7 +445,6 @@ if "pase" in params:
             clase_badge = "badge-pendiente"
             texto_badge = "FECHA INVÁLIDA"
 
-        # HTML sin indentación para evitar el bug de Streamlit
         st.markdown(f"""
 <div class="dark-wrapper" style="margin-top: 50px;">
 <div class="glass-card">
@@ -429,24 +487,32 @@ PASE DE INVITADO
     else:
         st.error("❌ Enlace de pase inválido o no encontrado.")
         
-    st.stop() # Detiene la ejecución para que no cargue el Login regular
+    st.stop()
 
 
 # ==========================================
 # PANTALLA INICIAL: LOGIN Y AUTO-REGISTRO
 # ==========================================
 if not st.session_state.logueado:
-    st.title("🔑 VENTRY SYSTEM")
-    st.write("---")
     
-    tab_login, tab_registro = st.tabs(["🔐 Iniciar Sesión", "📝 Crear Cuenta"])
+    # Encabezado visual Ventry
+    st.markdown("""
+        <div style='text-align: center; margin-top: 20px; margin-bottom: 30px;'>
+            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="100" style="border-radius: 20px; margin-bottom: 10px; box-shadow: 0 10px 20px rgba(255,102,0,0.2);">
+            <h1 style='font-weight: 800; font-size: 36px; letter-spacing: 2px; margin-bottom: 0px; color: #ffffff !important;'>VENTRY</h1>
+            <p style='color: #FF6600; font-size: 14px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase;'>Access Control</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    tab_login, tab_registro = st.tabs(["🔐 INICIAR SESIÓN", "📝 SOLICITUD DE INGRESO"])
     
     with tab_login:
-        st.subheader("Acceso al Sistema Integrado")
         with st.form("login_form"):
+            st.markdown("<p style='text-align:center; color:#888888; margin-bottom:20px;'>Portal de Socios - Magnum City Club</p>", unsafe_allow_html=True)
             cedula_ingresada = st.text_input("Usuario / Cédula")
             clave_ingresada = st.text_input("Contraseña", type="password")
-            boton_entrar = st.form_submit_button("Iniciar Sesión")
+            st.markdown("<br>", unsafe_allow_html=True)
+            boton_entrar = st.form_submit_button("ACCEDER AL SISTEMA")
 
         if boton_entrar:
             if cedula_ingresada in BASE_DATOS_SOCIOS:
@@ -461,7 +527,6 @@ if not st.session_state.logueado:
                 st.error("⚠️ Usuario no registrado.")
 
     with tab_registro:
-        st.subheader("Solicitud de Nuevo Ingreso")
         st.info("💡 Tu cuenta quedará en estatus **Pendiente** hasta ser validada por la Administración.")
         with st.form("registro_form"):
             r_cedula = st.text_input("Cédula de Identidad")
@@ -476,7 +541,8 @@ if not st.session_state.logueado:
             
             r_clave = st.text_input("Crea una Contraseña", type="password")
             r_clave_conf = st.text_input("Confirma tu Contraseña", type="password")
-            btn_registrar = st.form_submit_button("Enviar Solicitud")
+            st.markdown("<br>", unsafe_allow_html=True)
+            btn_registrar = st.form_submit_button("ENVIAR SOLICITUD")
             
         if btn_registrar:
             if not r_cedula or not r_nombre or not r_accion or not r_clave: 
@@ -576,7 +642,6 @@ else:
         img.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue()).decode()
 
-        # HTML sin indentación para evitar el bug de Streamlit
         carnet_html = f"""
 <div class="dark-wrapper">
 <div class="glass-card">
@@ -665,7 +730,6 @@ else:
     elif modulo_seleccionado == "Pases de Invitados":
         st.subheader("🎫 Generar Pase de Invitado")
         
-        # Memoria temporal para el link de WhatsApp
         if "ultimo_pase_generado" not in st.session_state:
             st.session_state.ultimo_pase_generado = None
 
@@ -708,6 +772,7 @@ else:
                     st.write("---")
                     guardar_contacto = st.checkbox("⭐ Guardar en mi directorio de invitados frecuentes", value=True)
                 
+                st.markdown("<br>", unsafe_allow_html=True)
                 btn_generar = st.form_submit_button("Generar Pase Digital")
                 
             if btn_generar:
@@ -737,7 +802,6 @@ else:
                     }
                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
                     
-                    # Guardamos el pase en memoria
                     st.session_state.ultimo_pase_generado = {
                         "id": id_unico,
                         "nombre": n_nombre_inv,
@@ -745,24 +809,19 @@ else:
                     }
                     st.success(f"✅ Pase digital generado para {n_nombre_inv}.")
             
-            # MOSTRAR EL BOTÓN SI HAY UN PASE RECIÉN GENERADO
             if st.session_state.ultimo_pase_generado:
                 pase_temp = st.session_state.ultimo_pase_generado
                 
-                # IMPORTANTE: CAMBIA ESTA URL SI TU LINK DE STREAMLIT ES DISTINTO
                 url_base = "https://ventry.streamlit.app" 
                 link_pase_digital = f"{url_base}/?pase={pase_temp['id']}"
                 
                 st.info("🎟️ **PASE LISTO PARA ENVIAR**")
                 
-                # Mensaje inteligente para WhatsApp
                 mensaje_ws = f"¡Hola {pase_temp['nombre']}! 🏌️‍♂️\n\nAquí tienes tu Pase de Invitado para el *Magnum City Club*.\n\n*Fecha válida:* {pase_temp['fecha']}\n\n👉 *Toca este enlace para abrir tu pase digital y mostrarlo en garita:*\n{link_pase_digital}"
                 mensaje_codificado = urllib.parse.quote(mensaje_ws)
                 link_ws = f"https://wa.me/?text={mensaje_codificado}"
                 
-                # Botón directo de WhatsApp
                 st.markdown(f'<a href="{link_ws}" target="_blank" class="whatsapp-btn">💬 Enviar Link por WhatsApp</a>', unsafe_allow_html=True)
-                st.caption("Esto enviará un enlace seguro. Cuando el invitado lo abra, verá su código QR automáticamente en su celular.")
 
     # --- MÓDULO 4: GARITA ---
     elif modulo_seleccionado == "Panel de Garita":
@@ -855,6 +914,7 @@ else:
                     n_parentesco = st.selectbox("Parentesco", ["N/A", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"])
                 
                 n_solvencia = st.selectbox("Estatus", ["Al dia", "Moroso", "Pendiente"])
+                st.markdown("<br>", unsafe_allow_html=True)
                 
                 if st.form_submit_button("Guardar"):
                     if n_cedula and n_nombre:
@@ -881,7 +941,6 @@ else:
                             st.success("✅ Guardado.")
 
         with tab2:
-            st.markdown("### ✏️ Modificar Datos")
             opciones_editar = {ced: f"{d['nombre']} (C.I: {ced})" for ced, d in BASE_DATOS_SOCIOS.items()}
             
             if opciones_editar:
@@ -912,6 +971,7 @@ else:
                     
                     lista_estatus = ["Al dia", "Moroso", "Pendiente"]
                     e_solvencia = st.selectbox("Estatus Individual", lista_estatus, index=lista_estatus.index(socio_data["solvencia"]))
+                    st.markdown("<br>", unsafe_allow_html=True)
                     
                     if st.form_submit_button("Guardar Cambios"):
                         BASE_DATOS_SOCIOS[socio_a_editar] = {
@@ -928,7 +988,6 @@ else:
                         st.success("✅ Actualizado.")
 
         with tab3:
-            st.markdown("### 🏠 Gestión de Grupos Familiares")
             acciones_disponibles = sorted(list(set(d["accion"] for d in BASE_DATOS_SOCIOS.values())))
             
             if acciones_disponibles:
@@ -951,7 +1010,7 @@ else:
                     with st.form("form_estatus_admin"):
                         st.write(f"Estatus principal: **{estatus_actual_grupo}**")
                         n_estatus = st.radio("Modificar Estatus a todo el grupo:", ["Al dia", "Moroso", "Pendiente"])
-                        
+                        st.markdown("<br>", unsafe_allow_html=True)
                         if st.form_submit_button("Actualizar Todo"):
                             for ced, info in BASE_DATOS_SOCIOS.items():
                                 if info["accion"] == accion_sel: 
@@ -960,7 +1019,6 @@ else:
                             st.success("✅ Grupo familiar actualizado.")
 
         with tab4:
-            st.markdown("### 💳 Conciliación de Pagos")
             pagos_pendientes = {k: v for k, v in BASE_DATOS_PAGOS.items() if v["estatus"] == "En Revisión"}
             
             if pagos_pendientes:
@@ -971,7 +1029,7 @@ else:
                         
                         col1, col2 = st.columns(2)
                         with col1:
-                            if st.button("✅ Aprobar Pago & Liberar Acceso", key=f"apr_{p_id}"):
+                            if st.button("✅ Aprobar Pago", key=f"apr_{p_id}"):
                                 BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"
                                 guardar_bd_pagos(BASE_DATOS_PAGOS)
                                 for ced, info in BASE_DATOS_SOCIOS.items():
@@ -990,11 +1048,9 @@ else:
                 st.info("No hay pagos pendientes por conciliar 🎉")
 
         with tab5:
-            st.write("Base de Datos Maestra:")
             st.json(BASE_DATOS_SOCIOS)
 
         with tab6:
-            st.markdown("### 📊 Radiografía de la Cartera")
             acciones_al_dia, acciones_morosas, acciones_pendientes = set(), set(), set()
             
             for socio in BASE_DATOS_SOCIOS.values():
@@ -1029,37 +1085,23 @@ else:
                 df_grafico = pd.DataFrame({
                     "Estatus": ["Al Día", "Moroso", "Pendiente"],
                     "Cantidad": [al_dia_count, morosos_count, pendientes_count],
-                    "Color": ["#003366", "#FF4B4B", "#FFA500"]
+                    "Color": ["#FF6600", "#ff6b6b", "#888888"]
                 })
                 st.bar_chart(data=df_grafico, x="Estatus", y="Cantidad", color="Color")
                 
                 st.write("---")
-                st.markdown("#### 📥 Exportar Reportes (CSV)")
                 colA, colB = st.columns(2)
                 with colA:
                     df_socios = pd.DataFrame(list(BASE_DATOS_SOCIOS.values()))
                     csv_socios = df_socios.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="Descargar Matriz de Socios", 
-                        data=csv_socios, 
-                        file_name=f"Reporte_Socios_Ventry_{datetime.now().strftime('%Y%m%d')}.csv", 
-                        mime="text/csv"
-                    )
+                    st.download_button(label="📥 Matriz de Socios", data=csv_socios, file_name=f"Reporte_Socios_Ventry_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
                 with colB:
                     try:
                         historial_data = hoja_historial.get_all_records()
                         if historial_data:
                             df_historial = pd.DataFrame(historial_data)
                             csv_historial = df_historial.to_csv(index=False).encode('utf-8')
-                            st.download_button(
-                                label="Descargar Auditoría de Garita", 
-                                data=csv_historial, 
-                                file_name=f"Auditoria_Accesos_{datetime.now().strftime('%Y%m%d')}.csv", 
-                                mime="text/csv"
-                            )
-                        else: 
-                            st.info("El historial de garita aún está vacío.")
-                    except: 
-                        st.info("El historial de garita aún está vacío.")
-            else: 
-                st.info("Datos insuficientes para generar métricas.")
+                            st.download_button(label="📥 Auditoría de Garita", data=csv_historial, file_name=f"Auditoria_Accesos_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
+                        else: st.info("Historial vacío.")
+                    except: st.info("Historial vacío.")
+            else: st.info("Datos insuficientes para generar métricas.")

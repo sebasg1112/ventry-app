@@ -49,7 +49,7 @@ st.markdown(f"""
     </head>
 """, unsafe_allow_html=True)
 
-# --- CSS AVANZADO (GLASSMORPHISM Y WHATSAPP) ---
+# --- CSS AVANZADO ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -480,44 +480,41 @@ else:
         img.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue()).decode()
 
+        # HTML sin indentación para evitar el bug de Streamlit
         carnet_html = f"""
-        <div class="dark-wrapper">
-            <div class="glass-card">
-                <div class="glow-effect"></div>
-                <div class="glass-content">
-                    <div class="magnum-logo">
-                        <p class="logo-m">M</p>
-                        <p class="logo-magnum">MAGNUM</p>
-                        <p class="logo-city">CITY CLUB</p>
-                        <div class="logo-line"></div>
-                    </div>
-                    
-                    <div class="info-group">
-                        <p class="info-label">Nombre</p>
-                        <p class="info-value">{socio_actual['nombre']}</p>
-                    </div>
-                    
-                    <div class="info-group">
-                        <p class="info-label">ID (Cédula)</p>
-                        <p class="info-value">{socio_actual['cedula']}</p>
-                    </div>
-                    
-                    <div class="info-group">
-                        <p class="info-label">Acción</p>
-                        <p class="info-value">{socio_actual['accion']} <span style="font-size:12px; color:#8892b0; font-weight:normal;">({socio_actual['rol']})</span></p>
-                    </div>
-                    
-                    <div class="qr-container">
-                        <div class="qr-box">
-                            <img src="data:image/png;base64,{img_str}">
-                        </div>
-                        <br>
-                        <span class="status-badge {clase_badge}">{texto_badge}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        """
+<div class="dark-wrapper">
+<div class="glass-card">
+<div class="glow-effect"></div>
+<div class="glass-content">
+<div class="magnum-logo">
+<p class="logo-m">M</p>
+<p class="logo-magnum">MAGNUM</p>
+<p class="logo-city">CITY CLUB</p>
+<div class="logo-line"></div>
+</div>
+<div class="info-group">
+<p class="info-label">Nombre</p>
+<p class="info-value">{socio_actual['nombre']}</p>
+</div>
+<div class="info-group">
+<p class="info-label">ID (Cédula)</p>
+<p class="info-value">{socio_actual['cedula']}</p>
+</div>
+<div class="info-group">
+<p class="info-label">Acción</p>
+<p class="info-value">{socio_actual['accion']} <span style="font-size:12px; color:#8892b0; font-weight:normal;">({socio_actual['rol']})</span></p>
+</div>
+<div class="qr-container">
+<div class="qr-box">
+<img src="data:image/png;base64,{img_str}">
+</div>
+<br>
+<span class="status-badge {clase_badge}">{texto_badge}</span>
+</div>
+</div>
+</div>
+</div>
+"""
         st.markdown(carnet_html, unsafe_allow_html=True)
         
         if socio_actual['solvencia'] != "Al dia":
@@ -606,8 +603,13 @@ else:
                     n_nacimiento_inv = st.date_input("Fecha de Nacimiento", value=n_nacimiento_def, min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
                 
                 fecha_visita = st.date_input("Fecha de la visita (Válido por todo el día)", min_value=datetime.today(), format="DD/MM/YYYY")
-                st.write("---")
-                guardar_contacto = st.checkbox("⭐ Guardar/Actualizar en mi directorio de invitados frecuentes", value=False if modo_ingreso == "Directorio de Favoritos" else True)
+                
+                # LÓGICA CORREGIDA: Solo mostrar checkbox si es invitado nuevo
+                guardar_contacto = False
+                if modo_ingreso == "Nuevo Invitado":
+                    st.write("---")
+                    guardar_contacto = st.checkbox("⭐ Guardar en mi directorio de invitados frecuentes", value=True)
+                
                 btn_generar = st.form_submit_button("Generar Pase QR")
                 
             if btn_generar:
@@ -648,13 +650,22 @@ else:
                     with col_B: 
                         st.image(buffer.getvalue(), caption="Comparte este QR con tu invitado", width=250)
                         
+                        # --- BOTÓN PARA DESCARGAR LA IMAGEN ---
+                        st.download_button(
+                            label="📥 Descargar Imagen QR",
+                            data=buffer.getvalue(),
+                            file_name=f"Pase_Magnum_{id_unico}.png",
+                            mime="image/png",
+                            use_container_width=True
+                        )
+                        
                         # --- GENERADOR DEL ENLACE DE WHATSAPP ---
-                        mensaje_ws = f"¡Hola {n_nombre_inv}! 🏌️‍♂️\n\nAquí tienes tu Pase de Invitado para el *Magnum City Club*.\n\n*Fecha válida:* {str_fecha}\n*ID de Pase:* {id_unico}\n\nPor favor, muestra la imagen del código QR que te enviaré a continuación en la garita principal para tu acceso."
+                        mensaje_ws = f"¡Hola {n_nombre_inv}! 🏌️‍♂️\n\nAquí tienes tu Pase de Invitado para el *Magnum City Club*.\n\n*Fecha válida:* {str_fecha}\n*ID de Pase:* {id_unico}\n\n⚠️ *IMPORTANTE:* Te acabo de enviar la imagen del código QR. Por favor, muéstrala en la garita principal para tu acceso."
                         mensaje_codificado = urllib.parse.quote(mensaje_ws)
                         link_ws = f"https://wa.me/?text={mensaje_codificado}"
                         
-                        st.markdown(f'<a href="{link_ws}" target="_blank" class="whatsapp-btn">💬 Enviar Pase por WhatsApp</a>', unsafe_allow_html=True)
-                        st.caption("Pídele a tu invitado que guarde la captura del código QR junto con este mensaje.")
+                        st.markdown(f'<a href="{link_ws}" target="_blank" class="whatsapp-btn">💬 Enviar mensaje por WhatsApp</a>', unsafe_allow_html=True)
+                        st.caption("Paso 1: Descarga el QR. Paso 2: Envía el mensaje y adjúntalo.")
 
     # --- MÓDULO 4: GARITA ---
     elif modulo_seleccionado == "Panel de Garita":
@@ -898,7 +909,6 @@ else:
                 else: 
                     acciones_al_dia.add(socio["accion"])
                     
-            # Limpiar cruces para acciones únicas
             for acc in acciones_morosas:
                 acciones_pendientes.discard(acc)
                 acciones_al_dia.discard(acc)

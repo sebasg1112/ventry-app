@@ -354,7 +354,6 @@ if "pase" in params:
         if pase["fecha_visita"] != datetime.now().strftime("%d/%m/%Y") and pase["estatus"] == "Activo":
             clase_badge = "badge-pendiente"; texto_badge = "FECHA INVÁLIDA"
 
-        # Corrección de indentación HTML
         st.markdown(f"""
 <div class="dark-wrapper" style="margin-top: 50px;">
 <div class="glass-card">
@@ -446,7 +445,6 @@ else:
 
     # --- MÓDULO 1: INICIO (BOTÓN ABRIR PUERTA MOCKUP) ---
     if modulo_seleccionado == "🏠\nInicio":
-        # Corrección de indentación HTML
         st.markdown("""
 <div style="text-align: center; margin-top: 30px;">
 <h2 style="margin-bottom: 0; font-size:24px;">Magnum City Club</h2>
@@ -463,7 +461,6 @@ else:
 </div>
 """, unsafe_allow_html=True)
         
-        # Simulador del ESP32
         if st.button("Simular Apertura (Demo)"):
             st.success("📡 Señal BLE enviada al hardware del torniquete.")
 

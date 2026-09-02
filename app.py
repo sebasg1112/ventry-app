@@ -55,7 +55,6 @@ st.markdown("""
     /* Ocultamos marca de agua y menú derecho de Streamlit, pero DEJAMOS el header para el menú móvil */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    /* header {visibility: hidden;} <-- ELIMINADO PARA ARREGLAR EL BUG DEL MENÚ MÓVIL */
     
     .stApp { background-color: #f0f2f6; } 
     
@@ -387,48 +386,44 @@ if "pase" in params:
             clase_badge = "badge-pendiente"
             texto_badge = "FECHA INVÁLIDA"
 
+        # HTML sin indentación para evitar el bug de Streamlit
         st.markdown(f"""
-        <div class="dark-wrapper" style="margin-top: 50px;">
-            <div class="glass-card">
-                <div class="glow-effect"></div>
-                <div class="glass-content">
-                    <div class="magnum-logo">
-                        <p class="logo-m">M</p>
-                        <p class="logo-magnum">MAGNUM</p>
-                        <p class="logo-city">CITY CLUB</p>
-                        <div class="logo-line"></div>
-                    </div>
-                    
-                    <div style="text-align:center; color:#d4af37; font-size:12px; font-weight:bold; letter-spacing:2px; margin-bottom:20px;">
-                        PASE DE INVITADO
-                    </div>
-                    
-                    <div class="info-group">
-                        <p class="info-label">Invitado</p>
-                        <p class="info-value">{pase['nombre_invitado']}</p>
-                    </div>
-                    
-                    <div class="info-group">
-                        <p class="info-label">Válido para el día</p>
-                        <p class="info-value">{pase['fecha_visita']}</p>
-                    </div>
-                    
-                    <div class="info-group">
-                        <p class="info-label">Autorizado por (Acción)</p>
-                        <p class="info-value">{pase['accion']}</p>
-                    </div>
-                    
-                    <div class="qr-container">
-                        <div class="qr-box">
-                            <img src="data:image/png;base64,{img_str}">
-                        </div>
-                        <br>
-                        <span class="status-badge {clase_badge}">{texto_badge}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+<div class="dark-wrapper" style="margin-top: 50px;">
+<div class="glass-card">
+<div class="glow-effect"></div>
+<div class="glass-content">
+<div class="magnum-logo">
+<p class="logo-m">M</p>
+<p class="logo-magnum">MAGNUM</p>
+<p class="logo-city">CITY CLUB</p>
+<div class="logo-line"></div>
+</div>
+<div style="text-align:center; color:#d4af37; font-size:12px; font-weight:bold; letter-spacing:2px; margin-bottom:20px;">
+PASE DE INVITADO
+</div>
+<div class="info-group">
+<p class="info-label">Invitado</p>
+<p class="info-value">{pase['nombre_invitado']}</p>
+</div>
+<div class="info-group">
+<p class="info-label">Válido para el día</p>
+<p class="info-value">{pase['fecha_visita']}</p>
+</div>
+<div class="info-group">
+<p class="info-label">Autorizado por (Acción)</p>
+<p class="info-value">{pase['accion']}</p>
+</div>
+<div class="qr-container">
+<div class="qr-box">
+<img src="data:image/png;base64,{img_str}">
+</div>
+<br>
+<span class="status-badge {clase_badge}">{texto_badge}</span>
+</div>
+</div>
+</div>
+</div>
+""", unsafe_allow_html=True)
         
         st.info("💡 Muestra esta pantalla directamente en la garita de seguridad del club.")
     else:
@@ -581,40 +576,41 @@ else:
         img.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue()).decode()
 
+        # HTML sin indentación para evitar el bug de Streamlit
         carnet_html = f"""
-        <div class="dark-wrapper">
-            <div class="glass-card">
-                <div class="glow-effect"></div>
-                <div class="glass-content">
-                    <div class="magnum-logo">
-                        <p class="logo-m">M</p>
-                        <p class="logo-magnum">MAGNUM</p>
-                        <p class="logo-city">CITY CLUB</p>
-                        <div class="logo-line"></div>
-                    </div>
-                    <div class="info-group">
-                        <p class="info-label">Nombre</p>
-                        <p class="info-value">{socio_actual['nombre']}</p>
-                    </div>
-                    <div class="info-group">
-                        <p class="info-label">ID (Cédula)</p>
-                        <p class="info-value">{socio_actual['cedula']}</p>
-                    </div>
-                    <div class="info-group">
-                        <p class="info-label">Acción</p>
-                        <p class="info-value">{socio_actual['accion']} <span style="font-size:12px; color:#8892b0; font-weight:normal;">({socio_actual['rol']})</span></p>
-                    </div>
-                    <div class="qr-container">
-                        <div class="qr-box">
-                            <img src="data:image/png;base64,{img_str}">
-                        </div>
-                        <br>
-                        <span class="status-badge {clase_badge}">{texto_badge}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        """
+<div class="dark-wrapper">
+<div class="glass-card">
+<div class="glow-effect"></div>
+<div class="glass-content">
+<div class="magnum-logo">
+<p class="logo-m">M</p>
+<p class="logo-magnum">MAGNUM</p>
+<p class="logo-city">CITY CLUB</p>
+<div class="logo-line"></div>
+</div>
+<div class="info-group">
+<p class="info-label">Nombre</p>
+<p class="info-value">{socio_actual['nombre']}</p>
+</div>
+<div class="info-group">
+<p class="info-label">ID (Cédula)</p>
+<p class="info-value">{socio_actual['cedula']}</p>
+</div>
+<div class="info-group">
+<p class="info-label">Acción</p>
+<p class="info-value">{socio_actual['accion']} <span style="font-size:12px; color:#8892b0; font-weight:normal;">({socio_actual['rol']})</span></p>
+</div>
+<div class="qr-container">
+<div class="qr-box">
+<img src="data:image/png;base64,{img_str}">
+</div>
+<br>
+<span class="status-badge {clase_badge}">{texto_badge}</span>
+</div>
+</div>
+</div>
+</div>
+"""
         st.markdown(carnet_html, unsafe_allow_html=True)
         
         if socio_actual['solvencia'] != "Al dia": 

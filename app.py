@@ -253,14 +253,14 @@ def cargar_bd():
     datos = {}
     for fila in registros:
         ced = str(fila.get("cedula", ""))
-        if ced: datos[ced] = {"nombre": str(fila.get("nombre", "")), "clave": str(fila.get("clave", "")), "accion": str(fila.get("accion", "")), "rol": str(fila.get("rol", "")), "parentesco": str(fila.get("parentesco", "N/A")), "fecha_nacimiento": str(fila.get("fecha_nacimiento", "")), "solvencia": str(fila.get("solvencia", "")), "cedula": ced}
+        if ced: datos[ced] = {"nombre": str(fila.get("nombre", "")), "clave": str(fila.get("clave", "")), "accion": str(fila.get("accion", "")), "rol": str(fila.get("rol", "")), "parentesco": str(fila.get("parentesco", "N/A")), "fecha_nacimiento": str(fila.get("fecha_nacimiento", "")), "solvency": str(fila.get("solvencia", "")), "cedula": ced}
     return datos
 
 def guardar_bd(datos):
     lista_socios = list(datos.values())
     lista_socios.sort(key=lambda x: (x.get("accion", ""), x.get("rol", "")), reverse=True) 
     filas_a_subir = [["cedula", "nombre", "clave", "accion", "rol", "parentesco", "fecha_nacimiento", "solvencia"]]
-    for socio in lista_socios: filas_a_subir.append([socio["cedula"], socio["nombre"], socio["clave"], socio["accion"], socio["rol"], socio["parentesco"], socio.get("fecha_nacimiento", ""), socio["solvencia"]])
+    for socio in lista_socios: filas_a_subir.append([socio["cedula"], socio["nombre"], socio["clave"], socio["accion"], socio["rol"], socio["parentesco"], socio.get("fecha_nacimiento", ""), socio.get("solvencia", socio.get("solvency"))])
     hoja_bd.clear()
     hoja_bd.update(values=filas_a_subir, range_name="A1")
     st.session_state.db_socios = datos
@@ -418,7 +418,7 @@ else:
     socio_actual = st.session_state.usuario_actual
     rol_actual = socio_actual["rol"]
 
-    # Header Superior
+    # Header Superior Elegante
     st.markdown(f"""
     <div style="display:flex; align-items:center; gap:10px; margin-bottom: 20px;">
         <img src="https://i.ibb.co/t7xWXXR/logo.png" width="25">
@@ -427,8 +427,9 @@ else:
     """, unsafe_allow_html=True)
 
     # --- BOTTOM NAVIGATION BAR DEFINITION ---
+    # ¡AQUÍ ESTÁ LA CORRECCIÓN! Todos los roles ahora tienen "Ajustes"
     if rol_actual in ["Titular", "Familiar"]: 
-        opciones_menu = ["Inicio", "Invitados", "Carnet", "Pagos"]
+        opciones_menu = ["Inicio", "Invitados", "Carnet", "Pagos", "Ajustes"]
     elif rol_actual == "Vigilante": 
         opciones_menu = ["Garita", "Ajustes"]
     elif rol_actual == "Administrador": 
@@ -437,13 +438,11 @@ else:
     modulo_seleccionado = st.radio("Nav", opciones_menu, horizontal=True, label_visibility="collapsed")
 
     # ==========================================
-    # LOGICA DE EXPANSIÓN RESPONSIVA (EL HACK PARA ADMIN)
+    # LOGICA DE EXPANSIÓN RESPONSIVA (HACK PARA ADMIN)
     # ==========================================
     if modulo_seleccionado == "Admin":
-        # Hacemos la pantalla ancha (en PC se verá gigante, en móvil ocupará el 100% como siempre)
         st.markdown("<style>.block-container { max-width: 95% !important; padding-top: 2rem !important; }</style>", unsafe_allow_html=True)
     else:
-        # Mantenemos el tamaño de celular normal para el resto de módulos
         st.markdown("<style>.block-container { max-width: 46rem !important; }</style>", unsafe_allow_html=True)
 
 
@@ -472,9 +471,11 @@ else:
 
     # --- MÓDULO 2: CARNET DIGITAL ---
     elif modulo_seleccionado == "Carnet":
-        if socio_actual['solvencia'] == "Moroso": st.error("⚠️ Tu grupo familiar presenta un saldo pendiente.")
-        if socio_actual['solvencia'] == "Al dia": clase_badge = "badge-aldia"; texto_badge = "AL DÍA"
-        elif socio_actual['solvencia'] == "Pendiente": clase_badge = "badge-pendiente"; texto_badge = "PENDIENTE"
+        solvencia = socio_actual.get('solvencia', socio_actual.get('solvency', 'Desconocido'))
+        if solvencia == "Moroso": st.error("⚠️ Tu grupo familiar presenta un saldo pendiente.")
+        
+        if solvencia == "Al dia": clase_badge = "badge-aldia"; texto_badge = "AL DÍA"
+        elif solvencia == "Pendiente": clase_badge = "badge-pendiente"; texto_badge = "PENDIENTE"
         else: clase_badge = "badge-moroso"; texto_badge = "MOROSO"
 
         datos_qr = f"CEDULA:{socio_actual['cedula']}|VENTRY|{socio_actual['nombre']}|{socio_actual['accion']}"
@@ -502,6 +503,7 @@ else:
 
     # --- MÓDULO 3: INVITADOS ---
     elif modulo_seleccionado == "Invitados":
+        
         if "ultimo_pase_generado" not in st.session_state: 
             st.session_state.ultimo_pase_generado = None
 
@@ -526,10 +528,12 @@ else:
         else:
             st.markdown("<h3 style='font-size:18px; font-weight:700;'>Pases y Accesos</h3>", unsafe_allow_html=True)
             
-            if socio_actual["solvencia"] != "Al dia":
+            solvencia = socio_actual.get('solvencia', socio_actual.get('solvency', 'Desconocido'))
+            if solvencia != "Al dia":
                 st.error("❌ Operación Denegada. Debes estar al día con la administración para invitar.")
             else:
                 invitados_previos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
+                
                 modo_ingreso = st.selectbox("Método de registro:", ["📝 Ingresar Nuevo Invitado", "⭐ Seleccionar de Favoritos"])
                 
                 n_cedula_def, n_nombre_def, n_correo_def = "", "", ""
@@ -571,13 +575,15 @@ else:
                         "fecha_nacimiento": "", "correo": "", "estatus": "Activo"
                     }
                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
+                    
                     st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha}
                     st.rerun()
 
     # --- MÓDULO 4: PAGOS ---
     elif modulo_seleccionado == "Pagos":
         st.markdown("<h3 style='font-size:18px; font-weight:700;'>Gestión de Pagos</h3>", unsafe_allow_html=True)
-        deuda = 104.00 if socio_actual['solvencia'] == "Moroso" else 0.00
+        solvencia = socio_actual.get('solvencia', socio_actual.get('solvency', 'Desconocido'))
+        deuda = 104.00 if solvencia == "Moroso" else 0.00
         
         st.markdown(f"""
         <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid #333; margin-bottom: 20px;">
@@ -605,11 +611,11 @@ else:
     elif modulo_seleccionado == "Admin":
         st.markdown("<h3 style='font-size:24px; font-weight:800; color:#FF6600;'>Consola Administrativa VIP</h3>", unsafe_allow_html=True)
         
-        # 1. CÁLCULO DE MÉTRICAS (KPIs)
         acciones_al_dia, acciones_morosas, acciones_pendientes = set(), set(), set()
         for socio in BASE_DATOS_SOCIOS.values():
-            if socio["solvencia"] == "Moroso": acciones_morosas.add(socio["accion"])
-            elif socio["solvencia"] == "Pendiente": acciones_pendientes.add(socio["accion"])
+            solvencia_s = socio.get("solvencia", socio.get("solvency", ""))
+            if solvencia_s == "Moroso": acciones_morosas.add(socio["accion"])
+            elif solvencia_s == "Pendiente": acciones_pendientes.add(socio["accion"])
             else: acciones_al_dia.add(socio["accion"])
         
         for acc in acciones_morosas: acciones_pendientes.discard(acc); acciones_al_dia.discard(acc)
@@ -620,7 +626,6 @@ else:
         tasa_morosidad = (morosos_count / total_acciones * 100) if total_acciones > 0 else 0
         capital_riesgo = morosos_count * 104
 
-        # Layout Inteligente: En PC se ponen al lado (3 columnas), en teléfono se ponen una debajo de la otra automáticamente
         col_k1, col_k2, col_k3 = st.columns(3)
         
         with col_k1:
@@ -649,7 +654,6 @@ else:
 
         st.write("---")
         
-        # 2. SEGUNDA FILA: PANEL DE CONTROL MULTITAREA
         col_admin1, col_admin2 = st.columns([1, 1])
         
         with col_admin1:
@@ -686,7 +690,8 @@ else:
                 
                 for m in miembros_accion: 
                     icono = '👑' if m['rol'] == 'Titular' else '👤'
-                    st.markdown(f"<div style='background:#1a1a1a; padding:10px; border-radius:8px; margin-bottom:5px; font-size:13px;'>{icono} <b>{m['nombre']}</b> - {m['solvencia']}</div>", unsafe_allow_html=True)
+                    solvencia_m = m.get('solvencia', m.get('solvency', 'Desconocido'))
+                    st.markdown(f"<div style='background:#1a1a1a; padding:10px; border-radius:8px; margin-bottom:5px; font-size:13px;'>{icono} <b>{m['nombre']}</b> - {solvencia_m}</div>", unsafe_allow_html=True)
                 
                 with st.form("form_estatus_rapido"):
                     n_estatus = st.radio("Actualizar Estatus de Grupo:", ["Al dia", "Moroso", "Pendiente"], horizontal=True)

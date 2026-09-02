@@ -16,7 +16,6 @@ icono_url = "https://i.ibb.co/t7xWXXR/logo.png"
 st.set_page_config(page_title="Ventry - Control de Acceso", page_icon=icono_url, layout="centered")
 
 # --- CONVERSIÓN A PWA (APP MÓVIL NATIVA) ---
-# theme_color ajustado al gris oscuro de Ventry
 manifest_json = f"""
 {{
   "name": "Ventry System",
@@ -50,12 +49,14 @@ st.markdown(f"""
     </head>
 """, unsafe_allow_html=True)
 
-# --- CSS AVANZADO (IDENTIDAD VENTRY + CARNET CLIENTE) ---
+# --- CSS AVANZADO (IDENTIDAD VENTRY + NAVEGACIÓN MÓVIL) ---
 st.markdown("""
     <style>
-    /* Ocultamos marca de agua y menú derecho de Streamlit */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+    /* ASESINATO DEL MENÚ LATERAL: Ocultamos todo rastro del sidebar de Streamlit */
+    #MainMenu {display: none;}
+    footer {display: none;}
+    [data-testid="collapsedControl"] {display: none;} /* Oculta la flecha/hamburguesa superior */
+    section[data-testid="stSidebar"] {display: none;} /* Elimina el panel lateral */
     
     /* 1. FONDO GLOBAL VENTRY (GRIS OSCURO CASI NEGRO) */
     .stApp { 
@@ -65,11 +66,29 @@ st.markdown("""
     }
     
     /* 2. TIPOGRAFÍA Y TEXTOS GLOBALES */
-    h1, h2, h3, h4, h5, h6, p, span, label, div { 
-        color: #f5f5f5 !important; 
-    }
+    h1, h2, h3, h4, h5, h6, p, span, label, div { color: #f5f5f5 !important; }
     
-    /* 3. TABS (PESTAÑAS SUPERIORES - IDENTIDAD VENTRY) */
+    /* 3. NAVEGACIÓN MÓVIL (RADIO BUTTONS HORIZONTALES TRANSFORMADOS A TABS) */
+    div[role="radiogroup"] {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 5px;
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 5px;
+        border-radius: 15px;
+        margin-bottom: 20px;
+    }
+    div[role="radiogroup"] label {
+        background-color: transparent;
+        padding: 8px 15px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    /* El estilo de selección lo maneja Streamlit por defecto con el Primary Color, pero aseguramos textos legibles */
+    
+    /* 4. TABS (PESTAÑAS DE INICIO DE SESIÓN) */
     [data-testid="stTabs"] button {
         color: #888888 !important;
         font-weight: 600;
@@ -80,7 +99,7 @@ st.markdown("""
         border-bottom-color: #FF6600 !important; /* Naranja Eléctrico Ventry */
     }
     
-    /* 4. FORMULARIOS GLASSMORPHISM (LOGIN Y REGISTRO) */
+    /* 5. FORMULARIOS GLASSMORPHISM */
     [data-testid="stForm"] {
         background: rgba(255, 255, 255, 0.03) !important;
         backdrop-filter: blur(16px) !important;
@@ -91,20 +110,19 @@ st.markdown("""
         box-shadow: 0 15px 35px rgba(0,0,0,0.6) !important;
     }
     
-    /* 5. CAJAS DE TEXTO Y SELECTORES OSCUROS */
+    /* 6. CAJAS DE TEXTO Y SELECTORES OSCUROS */
     .stTextInput>div>div>input, .stDateInput>div>div>input, .stSelectbox>div>div>div {
         background-color: rgba(0, 0, 0, 0.5) !important;
         color: #ffffff !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 10px !important;
     }
-    /* Borde naranja eléctrico al hacer clic en escribir */
     .stTextInput>div>div:focus-within {
         border-color: #FF6600 !important;
         box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important;
     }
 
-    /* 6. BOTONES PRINCIPALES (NARANJA ELÉCTRICO VENTRY) */
+    /* 7. BOTONES PRINCIPALES (NARANJA ELÉCTRICO VENTRY) */
     .stButton>button, .stFormSubmitButton>button { 
         width: 100%; 
         border-radius: 12px !important; 
@@ -122,7 +140,22 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(255, 102, 0, 0.5) !important;
     }
     
-    /* 7. TARJETAS INTERNAS (PAGOS / MÉTRICAS) */
+    /* BOTÓN SECUNDARIO (CERRAR SESIÓN) */
+    .btn-salir > div > button {
+        background: rgba(255,255,255,0.05) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        color: #888888 !important;
+        box-shadow: none !important;
+        padding: 5px !important;
+        font-size: 12px !important;
+    }
+    .btn-salir > div > button:hover {
+        background: rgba(220, 53, 69, 0.2) !important;
+        color: #ff6b6b !important;
+        border-color: rgba(220, 53, 69, 0.5) !important;
+    }
+    
+    /* 8. TARJETAS INTERNAS (PAGOS / MÉTRICAS) */
     .pago-card { 
         background: rgba(255, 255, 255, 0.03); 
         backdrop-filter: blur(10px);
@@ -132,7 +165,7 @@ st.markdown("""
         margin-bottom: 20px; 
     }
     
-    /* 8. ALERTAS Y MENSAJES (SUCCESS, INFO, ERROR) */
+    /* 9. ALERTAS Y MENSAJES */
     .stAlert {
         background-color: rgba(0,0,0,0.4) !important;
         border: 1px solid rgba(255,255,255,0.1) !important;
@@ -178,7 +211,7 @@ st.markdown("""
     .magnum-logo { text-align: center; margin-bottom: 35px; }
     .logo-m { font-size: 50px; font-weight: 300; margin: 0; line-height: 1; color: #ffffff !important; }
     .logo-magnum { font-size: 16px; font-weight: 600; letter-spacing: 5px; margin: 5px 0 0 0; color: #ffffff !important; }
-    .logo-city { font-size: 9px; letter-spacing: 2px; color: #d4af37 !important; margin: 0; text-transform: uppercase; } /* Dorado */
+    .logo-city { font-size: 9px; letter-spacing: 2px; color: #d4af37 !important; margin: 0; text-transform: uppercase; } 
     .logo-line { width: 30px; height: 1px; background-color: #d4af37; margin: 15px auto 0 auto; }
     
     .info-group { margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
@@ -212,7 +245,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- MOTOR DE BASE DE DATOS (CON CACHÉ) ---
+# --- MOTOR DE BASE DE DATOS ---
 @st.cache_resource
 def conectar_google_sheets():
     if "google_credentials" in st.secrets:
@@ -220,15 +253,8 @@ def conectar_google_sheets():
         gc = gspread.service_account_from_dict(cred_dict)
     else:
         gc = gspread.service_account(filename="credenciales.json")
-    
     doc = gc.open("Ventry_BD")
-    return (
-        doc.worksheet("Socios Magnum City Club"),
-        doc.worksheet("Invitaciones"),
-        doc.worksheet("Pagos"),
-        doc.worksheet("Directorio"),
-        doc.worksheet("Historial")
-    )
+    return (doc.worksheet("Socios Magnum City Club"), doc.worksheet("Invitaciones"), doc.worksheet("Pagos"), doc.worksheet("Directorio"), doc.worksheet("Historial"))
 
 try:
     hoja_bd, hoja_invitaciones, hoja_pagos, hoja_directorio, hoja_historial = conectar_google_sheets()
@@ -236,10 +262,9 @@ except Exception as e:
     st.error(f"Error conectando a Google Sheets: {e}")
     st.stop()
 
-# --- FUNCIONES BÁSICAS ---
+# --- FUNCIONES ---
 def calcular_edad(fecha_nac_str):
-    if not fecha_nac_str: 
-        return "N/A"
+    if not fecha_nac_str: return "N/A"
     try:
         fecha_nac = datetime.strptime(fecha_nac_str, "%d/%m/%Y").date()
         hoy = datetime.today().date()
@@ -249,76 +274,37 @@ def calcular_edad(fecha_nac_str):
             fecha_nac = datetime.strptime(fecha_nac_str, "%Y-%m-%d").date()
             hoy = datetime.today().date()
             return str(hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day)))
-        except: 
-            return "N/A"
+        except: return "N/A"
 
 def registrar_acceso(nombre, accion, via, movimiento):
     hora_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     hoja_historial.append_row([hora_actual, str(accion), nombre, via, movimiento])
-    st.session_state.historial.insert(0, {
-        "nombre": nombre, 
-        "accion": accion, 
-        "hora": hora_actual, 
-        "via": via, 
-        "movimiento": movimiento
-    })
+    st.session_state.historial.insert(0, {"nombre": nombre, "accion": accion, "hora": hora_actual, "via": via, "movimiento": movimiento})
 
 def cargar_bd():
     registros = hoja_bd.get_all_records()
     datos = {}
     for fila in registros:
         ced = str(fila.get("cedula", ""))
-        if ced: 
-            datos[ced] = {
-                "nombre": str(fila.get("nombre", "")), 
-                "clave": str(fila.get("clave", "")), 
-                "accion": str(fila.get("accion", "")), 
-                "rol": str(fila.get("rol", "")), 
-                "parentesco": str(fila.get("parentesco", "N/A")), 
-                "fecha_nacimiento": str(fila.get("fecha_nacimiento", "")), 
-                "solvencia": str(fila.get("solvencia", "")), 
-                "cedula": ced
-            }
+        if ced: datos[ced] = {"nombre": str(fila.get("nombre", "")), "clave": str(fila.get("clave", "")), "accion": str(fila.get("accion", "")), "rol": str(fila.get("rol", "")), "parentesco": str(fila.get("parentesco", "N/A")), "fecha_nacimiento": str(fila.get("fecha_nacimiento", "")), "solvencia": str(fila.get("solvencia", "")), "cedula": ced}
     return datos
 
 def guardar_bd(datos):
     lista_socios = list(datos.values())
     lista_socios.sort(key=lambda x: (x.get("accion", ""), x.get("rol", "")), reverse=True) 
     filas_a_subir = [["cedula", "nombre", "clave", "accion", "rol", "parentesco", "fecha_nacimiento", "solvencia"]]
-    for socio in lista_socios: 
-        filas_a_subir.append([
-            socio["cedula"], 
-            socio["nombre"], 
-            socio["clave"], 
-            socio["accion"], 
-            socio["rol"], 
-            socio["parentesco"], 
-            socio.get("fecha_nacimiento", ""), 
-            socio["solvencia"]
-        ])
+    for socio in lista_socios: filas_a_subir.append([socio["cedula"], socio["nombre"], socio["clave"], socio["accion"], socio["rol"], socio["parentesco"], socio.get("fecha_nacimiento", ""), socio["solvencia"]])
     hoja_bd.clear()
     hoja_bd.update(values=filas_a_subir, range_name="A1")
     st.session_state.db_socios = datos
 
 def cargar_invitaciones():
-    try: 
-        return {str(f["id_qr"]): f for f in hoja_invitaciones.get_all_records() if str(f.get("id_qr", ""))}
-    except: 
-        return {}
+    try: return {str(f["id_qr"]): f for f in hoja_invitaciones.get_all_records() if str(f.get("id_qr", ""))}
+    except: return {}
 
 def guardar_bd_invitaciones(datos):
     filas = [["id_qr", "accion", "fecha_visita", "cedula_invitado", "nombre_invitado", "fecha_nacimiento", "correo", "estatus"]]
-    for k, v in datos.items(): 
-        filas.append([
-            k, 
-            v["accion"], 
-            v["fecha_visita"], 
-            v["cedula_invitado"], 
-            v["nombre_invitado"], 
-            v.get("fecha_nacimiento", ""), 
-            v.get("correo", ""), 
-            v["estatus"]
-        ])
+    for k, v in datos.items(): filas.append([k, v["accion"], v["fecha_visita"], v["cedula_invitado"], v["nombre_invitado"], v.get("fecha_nacimiento", ""), v.get("correo", ""), v["estatus"]])
     hoja_invitaciones.clear()
     hoja_invitaciones.update(values=filas, range_name="A1")
     st.session_state.db_invitaciones = datos
@@ -329,31 +315,13 @@ def cargar_pagos():
         datos = {}
         for f in registros:
             id_p = str(f.get("id_pago", ""))
-            if id_p: 
-                datos[id_p] = {
-                    "accion": str(f.get("accion", "")), 
-                    "metodo": str(f.get("metodo", "")), 
-                    "referencia": str(f.get("referencia", "")), 
-                    "monto": str(f.get("monto", "")), 
-                    "fecha_reporte": str(f.get("fecha_reporte", "")), 
-                    "estatus": str(f.get("estatus", ""))
-                }
+            if id_p: datos[id_p] = {"accion": str(f.get("accion", "")), "metodo": str(f.get("metodo", "")), "referencia": str(f.get("referencia", "")), "monto": str(f.get("monto", "")), "fecha_reporte": str(f.get("fecha_reporte", "")), "estatus": str(f.get("estatus", ""))}
         return datos
-    except: 
-        return {}
+    except: return {}
 
 def guardar_bd_pagos(datos):
     filas = [["id_pago", "accion", "metodo", "referencia", "monto", "fecha_reporte", "estatus"]]
-    for k, v in datos.items(): 
-        filas.append([
-            k, 
-            v["accion"], 
-            v["metodo"], 
-            v["referencia"], 
-            v["monto"], 
-            v["fecha_reporte"], 
-            v["estatus"]
-        ])
+    for k, v in datos.items(): filas.append([k, v["accion"], v["metodo"], v["referencia"], v["monto"], v["fecha_reporte"], v["estatus"]])
     hoja_pagos.clear()
     hoja_pagos.update(values=filas, range_name="A1")
     st.session_state.db_pagos = datos
@@ -366,28 +334,15 @@ def cargar_directorio():
             acc = str(f.get("accion", ""))
             ced = str(f.get("cedula_invitado", ""))
             if acc and ced:
-                if acc not in datos: 
-                    datos[acc] = {}
-                datos[acc][ced] = {
-                    "nombre": str(f.get("nombre_invitado", "")), 
-                    "correo": str(f.get("correo", "")), 
-                    "fecha_nacimiento": str(f.get("fecha_nacimiento", ""))
-                }
+                if acc not in datos: datos[acc] = {}
+                datos[acc][ced] = {"nombre": str(f.get("nombre_invitado", "")), "correo": str(f.get("correo", "")), "fecha_nacimiento": str(f.get("fecha_nacimiento", ""))}
         return datos
-    except: 
-        return {}
+    except: return {}
 
 def guardar_bd_directorio(datos):
     filas = [["accion", "cedula_invitado", "nombre_invitado", "correo", "fecha_nacimiento"]]
     for acc, invitados in datos.items():
-        for ced, info in invitados.items(): 
-            filas.append([
-                acc, 
-                ced, 
-                info["nombre"], 
-                info["correo"], 
-                info.get("fecha_nacimiento", "")
-            ])
+        for ced, info in invitados.items(): filas.append([acc, ced, info["nombre"], info["correo"], info.get("fecha_nacimiento", "")])
     hoja_directorio.clear()
     hoja_directorio.update(values=filas, range_name="A1")
     st.session_state.db_directorio = datos
@@ -405,14 +360,10 @@ BASE_DATOS_INVITACIONES = st.session_state.db_invitaciones
 BASE_DATOS_PAGOS = st.session_state.db_pagos
 BASE_DATOS_DIRECTORIO = st.session_state.db_directorio
 
-if "logueado" not in st.session_state: 
-    st.session_state.logueado = False
-if "usuario_actual" not in st.session_state: 
-    st.session_state.usuario_actual = None
-if "historial" not in st.session_state: 
-    st.session_state.historial = []
-if "ubicacion_socios" not in st.session_state: 
-    st.session_state.ubicacion_socios = {} 
+if "logueado" not in st.session_state: st.session_state.logueado = False
+if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = None
+if "historial" not in st.session_state: st.session_state.historial = []
+if "ubicacion_socios" not in st.session_state: st.session_state.ubicacion_socios = {} 
 
 
 # ==========================================
@@ -424,26 +375,18 @@ if "pase" in params:
     
     if id_pase_url in BASE_DATOS_INVITACIONES:
         pase = BASE_DATOS_INVITACIONES[id_pase_url]
-        
         datos_qr = f"INVITADO|{id_pase_url}"
         img = qrcode.make(datos_qr)
         buffer = BytesIO()
         img.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue()).decode()
         
-        if pase["estatus"] == "Activo": 
-            clase_badge = "badge-aldia"
-            texto_badge = "PASE VÁLIDO"
-        elif pase["estatus"] == "Adentro": 
-            clase_badge = "badge-aldia"
-            texto_badge = "EN INSTALACIONES"
-        else: 
-            clase_badge = "badge-moroso"
-            texto_badge = pase["estatus"].upper()
+        if pase["estatus"] == "Activo": clase_badge = "badge-aldia"; texto_badge = "PASE VÁLIDO"
+        elif pase["estatus"] == "Adentro": clase_badge = "badge-aldia"; texto_badge = "EN INSTALACIONES"
+        else: clase_badge = "badge-moroso"; texto_badge = pase["estatus"].upper()
             
         if pase["fecha_visita"] != datetime.now().strftime("%d/%m/%Y") and pase["estatus"] == "Activo":
-            clase_badge = "badge-pendiente"
-            texto_badge = "FECHA INVÁLIDA"
+            clase_badge = "badge-pendiente"; texto_badge = "FECHA INVÁLIDA"
 
         st.markdown(f"""
 <div class="dark-wrapper" style="margin-top: 50px;">
@@ -482,11 +425,8 @@ PASE DE INVITADO
 </div>
 </div>
 """, unsafe_allow_html=True)
-        
         st.info("💡 Muestra esta pantalla directamente en la garita de seguridad del club.")
-    else:
-        st.error("❌ Enlace de pase inválido o no encontrado.")
-        
+    else: st.error("❌ Enlace de pase inválido o no encontrado.")
     st.stop()
 
 
@@ -494,8 +434,6 @@ PASE DE INVITADO
 # PANTALLA INICIAL: LOGIN Y AUTO-REGISTRO
 # ==========================================
 if not st.session_state.logueado:
-    
-    # Encabezado visual Ventry
     st.markdown("""
         <div style='text-align: center; margin-top: 20px; margin-bottom: 30px;'>
             <img src="https://i.ibb.co/t7xWXXR/logo.png" width="100" style="border-radius: 20px; margin-bottom: 10px; box-shadow: 0 10px 20px rgba(255,102,0,0.2);">
@@ -518,124 +456,79 @@ if not st.session_state.logueado:
             if cedula_ingresada in BASE_DATOS_SOCIOS:
                 socio = BASE_DATOS_SOCIOS[cedula_ingresada]
                 if clave_ingresada == str(socio["clave"]):
-                    st.session_state.logueado = True
-                    st.session_state.usuario_actual = socio
-                    st.rerun()
-                else: 
-                    st.error("❌ Contraseña incorrecta.")
-            else: 
-                st.error("⚠️ Usuario no registrado.")
+                    st.session_state.logueado = True; st.session_state.usuario_actual = socio; st.rerun()
+                else: st.error("❌ Contraseña incorrecta.")
+            else: st.error("⚠️ Usuario no registrado.")
 
     with tab_registro:
         st.info("💡 Tu cuenta quedará en estatus **Pendiente** hasta ser validada por la Administración.")
         with st.form("registro_form"):
-            r_cedula = st.text_input("Cédula de Identidad")
-            r_nombre = st.text_input("Nombre y Apellido")
-            r_nacimiento = st.date_input("Fecha de Nacimiento", min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
+            r_cedula = st.text_input("Cédula de Identidad"); r_nombre = st.text_input("Nombre y Apellido"); r_nacimiento = st.date_input("Fecha de Nacimiento", min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
             col1, col2 = st.columns(2)
-            with col1:
-                r_accion = st.text_input("Número de Acción")
-                r_rol = st.selectbox("Rol en la Acción", ["Titular", "Familiar"])
-            with col2:
-                r_parentesco = st.selectbox("Parentesco", ["N/A (Titular)", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"])
-            
-            r_clave = st.text_input("Crea una Contraseña", type="password")
-            r_clave_conf = st.text_input("Confirma tu Contraseña", type="password")
+            with col1: r_accion = st.text_input("Número de Acción"); r_rol = st.selectbox("Rol en la Acción", ["Titular", "Familiar"])
+            with col2: r_parentesco = st.selectbox("Parentesco", ["N/A (Titular)", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"])
+            r_clave = st.text_input("Crea una Contraseña", type="password"); r_clave_conf = st.text_input("Confirma tu Contraseña", type="password")
             st.markdown("<br>", unsafe_allow_html=True)
             btn_registrar = st.form_submit_button("ENVIAR SOLICITUD")
             
         if btn_registrar:
-            if not r_cedula or not r_nombre or not r_accion or not r_clave: 
-                st.error("⚠️ Todos los campos son obligatorios.")
-            elif r_clave != r_clave_conf: 
-                st.error("❌ Las contraseñas no coinciden.")
-            elif r_cedula in BASE_DATOS_SOCIOS: 
-                st.error("⚠️ Esta cédula ya se encuentra registrada.")
+            if not r_cedula or not r_nombre or not r_accion or not r_clave: st.error("⚠️ Todos los campos son obligatorios.")
+            elif r_clave != r_clave_conf: st.error("❌ Las contraseñas no coinciden.")
+            elif r_cedula in BASE_DATOS_SOCIOS: st.error("⚠️ Esta cédula ya se encuentra registrada.")
             else:
                 r_acc_norm = r_accion.strip().lstrip('0') or "0"
-                titular_existente = False
-                
-                if r_rol == "Titular":
-                    for info in BASE_DATOS_SOCIOS.values():
-                        if info["accion"] == r_acc_norm and info["rol"] == "Titular":
-                            titular_existente = True
-                            break
-                
-                if titular_existente: 
-                    st.error(f"⚠️ Operación Denegada: La Acción {r_acc_norm} ya tiene un Titular registrado.")
+                titular_existente = any(info["accion"] == r_acc_norm and info["rol"] == "Titular" for info in BASE_DATOS_SOCIOS.values()) if r_rol == "Titular" else False
+                if titular_existente: st.error(f"⚠️ Operación Denegada: La Acción {r_acc_norm} ya tiene un Titular registrado.")
                 else:
-                    BASE_DATOS_SOCIOS[r_cedula] = {
-                        "nombre": r_nombre, 
-                        "clave": r_clave, 
-                        "accion": r_acc_norm, 
-                        "rol": r_rol, 
-                        "parentesco": r_parentesco, 
-                        "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"), 
-                        "solvencia": "Pendiente", 
-                        "cedula": r_cedula
-                    }
-                    guardar_bd(BASE_DATOS_SOCIOS)
-                    st.success("✅ ¡Registro exitoso! Ya puedes iniciar sesión.")
+                    BASE_DATOS_SOCIOS[r_cedula] = {"nombre": r_nombre, "clave": r_clave, "accion": r_acc_norm, "rol": r_rol, "parentesco": r_parentesco, "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"), "solvencia": "Pendiente", "cedula": r_cedula}
+                    guardar_bd(BASE_DATOS_SOCIOS); st.success("✅ ¡Registro exitoso! Ya puedes iniciar sesión.")
 
 # ==========================================
-# SISTEMA INTERNO
+# SISTEMA INTERNO (DASHBOARD MÓVIL NATIVO)
 # ==========================================
 else:
     socio_actual = st.session_state.usuario_actual
     rol_actual = socio_actual["rol"]
 
-    st.sidebar.image("https://i.ibb.co/t7xWXXR/logo.png", width=100)
-    st.sidebar.title(f"Hola, {socio_actual['nombre']}")
-    st.sidebar.write(f"Rol: **{rol_actual}**")
+    # APP HEADER (Adiós menú lateral)
+    col_logo, col_info, col_btn = st.columns([1, 3, 1.5])
+    with col_logo: st.image("https://i.ibb.co/t7xWXXR/logo.png", width=50)
+    with col_info: 
+        st.markdown(f"<p style='margin:0; font-size:16px; font-weight:bold;'>{socio_actual['nombre']}</p><p style='margin:0; font-size:12px; color:#FF6600 !important;'>{rol_actual}</p>", unsafe_allow_html=True)
+    with col_btn:
+        st.markdown("<div class='btn-salir'>", unsafe_allow_html=True)
+        if st.button("Cerrar Sesión", use_container_width=True): 
+            st.session_state.logueado = False; st.session_state.usuario_actual = None; st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
     
-    if rol_actual == "Administrador":
-        if st.sidebar.button("🔄 Sincronizar Nube"):
-            st.session_state.db_socios = cargar_bd()
-            st.session_state.db_invitaciones = cargar_invitaciones()
-            st.session_state.db_pagos = cargar_pagos()
-            st.session_state.db_directorio = cargar_directorio()
-            st.sidebar.success("Base de datos sincronizada")
-            st.rerun()
-            
-    st.sidebar.write("---")
+    st.write("---")
     
+    # NAVEGACIÓN MÓVIL HORIZONTAL (TIPO TABS DE APP)
     opciones_menu = []
-    if rol_actual in ["Titular", "Familiar"]: 
-        opciones_menu = ["Mi Carnet Digital", "Módulo de Pagos", "Pases de Invitados"]
-    elif rol_actual == "Vigilante": 
-        opciones_menu = ["Panel de Garita"]
-    elif rol_actual == "Administrador": 
-        opciones_menu = ["Portal de Administración", "Panel de Garita", "Módulo de Pagos", "Mi Carnet Digital", "Pases de Invitados"]
+    if rol_actual in ["Titular", "Familiar"]: opciones_menu = ["🎫 Carnet", "💸 Pagos", "🎟️ Invitados"]
+    elif rol_actual == "Vigilante": opciones_menu = ["🛡️ Garita"]
+    elif rol_actual == "Administrador": opciones_menu = ["⚙️ Admin", "🛡️ Garita", "💸 Pagos", "🎫 Carnet", "🎟️ Invitados"]
 
-    modulo_seleccionado = st.sidebar.radio("Navegación:", opciones_menu)
-    
-    st.sidebar.write("---")
-    if st.sidebar.button("Cerrar Sesión"): 
-        st.session_state.logueado = False
-        st.session_state.usuario_actual = None
-        st.rerun()
+    modulo_seleccionado = st.radio("Menú", opciones_menu, horizontal=True, label_visibility="collapsed")
+    st.write("---")
+
+    # Si es Administrador, botón de sincronizar en el Home
+    if rol_actual == "Administrador" and modulo_seleccionado == "⚙️ Admin":
+        if st.button("🔄 Sincronizar Base de Datos en la Nube"):
+            st.session_state.db_socios = cargar_bd(); st.session_state.db_invitaciones = cargar_invitaciones(); st.session_state.db_pagos = cargar_pagos(); st.session_state.db_directorio = cargar_directorio()
+            st.success("✅ Base de datos sincronizada"); st.rerun()
 
     # --- MÓDULO 1: CARNET DIGITAL ---
-    if modulo_seleccionado == "Mi Carnet Digital":
+    if modulo_seleccionado == "🎫 Carnet":
         
-        if socio_actual['solvencia'] == "Moroso": 
-            st.error("⚠️ ATENCIÓN: Tu grupo familiar presenta un saldo pendiente.")
-            st.warning("Tu acceso a las instalaciones está restringido. Por favor, regulariza tu estatus en el Módulo de Pagos.")
-        elif socio_actual['solvencia'] == "Pendiente": 
-            st.warning("⏳ Tu cuenta se encuentra en revisión administrativa. El código QR no será válido hasta ser aprobado.")
+        if socio_actual['solvencia'] == "Moroso": st.error("⚠️ ATENCIÓN: Tu grupo familiar presenta un saldo pendiente."); st.warning("Tu acceso a las instalaciones está restringido.")
+        elif socio_actual['solvencia'] == "Pendiente": st.warning("⏳ Tu cuenta se encuentra en revisión administrativa.")
 
-        if socio_actual['solvencia'] == "Al dia": 
-            clase_badge = "badge-aldia"
-            texto_badge = "AL DÍA"
-        elif socio_actual['solvencia'] == "Pendiente": 
-            clase_badge = "badge-pendiente"
-            texto_badge = "PENDIENTE"
-        else: 
-            clase_badge = "badge-moroso"
-            texto_badge = "MOROSO"
+        if socio_actual['solvencia'] == "Al dia": clase_badge = "badge-aldia"; texto_badge = "AL DÍA"
+        elif socio_actual['solvencia'] == "Pendiente": clase_badge = "badge-pendiente"; texto_badge = "PENDIENTE"
+        else: clase_badge = "badge-moroso"; texto_badge = "MOROSO"
 
         edad_socio = calcular_edad(socio_actual.get('fecha_nacimiento', ''))
-        
         datos_qr = f"CEDULA:{socio_actual['cedula']}|VENTRY|{socio_actual['nombre']}|{socio_actual['accion']}"
         img = qrcode.make(datos_qr)
         buffer = BytesIO()
@@ -677,31 +570,23 @@ else:
 </div>
 """
         st.markdown(carnet_html, unsafe_allow_html=True)
-        
-        if socio_actual['solvencia'] != "Al dia": 
-            st.error("❌ Código Inactivo en Garita.")
+        if socio_actual['solvencia'] != "Al dia": st.error("❌ Código Inactivo en Garita.")
 
     # --- MÓDULO 2: PAGOS ---
-    elif modulo_seleccionado == "Módulo de Pagos":
+    elif modulo_seleccionado == "💸 Pagos":
         st.subheader("💸 Depositar Fondos / Pagar Mensualidad")
         st.markdown("<div class='pago-card'>", unsafe_allow_html=True)
         st.markdown(f"#### Acción: {socio_actual['accion']}")
         deuda = 104.00 if socio_actual['solvencia'] == "Moroso" else 0.00
         st.metric("Saldo Pendiente Estimado", f"${deuda:.2f}")
-        
-        if deuda == 0: 
-            st.success("¡Tu grupo familiar se encuentra solvente!")
+        if deuda == 0: st.success("¡Tu grupo familiar se encuentra solvente!")
         st.markdown("</div>", unsafe_allow_html=True)
         
-        metodo = st.radio("¿Cómo deseas reportar tu pago?", ["Zelle", "Pago Móvil", "Transferencia Nacional"], horizontal=True)
+        metodo = st.radio("¿Cómo deseas reportar tu pago?", ["Zelle", "Pago Móvil", "Transferencia Nacional"])
         st.write("---")
-        
-        if metodo == "Zelle": 
-            st.info("📲 **Datos Zelle:**\n\n**Correo:** pagos@clubmagnum.com\n**Titular:** Inversiones Magnum LLC")
-        elif metodo == "Pago Móvil": 
-            st.info("📱 **Datos Pago Móvil:**\n\n**Banco:** Bancamiga (0172)\n**RIF:** J-12345678-9\n**Teléfono:** 0414-1234567")
-        else: 
-            st.info("🏦 **Cuentas Nacionales:**\n\n**Banco:** Banesco\n**Cuenta:** 0134-1234-5678-9012-3456\n**RIF:** J-12345678-9")
+        if metodo == "Zelle": st.info("📲 **Datos Zelle:**\n\n**Correo:** pagos@clubmagnum.com\n**Titular:** Inversiones Magnum LLC")
+        elif metodo == "Pago Móvil": st.info("📱 **Datos Pago Móvil:**\n\n**Banco:** Bancamiga (0172)\n**RIF:** J-12345678-9\n**Teléfono:** 0414-1234567")
+        else: st.info("🏦 **Cuentas Nacionales:**\n\n**Banco:** Banesco\n**Cuenta:** 0134-1234-5678-9012-3456\n**RIF:** J-12345678-9")
 
         st.markdown("### 📝 Reportar Transacción")
         with st.form("form_pago"):
@@ -711,30 +596,18 @@ else:
             btn_reportar = st.form_submit_button("Reportar Pago")
             
         if btn_reportar:
-            if not n_referencia: 
-                st.error("Debes ingresar un número de referencia válido.")
+            if not n_referencia: st.error("Debes ingresar un número de referencia válido.")
             else:
                 id_pago = f"PAG-{str(uuid.uuid4())[:6].upper()}"
-                BASE_DATOS_PAGOS[id_pago] = {
-                    "accion": socio_actual["accion"], 
-                    "metodo": metodo, 
-                    "referencia": str(n_referencia), 
-                    "monto": str(n_monto), 
-                    "fecha_reporte": datetime.now().strftime("%d/%m/%Y %H:%M:%S"), 
-                    "estatus": "En Revisión"
-                }
-                guardar_bd_pagos(BASE_DATOS_PAGOS)
-                st.success("✅ Pago reportado con éxito. En breve será validado.")
+                BASE_DATOS_PAGOS[id_pago] = {"accion": socio_actual["accion"], "metodo": metodo, "referencia": str(n_referencia), "monto": str(n_monto), "fecha_reporte": datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "estatus": "En Revisión"}
+                guardar_bd_pagos(BASE_DATOS_PAGOS); st.success("✅ Pago reportado con éxito. En breve será validado.")
 
-    # --- MÓDULO 3: PASES DE INVITADOS CON SMART LINKS ---
-    elif modulo_seleccionado == "Pases de Invitados":
+    # --- MÓDULO 3: PASES DE INVITADOS ---
+    elif modulo_seleccionado == "🎟️ Invitados":
         st.subheader("🎫 Generar Pase de Invitado")
-        
-        if "ultimo_pase_generado" not in st.session_state:
-            st.session_state.ultimo_pase_generado = None
+        if "ultimo_pase_generado" not in st.session_state: st.session_state.ultimo_pase_generado = None
 
-        if socio_actual["solvencia"] != "Al dia":
-            st.error("❌ Operación Denegada. Tu grupo familiar no se encuentra solvente.")
+        if socio_actual["solvencia"] != "Al dia": st.error("❌ Operación Denegada. Tu grupo familiar no se encuentra solvente.")
         else:
             invitados_previos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
             modo_ingreso = st.radio("Seleccione el tipo de registro:", ["Nuevo Invitado", "Directorio de Favoritos"])
@@ -744,88 +617,52 @@ else:
             if modo_ingreso == "Directorio de Favoritos":
                 if invitados_previos:
                     inv_sel = st.selectbox("Seleccione de su directorio:", list(invitados_previos.keys()), format_func=lambda x: f"{invitados_previos[x]['nombre']} (C.I: {x})")
-                    n_cedula_def = inv_sel
-                    n_nombre_def = invitados_previos[inv_sel]['nombre']
-                    n_correo_def = invitados_previos[inv_sel]['correo']
-                    
+                    n_cedula_def, n_nombre_def, n_correo_def = inv_sel, invitados_previos[inv_sel]['nombre'], invitados_previos[inv_sel]['correo']
                     if invitados_previos[inv_sel].get("fecha_nacimiento"):
-                        try: 
-                            n_nacimiento_def = datetime.strptime(invitados_previos[inv_sel]["fecha_nacimiento"], "%d/%m/%Y").date()
-                        except: 
-                            pass
-                else: 
-                    st.info("Aún no tienes invitados guardados en tu directorio.")
+                        try: n_nacimiento_def = datetime.strptime(invitados_previos[inv_sel]["fecha_nacimiento"], "%d/%m/%Y").date()
+                        except: pass
+                else: st.info("Aún no tienes invitados guardados en tu directorio.")
 
             with st.form("form_invitacion"):
-                col_a, col_b = st.columns(2)
-                with col_a: 
-                    n_cedula_inv = st.text_input("Cédula del Invitado", value=n_cedula_def)
-                    n_nombre_inv = st.text_input("Nombre del Invitado", value=n_nombre_def)
-                with col_b: 
-                    n_correo_inv = st.text_input("Correo Electrónico", value=n_correo_def)
-                    n_nacimiento_inv = st.date_input("Fecha de Nacimiento", value=n_nacimiento_def, min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
-                
+                n_cedula_inv = st.text_input("Cédula del Invitado", value=n_cedula_def)
+                n_nombre_inv = st.text_input("Nombre del Invitado", value=n_nombre_def)
+                n_correo_inv = st.text_input("Correo Electrónico", value=n_correo_def)
+                n_nacimiento_inv = st.date_input("Fecha de Nacimiento", value=n_nacimiento_def, min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
                 fecha_visita = st.date_input("Fecha de la visita (Válido por todo el día)", min_value=datetime.today(), format="DD/MM/YYYY")
                 
                 guardar_contacto = False
-                if modo_ingreso == "Nuevo Invitado":
-                    st.write("---")
-                    guardar_contacto = st.checkbox("⭐ Guardar en mi directorio de invitados frecuentes", value=True)
-                
+                if modo_ingreso == "Nuevo Invitado": st.write("---"); guardar_contacto = st.checkbox("⭐ Guardar en mi directorio", value=True)
                 st.markdown("<br>", unsafe_allow_html=True)
                 btn_generar = st.form_submit_button("Generar Pase Digital")
                 
             if btn_generar:
-                if not n_cedula_inv or not n_nombre_inv: 
-                    st.error("⚠️ Debes ingresar al menos la Cédula y el Nombre.")
+                if not n_cedula_inv or not n_nombre_inv: st.error("⚠️ Debes ingresar al menos la Cédula y el Nombre.")
                 else:
                     if guardar_contacto:
-                        if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: 
-                            BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
-                        BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {
-                            "nombre": n_nombre_inv, 
-                            "correo": n_correo_inv, 
-                            "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y")
-                        }
+                        if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
+                        BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {"nombre": n_nombre_inv, "correo": n_correo_inv, "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y")}
                         guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
                     
                     str_fecha = fecha_visita.strftime("%d/%m/%Y")
                     id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
-                    BASE_DATOS_INVITACIONES[id_unico] = {
-                        "accion": socio_actual["accion"], 
-                        "fecha_visita": str_fecha, 
-                        "cedula_invitado": n_cedula_inv, 
-                        "nombre_invitado": n_nombre_inv, 
-                        "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y"), 
-                        "correo": n_correo_inv, 
-                        "estatus": "Activo"
-                    }
+                    BASE_DATOS_INVITACIONES[id_unico] = {"accion": socio_actual["accion"], "fecha_visita": str_fecha, "cedula_invitado": n_cedula_inv, "nombre_invitado": n_nombre_inv, "fecha_nacimiento": n_nacimiento_inv.strftime("%d/%m/%Y"), "correo": n_correo_inv, "estatus": "Activo"}
                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
-                    
-                    st.session_state.ultimo_pase_generado = {
-                        "id": id_unico,
-                        "nombre": n_nombre_inv,
-                        "fecha": str_fecha
-                    }
+                    st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha}
                     st.success(f"✅ Pase digital generado para {n_nombre_inv}.")
             
             if st.session_state.ultimo_pase_generado:
                 pase_temp = st.session_state.ultimo_pase_generado
-                
                 url_base = "https://ventry.streamlit.app" 
                 link_pase_digital = f"{url_base}/?pase={pase_temp['id']}"
-                
                 st.info("🎟️ **PASE LISTO PARA ENVIAR**")
-                
                 mensaje_ws = f"¡Hola {pase_temp['nombre']}! 🏌️‍♂️\n\nAquí tienes tu Pase de Invitado para el *Magnum City Club*.\n\n*Fecha válida:* {pase_temp['fecha']}\n\n👉 *Toca este enlace para abrir tu pase digital y mostrarlo en garita:*\n{link_pase_digital}"
                 mensaje_codificado = urllib.parse.quote(mensaje_ws)
                 link_ws = f"https://wa.me/?text={mensaje_codificado}"
-                
                 st.markdown(f'<a href="{link_ws}" target="_blank" class="whatsapp-btn">💬 Enviar Link por WhatsApp</a>', unsafe_allow_html=True)
 
     # --- MÓDULO 4: GARITA ---
-    elif modulo_seleccionado == "Panel de Garita":
-        st.title("🛡️ Módulo de Garita (Automático)")
+    elif modulo_seleccionado == "🛡️ Garita":
+        st.title("🛡️ Panel de Garita (Automático)")
         st.write("---")
         foto_qr = st.camera_input("Apunte el código QR aquí")
         
@@ -842,21 +679,12 @@ else:
                         socio = BASE_DATOS_SOCIOS[cedula_escaneada]
                         if socio["solvencia"] == "Al dia":
                             estado_actual = st.session_state.ubicacion_socios.get(cedula_escaneada, "Afuera")
-                            if estado_actual == "Afuera": 
-                                st.success("✅ ENTRADA PERMITIDA (Socio)")
-                                st.session_state.ubicacion_socios[cedula_escaneada] = "Adentro"
-                                sentido_str = "Entrada"
-                            else: 
-                                st.success("✅ SALIDA REGISTRADA (Socio)")
-                                st.session_state.ubicacion_socios[cedula_escaneada] = "Afuera"
-                                sentido_str = "Salida"
-                                
+                            if estado_actual == "Afuera": st.success("✅ ENTRADA PERMITIDA (Socio)"); st.session_state.ubicacion_socios[cedula_escaneada] = "Adentro"; sentido_str = "Entrada"
+                            else: st.success("✅ SALIDA REGISTRADA (Socio)"); st.session_state.ubicacion_socios[cedula_escaneada] = "Afuera"; sentido_str = "Salida"
                             st.info(f"**Socio:** {socio['nombre']} | **Acción:** {socio['accion']}")
                             registrar_acceso(socio["nombre"], socio["accion"], "QR (Socio)", sentido_str)
-                        else: 
-                            st.error(f"❌ ACCESO DENEGADO - SOCIO {socio['solvencia'].upper()}")
-                    else: 
-                        st.error("⚠️ El socio ya no existe en la BD.")
+                        else: st.error(f"❌ ACCESO DENEGADO - SOCIO {socio['solvencia'].upper()}")
+                    else: st.error("⚠️ El socio ya no existe en la BD.")
                         
                 elif "INVITADO|" in datos_decodificados:
                     id_qr = datos_decodificados.split("|")[1]
@@ -870,21 +698,16 @@ else:
                                     BASE_DATOS_INVITACIONES[id_qr]["estatus"] = "Adentro"
                                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
                                     registrar_acceso(f"Inv: {pase['nombre_invitado']}", pase["accion"], "QR (Invitado)", "Entrada")
-                                else: 
-                                    st.error("❌ ACCESO DENEGADO - La Acción no está solvente.")
-                            else: 
-                                st.error("❌ ACCESO DENEGADO - Pase inválido hoy.")
+                                else: st.error("❌ ACCESO DENEGADO - La Acción no está solvente.")
+                            else: st.error("❌ ACCESO DENEGADO - Pase inválido hoy.")
                         elif pase["estatus"] in ["Adentro", "Usado"]: 
                             st.success(f"✅ SALIDA REGISTRADA (Invitado: {pase['nombre_invitado']})")
                             BASE_DATOS_INVITACIONES[id_qr]["estatus"] = "Salió"
                             guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
                             registrar_acceso(f"Inv: {pase['nombre_invitado']}", pase["accion"], "QR (Invitado)", "Salida")
-                        else: 
-                            st.error(f"❌ ACCESO DENEGADO - Estatus: {pase['estatus']}.")
-                    else: 
-                        st.warning("⚠️ Código de invitado no encontrado.")
-            else: 
-                st.warning("⚠️ No se detectó un código válido.")
+                        else: st.error(f"❌ ACCESO DENEGADO - Estatus: {pase['estatus']}.")
+                    else: st.warning("⚠️ Código de invitado no encontrado.")
+            else: st.warning("⚠️ No se detectó un código válido.")
         
         st.write("---")
         st.markdown("### 📊 Registro de Tránsito (En Vivo)")
@@ -894,214 +717,104 @@ else:
                 st.write(f"{icono_mov} **{acceso['movimiento'].upper()}** - {acceso['nombre']} (Acc. {acceso['accion']}) - {acceso['hora']}")
 
     # --- MÓDULO 5: ADMINISTRACIÓN ---
-    elif modulo_seleccionado == "Portal de Administración":
+    elif modulo_seleccionado == "⚙️ Admin":
         st.title("⚙️ Administración General")
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["➕ Nuevo Usuario", "✏️ Editar Perfil", "📝 Gestión Familiar", "💳 Conciliación", "🗃️ Base de Datos", "📈 Analítica"])
+        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["➕ Alta", "✏️ Editar", "📝 Familia", "💳 Pagos", "🗃️ Datos", "📈 KPIs"])
 
         with tab1:
             with st.form("form_nuevo_admin"):
-                n_cedula = st.text_input("Usuario / Cédula")
-                n_nombre = st.text_input("Nombre")
-                n_nacimiento = st.date_input("Fecha de Nacimiento", min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
-                n_clave = st.text_input("Contraseña")
-                
-                col_a, col_b, col_c = st.columns(3)
-                with col_a: 
-                    n_accion = st.text_input("Acción (0000 para staff)")
-                with col_b: 
-                    n_rol = st.selectbox("Rol", ["Titular", "Familiar", "Vigilante", "Administrador"])
-                with col_c: 
-                    n_parentesco = st.selectbox("Parentesco", ["N/A", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"])
-                
-                n_solvencia = st.selectbox("Estatus", ["Al dia", "Moroso", "Pendiente"])
+                n_cedula = st.text_input("Usuario / Cédula"); n_nombre = st.text_input("Nombre"); n_nacimiento = st.date_input("Fecha de Nacimiento", min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY"); n_clave = st.text_input("Contraseña")
+                col_a, col_b = st.columns(2)
+                with col_a: n_accion = st.text_input("Acción (0000 para staff)"); n_rol = st.selectbox("Rol", ["Titular", "Familiar", "Vigilante", "Administrador"])
+                with col_b: n_parentesco = st.selectbox("Parentesco", ["N/A", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"]); n_solvencia = st.selectbox("Estatus", ["Al dia", "Moroso", "Pendiente"])
                 st.markdown("<br>", unsafe_allow_html=True)
-                
                 if st.form_submit_button("Guardar"):
                     if n_cedula and n_nombre:
                         n_acc_norm = n_accion.strip().lstrip('0') or "0"
-                        titular_existente = False
-                        
-                        if n_rol == "Titular":
-                            titular_existente = any(info["accion"] == n_acc_norm and info["rol"] == "Titular" for info in BASE_DATOS_SOCIOS.values())
-                        
-                        if titular_existente: 
-                            st.error("⚠️ La Acción ya tiene Titular.")
+                        titular_existente = any(info["accion"] == n_acc_norm and info["rol"] == "Titular" for info in BASE_DATOS_SOCIOS.values()) if n_rol == "Titular" else False
+                        if titular_existente: st.error("⚠️ La Acción ya tiene Titular.")
                         else:
-                            BASE_DATOS_SOCIOS[n_cedula] = {
-                                "nombre": n_nombre, 
-                                "clave": n_clave, 
-                                "accion": n_acc_norm, 
-                                "rol": n_rol, 
-                                "parentesco": n_parentesco, 
-                                "fecha_nacimiento": n_nacimiento.strftime("%d/%m/%Y"), 
-                                "solvencia": n_solvencia, 
-                                "cedula": n_cedula
-                            }
-                            guardar_bd(BASE_DATOS_SOCIOS)
-                            st.success("✅ Guardado.")
+                            BASE_DATOS_SOCIOS[n_cedula] = {"nombre": n_nombre, "clave": n_clave, "accion": n_acc_norm, "rol": n_rol, "parentesco": n_parentesco, "fecha_nacimiento": n_nacimiento.strftime("%d/%m/%Y"), "solvencia": n_solvencia, "cedula": n_cedula}
+                            guardar_bd(BASE_DATOS_SOCIOS); st.success("✅ Guardado.")
 
         with tab2:
             opciones_editar = {ced: f"{d['nombre']} (C.I: {ced})" for ced, d in BASE_DATOS_SOCIOS.items()}
-            
             if opciones_editar:
                 socio_a_editar = st.selectbox("Seleccione el socio:", list(opciones_editar.keys()), format_func=lambda x: opciones_editar[x])
                 socio_data = BASE_DATOS_SOCIOS[socio_a_editar]
                 e_nac_def = datetime.today()
-                
                 if socio_data.get("fecha_nacimiento"):
-                    try: 
-                        e_nac_def = datetime.strptime(socio_data["fecha_nacimiento"], "%d/%m/%Y").date()
-                    except: 
-                        pass
-                
+                    try: e_nac_def = datetime.strptime(socio_data["fecha_nacimiento"], "%d/%m/%Y").date()
+                    except: pass
                 with st.form("form_editar_admin"):
-                    e_nombre = st.text_input("Nombre", value=socio_data["nombre"])
-                    e_clave = st.text_input("Contraseña", value=socio_data["clave"])
-                    e_nacimiento = st.date_input("Fecha de Nacimiento", value=e_nac_def, min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
-                    
-                    col_a, col_b, col_c = st.columns(3)
-                    with col_a: 
-                        e_accion = st.text_input("Acción", value=socio_data["accion"])
-                    with col_b: 
-                        lista_roles = ["Titular", "Familiar", "Vigilante", "Administrador"]
-                        e_rol = st.selectbox("Rol", lista_roles, index=lista_roles.index(socio_data["rol"]) if socio_data["rol"] in lista_roles else 0)
-                    with col_c: 
-                        lista_parentescos = ["N/A", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"]
-                        e_parentesco = st.selectbox("Parentesco", lista_parentescos, index=lista_parentescos.index(socio_data.get("parentesco", "N/A")) if socio_data.get("parentesco", "N/A") in lista_parentescos else 0)
-                    
-                    lista_estatus = ["Al dia", "Moroso", "Pendiente"]
-                    e_solvencia = st.selectbox("Estatus Individual", lista_estatus, index=lista_estatus.index(socio_data["solvencia"]))
+                    e_nombre = st.text_input("Nombre", value=socio_data["nombre"]); e_clave = st.text_input("Contraseña", value=socio_data["clave"]); e_nacimiento = st.date_input("Fecha de Nacimiento", value=e_nac_def, min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
+                    col_a, col_b = st.columns(2)
+                    with col_a: e_accion = st.text_input("Acción", value=socio_data["accion"]); e_rol = st.selectbox("Rol", ["Titular", "Familiar", "Vigilante", "Administrador"], index=["Titular", "Familiar", "Vigilante", "Administrador"].index(socio_data["rol"]) if socio_data["rol"] in ["Titular", "Familiar", "Vigilante", "Administrador"] else 0)
+                    with col_b: e_parentesco = st.selectbox("Parentesco", ["N/A", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"], index=["N/A", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"].index(socio_data.get("parentesco", "N/A")) if socio_data.get("parentesco", "N/A") in ["N/A", "Esposo(a)", "Hijo(a)", "Madre/Padre", "Hermano(a)", "Otro"] else 0); e_solvencia = st.selectbox("Estatus Individual", ["Al dia", "Moroso", "Pendiente"], index=["Al dia", "Moroso", "Pendiente"].index(socio_data["solvencia"]))
                     st.markdown("<br>", unsafe_allow_html=True)
-                    
                     if st.form_submit_button("Guardar Cambios"):
-                        BASE_DATOS_SOCIOS[socio_a_editar] = {
-                            "nombre": e_nombre, 
-                            "clave": e_clave, 
-                            "accion": e_accion.strip().lstrip('0') or "0", 
-                            "rol": e_rol, 
-                            "parentesco": e_parentesco, 
-                            "fecha_nacimiento": e_nacimiento.strftime("%d/%m/%Y"), 
-                            "solvencia": e_solvencia, 
-                            "cedula": socio_a_editar
-                        }
-                        guardar_bd(BASE_DATOS_SOCIOS)
-                        st.success("✅ Actualizado.")
+                        BASE_DATOS_SOCIOS[socio_a_editar] = {"nombre": e_nombre, "clave": e_clave, "accion": e_accion.strip().lstrip('0') or "0", "rol": e_rol, "parentesco": e_parentesco, "fecha_nacimiento": e_nacimiento.strftime("%d/%m/%Y"), "solvencia": e_solvencia, "cedula": socio_a_editar}
+                        guardar_bd(BASE_DATOS_SOCIOS); st.success("✅ Actualizado.")
 
         with tab3:
             acciones_disponibles = sorted(list(set(d["accion"] for d in BASE_DATOS_SOCIOS.values())))
-            
             if acciones_disponibles:
                 accion_sel = st.selectbox("Seleccione Acción:", acciones_disponibles)
                 miembros_accion = sorted([info for info in BASE_DATOS_SOCIOS.values() if info["accion"] == accion_sel], key=lambda x: x.get("rol", ""), reverse=True)
                 estatus_actual_grupo = miembros_accion[0]["solvencia"] if miembros_accion else "Desconocido"
-
                 st.write("---")
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    st.markdown(f"#### Acción {accion_sel}")
-                    tabla_md = "| Nombre | Rol | Edad | Estatus |\n| :--- | :--- | :--- | :--- |\n"
-                    for m in miembros_accion: 
-                        icono = '👑' if m['rol'] == 'Titular' else '👤'
-                        edad = calcular_edad(m.get('fecha_nacimiento', ''))
-                        tabla_md += f"| {icono} {m['nombre']} | {m['rol']} | {edad} | {m['solvencia']} |\n"
-                    st.markdown(tabla_md)
-                
-                with col2:
-                    with st.form("form_estatus_admin"):
-                        st.write(f"Estatus principal: **{estatus_actual_grupo}**")
-                        n_estatus = st.radio("Modificar Estatus a todo el grupo:", ["Al dia", "Moroso", "Pendiente"])
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        if st.form_submit_button("Actualizar Todo"):
-                            for ced, info in BASE_DATOS_SOCIOS.items():
-                                if info["accion"] == accion_sel: 
-                                    BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
-                            guardar_bd(BASE_DATOS_SOCIOS)
-                            st.success("✅ Grupo familiar actualizado.")
+                tabla_md = "| Nombre | Rol | Estatus |\n| :--- | :--- | :--- |\n"
+                for m in miembros_accion: tabla_md += f"| {'👑' if m['rol'] == 'Titular' else '👤'} {m['nombre']} | {m['rol']} | {m['solvencia']} |\n"
+                st.markdown(tabla_md)
+                with st.form("form_estatus_admin"):
+                    st.write(f"Estatus principal: **{estatus_actual_grupo}**")
+                    n_estatus = st.radio("Modificar Estatus a todo el grupo:", ["Al dia", "Moroso", "Pendiente"], horizontal=True)
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    if st.form_submit_button("Actualizar Todo"):
+                        for ced, info in BASE_DATOS_SOCIOS.items():
+                            if info["accion"] == accion_sel: BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
+                        guardar_bd(BASE_DATOS_SOCIOS); st.success("✅ Grupo familiar actualizado.")
 
         with tab4:
             pagos_pendientes = {k: v for k, v in BASE_DATOS_PAGOS.items() if v["estatus"] == "En Revisión"}
-            
             if pagos_pendientes:
                 for p_id, p_info in pagos_pendientes.items():
-                    with st.expander(f"Reporte de Acción: {p_info['accion']} | Monto: {p_info['monto']} | Vía: {p_info['metodo']}"):
-                        st.write(f"**Referencia:** {p_info['referencia']}")
-                        st.write(f"**Fecha reportada:** {p_info['fecha_reporte']}")
-                        
+                    with st.expander(f"Acción: {p_info['accion']} | ${p_info['monto']} | {p_info['metodo']}"):
+                        st.write(f"**Ref:** {p_info['referencia']} | **Fecha:** {p_info['fecha_reporte']}")
                         col1, col2 = st.columns(2)
                         with col1:
-                            if st.button("✅ Aprobar Pago", key=f"apr_{p_id}"):
-                                BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"
-                                guardar_bd_pagos(BASE_DATOS_PAGOS)
+                            if st.button("✅ Aprobar", key=f"apr_{p_id}"):
+                                BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"; guardar_bd_pagos(BASE_DATOS_PAGOS)
                                 for ced, info in BASE_DATOS_SOCIOS.items():
-                                    if str(info["accion"]) == str(p_info["accion"]): 
-                                        BASE_DATOS_SOCIOS[ced]["solvencia"] = "Al dia"
-                                guardar_bd(BASE_DATOS_SOCIOS)
-                                st.success(f"Pago aprobado. Familia {p_info['accion']} solvente.")
-                                st.rerun()
+                                    if str(info["accion"]) == str(p_info["accion"]): BASE_DATOS_SOCIOS[ced]["solvencia"] = "Al dia"
+                                guardar_bd(BASE_DATOS_SOCIOS); st.rerun()
                         with col2:
-                            if st.button("❌ Rechazar", key=f"rec_{p_id}"):
-                                BASE_DATOS_PAGOS[p_id]["estatus"] = "Rechazado"
-                                guardar_bd_pagos(BASE_DATOS_PAGOS)
-                                st.warning("Pago rechazado.")
-                                st.rerun()
-            else: 
-                st.info("No hay pagos pendientes por conciliar 🎉")
+                            if st.button("❌ Rechazar", key=f"rec_{p_id}"): BASE_DATOS_PAGOS[p_id]["estatus"] = "Rechazado"; guardar_bd_pagos(BASE_DATOS_PAGOS); st.rerun()
+            else: st.info("No hay pagos pendientes por conciliar 🎉")
 
-        with tab5:
-            st.json(BASE_DATOS_SOCIOS)
+        with tab5: st.json(BASE_DATOS_SOCIOS)
 
         with tab6:
             acciones_al_dia, acciones_morosas, acciones_pendientes = set(), set(), set()
-            
             for socio in BASE_DATOS_SOCIOS.values():
-                if socio["solvencia"] == "Moroso": 
-                    acciones_morosas.add(socio["accion"])
-                elif socio["solvencia"] == "Pendiente": 
-                    acciones_pendientes.add(socio["accion"])
-                else: 
-                    acciones_al_dia.add(socio["accion"])
-                    
-            for acc in acciones_morosas:
-                acciones_pendientes.discard(acc)
-                acciones_al_dia.discard(acc)
-            for acc in acciones_pendientes:
-                acciones_al_dia.discard(acc)
+                if socio["solvencia"] == "Moroso": acciones_morosas.add(socio["accion"])
+                elif socio["solvencia"] == "Pendiente": acciones_pendientes.add(socio["accion"])
+                else: acciones_al_dia.add(socio["accion"])
+            for acc in acciones_morosas: acciones_pendientes.discard(acc); acciones_al_dia.discard(acc)
+            for acc in acciones_pendientes: acciones_al_dia.discard(acc)
                 
-            morosos_count = len(acciones_morosas)
-            pendientes_count = len(acciones_pendientes)
-            al_dia_count = len(acciones_al_dia)
-            total_acciones_unicas = morosos_count + pendientes_count + al_dia_count
-            
-            if total_acciones_unicas > 0:
-                tasa_morosidad = (morosos_count / total_acciones_unicas) * 100
-                capital_retenido = morosos_count * 104
-                
+            if (len(acciones_morosas) + len(acciones_pendientes) + len(acciones_al_dia)) > 0:
+                total_acciones_unicas = len(acciones_morosas) + len(acciones_pendientes) + len(acciones_al_dia)
                 col1, col2, col3 = st.columns(3)
-                col1.metric("Acciones Totales", total_acciones_unicas)
-                col2.metric("Tasa de Morosidad", f"{tasa_morosidad:.1f}%")
-                col3.metric("Capital en Riesgo", f"${capital_retenido:,.2f}")
-                
+                col1.metric("Acciones", total_acciones_unicas)
+                col2.metric("Morosidad", f"{(len(acciones_morosas) / total_acciones_unicas) * 100:.1f}%")
+                col3.metric("Riesgo", f"${len(acciones_morosas) * 104:,.2f}")
                 st.write("---")
-                df_grafico = pd.DataFrame({
-                    "Estatus": ["Al Día", "Moroso", "Pendiente"],
-                    "Cantidad": [al_dia_count, morosos_count, pendientes_count],
-                    "Color": ["#FF6600", "#ff6b6b", "#888888"]
-                })
-                st.bar_chart(data=df_grafico, x="Estatus", y="Cantidad", color="Color")
-                
+                st.bar_chart(data=pd.DataFrame({"Estatus": ["Al Día", "Moroso", "Pendiente"], "Cantidad": [len(acciones_al_dia), len(acciones_morosas), len(acciones_pendientes)], "Color": ["#FF6600", "#ff6b6b", "#888888"]}), x="Estatus", y="Cantidad", color="Color")
                 st.write("---")
                 colA, colB = st.columns(2)
-                with colA:
-                    df_socios = pd.DataFrame(list(BASE_DATOS_SOCIOS.values()))
-                    csv_socios = df_socios.to_csv(index=False).encode('utf-8')
-                    st.download_button(label="📥 Matriz de Socios", data=csv_socios, file_name=f"Reporte_Socios_Ventry_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
+                with colA: st.download_button(label="📥 Matriz", data=pd.DataFrame(list(BASE_DATOS_SOCIOS.values())).to_csv(index=False).encode('utf-8'), file_name=f"Reporte_Socios_Ventry_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
                 with colB:
-                    try:
-                        historial_data = hoja_historial.get_all_records()
-                        if historial_data:
-                            df_historial = pd.DataFrame(historial_data)
-                            csv_historial = df_historial.to_csv(index=False).encode('utf-8')
-                            st.download_button(label="📥 Auditoría de Garita", data=csv_historial, file_name=f"Auditoria_Accesos_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
-                        else: st.info("Historial vacío.")
+                    try: st.download_button(label="📥 Auditoría", data=pd.DataFrame(hoja_historial.get_all_records()).to_csv(index=False).encode('utf-8'), file_name=f"Auditoria_Accesos_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
                     except: st.info("Historial vacío.")
             else: st.info("Datos insuficientes para generar métricas.")

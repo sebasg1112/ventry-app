@@ -49,10 +49,9 @@ st.markdown(f"""
     </head>
 """, unsafe_allow_html=True)
 
-# --- CSS AVANZADO (NAVEGACIÓN BOTTOM TIPO APP NATIVA) ---
+# --- CSS AVANZADO (CORRECCIÓN TOTAL DE INPUTS Y ESTILO NATIVO) ---
 st.markdown("""
     <style>
-    /* Ocultamos menú de Streamlit */
     #MainMenu {display: none;}
     footer {display: none;}
     [data-testid="collapsedControl"] {display: none;} 
@@ -64,43 +63,28 @@ st.markdown("""
         color: #f5f5f5;
     }
     
-    /* 2. TIPOGRAFÍA GLOBAL */
+    /* 2. TIPOGRAFÍA GLOBAL Y ETIQUETAS */
     h1, h2, h3, h4, h5, h6, p, span, label, div { color: #f5f5f5 !important; }
     
-    /* 3. PANTALLA LOGIN: CAJA BIOMÉTRICA */
-    .biometric-box {
-        border: 2px solid rgba(255, 102, 0, 0.4);
-        border-radius: 15px;
-        text-align: center;
-        padding: 30px 20px;
-        margin-bottom: 20px;
-        cursor: pointer;
-        box-shadow: 0 0 20px rgba(255, 102, 0, 0.1);
-        transition: all 0.3s ease;
-        background-color: rgba(255, 255, 255, 0.02);
-    }
-    .biometric-box:hover {
-        border-color: #FF6600;
-        box-shadow: 0 0 30px rgba(255, 102, 0, 0.3);
-    }
-    
-    /* 4. FORMULARIOS (LOGIN) CORREGIDO: CAJAS OSCURAS */
-    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div {
+    /* 3. CORRECCIÓN DEFINITIVA DE INPUTS (TEXTO VISIBLE) */
+    .stTextInput input, .stSelectbox select, .stDateInput input {
         background-color: #1a1a1a !important;
-        border: 1px solid #444 !important;
-        border-radius: 12px !important;
-    }
-    input, select, textarea {
         color: #ffffff !important;
-        background-color: transparent !important;
         -webkit-text-fill-color: #ffffff !important;
+        border: 1px solid #444 !important;
+        border-radius: 10px !important;
+    }
+    div[data-baseweb="input"] > div {
+        background-color: #1a1a1a !important;
+        border-radius: 10px !important;
+        border: 1px solid #444 !important;
     }
     div[data-baseweb="input"]:focus-within {
         border-color: #FF6600 !important;
         box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important;
     }
 
-    /* 5. BOTÓN NARANJA VENTRY */
+    /* 4. BOTÓN NARANJA VENTRY */
     .stButton>button, .stFormSubmitButton>button { 
         width: 100%; 
         border-radius: 25px !important; 
@@ -114,12 +98,11 @@ st.markdown("""
     }
     .stButton>button:hover, .stFormSubmitButton>button:hover {
         background: #e65c00 !important;
-        transform: scale(0.98);
     }
     
-    /* 6. BOTTOM NAVIGATION BAR (MENÚ INFERIOR FIJO) */
+    /* 5. BOTTOM NAVIGATION BAR (MENÚ INFERIOR FIJO) */
     .block-container {
-        padding-bottom: 100px !important; 
+        padding-bottom: 120px !important; 
     }
     
     div.stRadio {
@@ -129,8 +112,8 @@ st.markdown("""
         width: 100% !important;
         background-color: rgba(18, 18, 18, 0.95) !important;
         backdrop-filter: blur(15px) !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
-        padding: 15px 0px 25px 0px !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding: 12px 0px 22px 0px !important;
         z-index: 99999 !important;
     }
     div.stRadio > div[role="radiogroup"] {
@@ -163,7 +146,7 @@ st.markdown("""
         font-weight: bold !important;
     }
 
-    /* 7. BOTÓN GIGANTE DE ABRIR PUERTA */
+    /* 6. BOTÓN GIGANTE DE ABRIR PUERTA */
     .open-button-container { display: flex; justify-content: center; margin-top: 40px; margin-bottom: 20px;}
     .open-button-glow {
         border-radius: 50%;
@@ -189,12 +172,10 @@ st.markdown("""
     }
     .open-button:active {
         background: #FF6600;
-        transform: scale(0.95);
-        box-shadow: 0 0 30px rgba(255,102,0,0.8);
     }
     
     /* ========================================================= */
-    /* CARNET MAGNUM CLUB (DENTRO DEL MODULO) */
+    /* CARNET MAGNUM CLUB */
     /* ========================================================= */
     .dark-wrapper { background-color: transparent; padding: 20px 0px; display: flex; justify-content: center; margin-bottom: 30px; }
     .glass-card { background: rgba(0, 31, 63, 0.4); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 20px; padding: 40px 30px; width: 100%; max-width: 360px; box-shadow: 0 15px 35px rgba(0,0,0,0.8); position: relative; overflow: hidden; }
@@ -387,13 +368,12 @@ if not st.session_state.logueado:
     """, unsafe_allow_html=True)
     
     with st.form("login_form"):
-        # UI Mockup Biometría
         st.markdown("""
-        <div class='biometric-box' onclick="alert('Funcionalidad nativa (FaceID/TouchID) requiere compilación móvil en Fase 3.')">
+        <div class='biometric-box'>
             <div style='font-size: 50px; margin-bottom: 10px;'>🤳</div>
             <p style='margin:0; font-size:14px; font-weight:600;'>Toca para ingresar con<br>Biometría</p>
         </div>
-        <p style='text-align:center; color:#555; font-size:12px;'>o usar contraseña</p>
+        <p style='text-align:center; color:#888; font-size:12px;'>o usar contraseña</p>
         """, unsafe_allow_html=True)
         
         cedula_ingresada = st.text_input("Email o ID")
@@ -401,7 +381,7 @@ if not st.session_state.logueado:
         st.markdown("<br>", unsafe_allow_html=True)
         boton_entrar = st.form_submit_button("INGRESAR")
         
-        st.markdown("<p style='text-align:center; color:#FF6600; font-size:12px; margin-top:15px; cursor:pointer;'>¿Olvidaste tu contraseña?</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center; color:#FF6600; font-size:12px; margin-top:15px;'>¿Olvidaste tu contraseña?</p>", unsafe_allow_html=True)
 
     if boton_entrar:
         if cedula_ingresada in BASE_DATOS_SOCIOS:
@@ -418,7 +398,6 @@ else:
     socio_actual = st.session_state.usuario_actual
     rol_actual = socio_actual["rol"]
 
-    # Header Superior Limpio
     col1, col2 = st.columns([4, 1])
     with col1:
         st.markdown(f"""
@@ -433,7 +412,6 @@ else:
     
     st.write("")
 
-    # --- BOTTOM NAVIGATION BAR DEFINITION ---
     if rol_actual in ["Titular", "Familiar"]: 
         opciones_menu = ["🏠\nInicio", "👥\nInvitados", "🎫\nCarnet", "💳\nPagos"]
     elif rol_actual == "Vigilante": 
@@ -443,7 +421,7 @@ else:
 
     modulo_seleccionado = st.radio("Nav", opciones_menu, horizontal=True, label_visibility="collapsed")
 
-    # --- MÓDULO 1: INICIO (BOTÓN ABRIR PUERTA MOCKUP) ---
+    # --- MÓDULO 1: INICIO ---
     if modulo_seleccionado == "🏠\nInicio":
         st.markdown("""
 <div style="text-align: center; margin-top: 30px;">
@@ -451,7 +429,7 @@ else:
 <p style="color: #888; font-size:14px;">Puerta Principal</p>
 <div class="open-button-container">
 <div class="open-button-glow">
-<div class="open-button" onclick="alert('Señal enviada a Garita')">
+<div class="open-button">
 <span style="font-size: 50px; margin-bottom:5px;">🔒</span>
 <span style="font-size: 14px;">TOCA PARA<br>ABRIR</span>
 </div>
@@ -495,12 +473,10 @@ else:
 """
         st.markdown(carnet_html, unsafe_allow_html=True)
 
-    # --- MÓDULO 3: INVITADOS (FAVORITOS RESTAURADOS) ---
+    # --- MÓDULO 3: INVITADOS ---
     elif modulo_seleccionado == "👥\nInvitados":
         st.subheader("Generar Invitación")
         
-        if "ultimo_pase_generado" not in st.session_state: st.session_state.ultimo_pase_generado = None
-
         if socio_actual["solvencia"] != "Al dia":
             st.error("❌ Operación Denegada. Solvencia requerida.")
         else:
@@ -547,17 +523,14 @@ else:
                     "fecha_nacimiento": "", "correo": "", "estatus": "Activo"
                 }
                 guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
-                st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha}
-                st.success(f"✅ Pase digital generado.")
-            
-            if st.session_state.ultimo_pase_generado:
-                pase_temp = st.session_state.ultimo_pase_generado
-                url_base = "https://ventry.streamlit.app" 
-                link_pase_digital = f"{url_base}/?pase={pase_temp['id']}"
                 
-                mensaje_ws = f"¡Hola {pase_temp['nombre']}! Aquí tienes tu pase para el *Magnum City Club*.\nFecha: {pase_temp['fecha']}\n👉 Abre tu código QR aquí:\n{link_pase_digital}"
+                url_base = "https://ventry.streamlit.app" 
+                link_pase_digital = f"{url_base}/?pase={id_unico}"
+                
+                mensaje_ws = f"¡Hola {n_nombre_inv}! Aquí tienes tu pase para el *Magnum City Club*.\nFecha: {str_fecha}\n👉 Abre tu código QR aquí:\n{link_pase_digital}"
                 link_ws = f"https://wa.me/?text={urllib.parse.quote(mensaje_ws)}"
                 
+                st.success(f"✅ Pase digital generado con éxito para {n_nombre_inv}.")
                 st.markdown(f'<a href="{link_ws}" target="_blank" style="display:block; text-align:center; background:#FF6600; color:white; padding:12px; border-radius:15px; text-decoration:none; font-weight:bold; margin-top:10px;">📲 ENVIAR POR WHATSAPP</a>', unsafe_allow_html=True)
 
     # --- MÓDULO 4: PAGOS ---
@@ -580,7 +553,6 @@ else:
         st.subheader("Escáner de Garita")
         st.info("Apunta el QR de un Socio o Invitado:")
         foto_qr = st.camera_input("")
-        # Lógica de validación QR se mantiene intacta
 
     # --- MÓDULO ADMIN ---
     elif modulo_seleccionado == "⚙️\nAdmin":

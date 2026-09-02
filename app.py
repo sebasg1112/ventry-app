@@ -68,7 +68,6 @@ st.markdown("""
     h1, h2, h3, h4, h5, h6, p, span, label, div { color: #f5f5f5 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     
     /* 3. CORRECCIÓN DEFINITIVA DE FORMULARIOS Y CAJAS DE TEXTO */
-    /* Apuntamos a todos los niveles de divs internos de Streamlit para matar el fondo blanco */
     .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox select, textarea {
         background-color: #1a1a1a !important;
         color: #ffffff !important;
@@ -81,7 +80,6 @@ st.markdown("""
         border-radius: 10px !important;
         border: 1px solid #333 !important;
     }
-    /* Efecto Neón Naranja al escribir */
     div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within {
         border-color: #FF6600 !important;
         box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important;
@@ -105,7 +103,14 @@ st.markdown("""
         transform: scale(0.98);
     }
     
-    /* 5. BOTÓN SECUNDARIO (VOLVER / CANCELAR) */
+    /* 5. BOTONES DE PELIGRO (CERRAR SESIÓN) */
+    .btn-peligro>button {
+        background: rgba(220, 53, 69, 0.1) !important;
+        border: 1px solid rgba(220, 53, 69, 0.5) !important;
+        color: #ff6b6b !important;
+        box-shadow: none !important;
+    }
+    
     .btn-secundario>button {
         background: transparent !important;
         border: 1px solid #555 !important;
@@ -113,7 +118,7 @@ st.markdown("""
         box-shadow: none !important;
     }
     
-    /* 6. BOTTOM NAVIGATION BAR (MENÚ INFERIOR ELEGANTE SIN EMOJIS) */
+    /* 6. BOTTOM NAVIGATION BAR (MENÚ INFERIOR ELEGANTE) */
     .block-container {
         padding-bottom: 120px !important; 
     }
@@ -142,13 +147,18 @@ st.markdown("""
         margin: 0 !important;
         cursor: pointer;
     }
-    div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"] {
+    
+    /* ASESINATO DEFINITIVO DE LOS CÍRCULOS DEL RADIO BUTTON */
+    div.stRadio > div[role="radiogroup"] > label > div:first-child, 
+    div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"],
+    div.stRadio > div[role="radiogroup"] > label div[data-baseweb="radio"] {
         display: none !important;
     }
+    
     div.stRadio > div[role="radiogroup"] > label div {
         color: #777777 !important;
-        font-size: 13px !important;
-        font-weight: 500 !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
         text-transform: uppercase;
         letter-spacing: 1px;
     }
@@ -384,11 +394,11 @@ if not st.session_state.logueado:
         st.markdown("<br>", unsafe_allow_html=True)
         boton_entrar = st.form_submit_button("INICIAR SESIÓN")
         
-        # Enlace sutil para Biometría (Diseño Premium secundario, sin caja gigante)
+        # Enlace sutil para Biometría
         st.markdown("""
             <div style="text-align: center; margin-top: 20px;">
                 <span style="border: 1px solid #333; padding: 8px 15px; border-radius: 20px; color: #aaa; font-size: 12px; cursor: pointer; transition: all 0.3s;" onclick="alert('FaceID/TouchID se activará en la Fase 3 de compilación nativa.')">
-                    紋 Ingresar con Biometría
+                    🔒 Ingresar con Biometría
                 </span>
             </div>
             <p style='text-align:center; color:#FF6600; font-size:12px; margin-top:25px; cursor:pointer;'>¿Olvidaste tu contraseña?</p>
@@ -409,28 +419,21 @@ else:
     socio_actual = st.session_state.usuario_actual
     rol_actual = socio_actual["rol"]
 
-    # Header Superior Elegante
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        st.markdown(f"""
-        <div style="display:flex; align-items:center; gap:10px;">
-            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="25">
-            <span style="font-size:16px; font-weight:700; letter-spacing: 1px;">VENTRY</span>
-        </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        if st.button("Cerrar", use_container_width=True): 
-            st.session_state.logueado = False; st.session_state.usuario_actual = None; st.rerun()
-    
-    st.write("")
+    # --- Header Superior Limpio (Sin botón de cerrar) ---
+    st.markdown(f"""
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom: 20px;">
+        <img src="https://i.ibb.co/t7xWXXR/logo.png" width="25">
+        <span style="font-size:16px; font-weight:700; letter-spacing: 1px;">VENTRY</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # --- BOTTOM NAVIGATION BAR DEFINITION (Textos limpios) ---
+    # --- BOTTOM NAVIGATION BAR DEFINITION ---
     if rol_actual in ["Titular", "Familiar"]: 
-        opciones_menu = ["Inicio", "Invitados", "Carnet", "Pagos"]
+        opciones_menu = ["Inicio", "Invitados", "Carnet", "Pagos", "Ajustes"]
     elif rol_actual == "Vigilante": 
-        opciones_menu = ["Garita"]
+        opciones_menu = ["Garita", "Ajustes"]
     elif rol_actual == "Administrador": 
-        opciones_menu = ["Inicio", "Invitados", "Garita", "Admin"]
+        opciones_menu = ["Inicio", "Invitados", "Garita", "Admin", "Ajustes"]
 
     modulo_seleccionado = st.radio("Nav", opciones_menu, horizontal=True, label_visibility="collapsed")
 
@@ -443,7 +446,7 @@ else:
 <div class="open-button-container">
 <div class="open-button-glow">
 <div class="open-button">
-<span style="font-size: 40px; margin-bottom:10px;">⌲</span>
+<span style="font-size: 40px; margin-bottom:10px;">🔒</span>
 <span style="font-size: 14px; letter-spacing: 1px;">TOCA PARA ABRIR</span>
 </div>
 </div>
@@ -487,13 +490,12 @@ else:
 """
         st.markdown(carnet_html, unsafe_allow_html=True)
 
-    # --- MÓDULO 3: INVITADOS (CON ESCAPE PERFECTO) ---
+    # --- MÓDULO 3: INVITADOS ---
     elif modulo_seleccionado == "Invitados":
         
         if "ultimo_pase_generado" not in st.session_state: 
             st.session_state.ultimo_pase_generado = None
 
-        # PANTALLA DE RESULTADO: Muestra el pase generado y da la opción de volver
         if st.session_state.ultimo_pase_generado:
             pase_temp = st.session_state.ultimo_pase_generado
             url_base = "https://ventry.streamlit.app" 
@@ -506,14 +508,12 @@ else:
             
             st.markdown(f'<a href="{link_ws}" target="_blank" style="display:block; text-align:center; background:#25D366; color:white; padding:15px; border-radius:20px; text-decoration:none; font-weight:800; letter-spacing:1px; margin-top:20px; margin-bottom:20px; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);">ENVIAR POR WHATSAPP</a>', unsafe_allow_html=True)
             
-            # BOTÓN DE ESCAPE
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
             if st.button("← Volver a crear otra invitación"):
                 st.session_state.ultimo_pase_generado = None
                 st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
                 
-        # PANTALLA DE FORMULARIO
         else:
             st.markdown("<h3 style='font-size:18px; font-weight:700;'>Pases y Accesos</h3>", unsafe_allow_html=True)
             
@@ -522,7 +522,6 @@ else:
             else:
                 invitados_previos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
                 
-                # Selector minimalista
                 modo_ingreso = st.selectbox("Método de registro:", ["📝 Ingresar Nuevo Invitado", "⭐ Seleccionar de Favoritos"])
                 
                 n_cedula_def, n_nombre_def, n_correo_def = "", "", ""
@@ -565,7 +564,6 @@ else:
                     }
                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
                     
-                    # Guardar estado y recargar para mostrar pantalla de resultado
                     st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha}
                     st.rerun()
 
@@ -602,3 +600,17 @@ else:
         st.info("Para gestionar la base de datos maestra se recomienda usar la versión de escritorio de Ventry.")
         if st.button("Sincronizar Datos"):
             st.success("Sincronización completada.")
+
+    # --- MÓDULO AJUSTES ---
+    elif modulo_seleccionado == "Ajustes":
+        st.markdown("<h3 style='font-size:18px; font-weight:700;'>Ajustes de Perfil</h3>", unsafe_allow_html=True)
+        
+        st.info("🔧 Módulo en construcción: Aquí podrás editar tu foto, notificaciones y grupo familiar.")
+        
+        st.write("---")
+        st.markdown("<div class='btn-peligro'>", unsafe_allow_html=True)
+        if st.button("Cerrar Sesión"):
+            st.session_state.logueado = False
+            st.session_state.usuario_actual = None
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)

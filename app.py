@@ -103,14 +103,7 @@ st.markdown("""
         transform: scale(0.98);
     }
     
-    /* 5. BOTONES DE PELIGRO (CERRAR SESIÓN) */
-    .btn-peligro>button {
-        background: rgba(220, 53, 69, 0.1) !important;
-        border: 1px solid rgba(220, 53, 69, 0.5) !important;
-        color: #ff6b6b !important;
-        box-shadow: none !important;
-    }
-    
+    /* 5. BOTÓN SECUNDARIO (VOLVER / CANCELAR) */
     .btn-secundario>button {
         background: transparent !important;
         border: 1px solid #555 !important;
@@ -118,7 +111,7 @@ st.markdown("""
         box-shadow: none !important;
     }
     
-    /* 6. BOTTOM NAVIGATION BAR (MENÚ INFERIOR ELEGANTE) */
+    /* 6. BOTTOM NAVIGATION BAR (MENÚ INFERIOR ELEGANTE SIN EMOJIS) */
     .block-container {
         padding-bottom: 120px !important; 
     }
@@ -147,18 +140,13 @@ st.markdown("""
         margin: 0 !important;
         cursor: pointer;
     }
-    
-    /* ASESINATO DEFINITIVO DE LOS CÍRCULOS DEL RADIO BUTTON */
-    div.stRadio > div[role="radiogroup"] > label > div:first-child, 
-    div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"],
-    div.stRadio > div[role="radiogroup"] > label div[data-baseweb="radio"] {
+    div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"] {
         display: none !important;
     }
-    
     div.stRadio > div[role="radiogroup"] > label div {
         color: #777777 !important;
-        font-size: 11px !important;
-        font-weight: 600 !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
         text-transform: uppercase;
         letter-spacing: 1px;
     }
@@ -213,6 +201,18 @@ st.markdown("""
     .badge-aldia { background: #4ade80 !important; }
     .badge-moroso { background: #ff6b6b !important; color: white !important;}
     .badge-pendiente { background: #ffc107 !important; }
+    
+    /* 9. TARJETAS KPI ADMIN */
+    .kpi-card {
+        background: #1a1a1a;
+        padding: 20px;
+        border-radius: 15px;
+        border-left: 4px solid #FF6600;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        margin-bottom: 15px;
+    }
+    .kpi-title { color: #888; font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+    .kpi-value { color: #fff; font-size: 28px; font-weight: 800; margin: 0; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -394,7 +394,6 @@ if not st.session_state.logueado:
         st.markdown("<br>", unsafe_allow_html=True)
         boton_entrar = st.form_submit_button("INICIAR SESIÓN")
         
-        # Enlace sutil para Biometría
         st.markdown("""
             <div style="text-align: center; margin-top: 20px;">
                 <span style="border: 1px solid #333; padding: 8px 15px; border-radius: 20px; color: #aaa; font-size: 12px; cursor: pointer; transition: all 0.3s;" onclick="alert('FaceID/TouchID se activará en la Fase 3 de compilación nativa.')">
@@ -419,7 +418,7 @@ else:
     socio_actual = st.session_state.usuario_actual
     rol_actual = socio_actual["rol"]
 
-    # --- Header Superior Limpio (Sin botón de cerrar) ---
+    # Header Superior
     st.markdown(f"""
     <div style="display:flex; align-items:center; gap:10px; margin-bottom: 20px;">
         <img src="https://i.ibb.co/t7xWXXR/logo.png" width="25">
@@ -429,13 +428,24 @@ else:
 
     # --- BOTTOM NAVIGATION BAR DEFINITION ---
     if rol_actual in ["Titular", "Familiar"]: 
-        opciones_menu = ["Inicio", "Invitados", "Carnet", "Pagos", "Ajustes"]
+        opciones_menu = ["Inicio", "Invitados", "Carnet", "Pagos"]
     elif rol_actual == "Vigilante": 
         opciones_menu = ["Garita", "Ajustes"]
     elif rol_actual == "Administrador": 
         opciones_menu = ["Inicio", "Invitados", "Garita", "Admin", "Ajustes"]
 
     modulo_seleccionado = st.radio("Nav", opciones_menu, horizontal=True, label_visibility="collapsed")
+
+    # ==========================================
+    # LOGICA DE EXPANSIÓN RESPONSIVA (EL HACK PARA ADMIN)
+    # ==========================================
+    if modulo_seleccionado == "Admin":
+        # Hacemos la pantalla ancha (en PC se verá gigante, en móvil ocupará el 100% como siempre)
+        st.markdown("<style>.block-container { max-width: 95% !important; padding-top: 2rem !important; }</style>", unsafe_allow_html=True)
+    else:
+        # Mantenemos el tamaño de celular normal para el resto de módulos
+        st.markdown("<style>.block-container { max-width: 46rem !important; }</style>", unsafe_allow_html=True)
+
 
     # --- MÓDULO 1: INICIO ---
     if modulo_seleccionado == "Inicio":
@@ -492,7 +502,6 @@ else:
 
     # --- MÓDULO 3: INVITADOS ---
     elif modulo_seleccionado == "Invitados":
-        
         if "ultimo_pase_generado" not in st.session_state: 
             st.session_state.ultimo_pase_generado = None
 
@@ -521,7 +530,6 @@ else:
                 st.error("❌ Operación Denegada. Debes estar al día con la administración para invitar.")
             else:
                 invitados_previos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
-                
                 modo_ingreso = st.selectbox("Método de registro:", ["📝 Ingresar Nuevo Invitado", "⭐ Seleccionar de Favoritos"])
                 
                 n_cedula_def, n_nombre_def, n_correo_def = "", "", ""
@@ -563,7 +571,6 @@ else:
                         "fecha_nacimiento": "", "correo": "", "estatus": "Activo"
                     }
                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
-                    
                     st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha}
                     st.rerun()
 
@@ -594,12 +601,104 @@ else:
         st.markdown("<h3 style='font-size:18px; font-weight:700;'>Escáner de Seguridad</h3>", unsafe_allow_html=True)
         foto_qr = st.camera_input("")
 
-    # --- MÓDULO ADMIN ---
+    # --- MÓDULO 5: ADMIN (DASHBOARD RESPONSIVO) ---
     elif modulo_seleccionado == "Admin":
-        st.markdown("<h3 style='font-size:18px; font-weight:700;'>Consola Administrativa</h3>", unsafe_allow_html=True)
-        st.info("Para gestionar la base de datos maestra se recomienda usar la versión de escritorio de Ventry.")
-        if st.button("Sincronizar Datos"):
-            st.success("Sincronización completada.")
+        st.markdown("<h3 style='font-size:24px; font-weight:800; color:#FF6600;'>Consola Administrativa VIP</h3>", unsafe_allow_html=True)
+        
+        # 1. CÁLCULO DE MÉTRICAS (KPIs)
+        acciones_al_dia, acciones_morosas, acciones_pendientes = set(), set(), set()
+        for socio in BASE_DATOS_SOCIOS.values():
+            if socio["solvencia"] == "Moroso": acciones_morosas.add(socio["accion"])
+            elif socio["solvencia"] == "Pendiente": acciones_pendientes.add(socio["accion"])
+            else: acciones_al_dia.add(socio["accion"])
+        
+        for acc in acciones_morosas: acciones_pendientes.discard(acc); acciones_al_dia.discard(acc)
+        for acc in acciones_pendientes: acciones_al_dia.discard(acc)
+            
+        morosos_count = len(acciones_morosas)
+        total_acciones = len(acciones_al_dia) + morosos_count + len(acciones_pendientes)
+        tasa_morosidad = (morosos_count / total_acciones * 100) if total_acciones > 0 else 0
+        capital_riesgo = morosos_count * 104
+
+        # Layout Inteligente: En PC se ponen al lado (3 columnas), en teléfono se ponen una debajo de la otra automáticamente
+        col_k1, col_k2, col_k3 = st.columns(3)
+        
+        with col_k1:
+            st.markdown(f"""
+            <div class="kpi-card">
+                <p class="kpi-title">Familias Registradas</p>
+                <h3 class="kpi-value">{total_acciones}</h3>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with col_k2:
+            st.markdown(f"""
+            <div class="kpi-card" style="border-left-color: {'#ff6b6b' if tasa_morosidad > 15 else '#FF6600'};">
+                <p class="kpi-title">Tasa de Morosidad</p>
+                <h3 class="kpi-value">{tasa_morosidad:.1f}%</h3>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with col_k3:
+            st.markdown(f"""
+            <div class="kpi-card" style="border-left-color: #4ade80;">
+                <p class="kpi-title">Capital por Cobrar</p>
+                <h3 class="kpi-value">${capital_riesgo:,.2f}</h3>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.write("---")
+        
+        # 2. SEGUNDA FILA: PANEL DE CONTROL MULTITAREA
+        col_admin1, col_admin2 = st.columns([1, 1])
+        
+        with col_admin1:
+            st.markdown("<h4 style='font-size:16px; color:#aaa;'>💳 Conciliación Pendiente</h4>", unsafe_allow_html=True)
+            pagos_pendientes = {k: v for k, v in BASE_DATOS_PAGOS.items() if v["estatus"] == "En Revisión"}
+            if pagos_pendientes:
+                for p_id, p_info in pagos_pendientes.items():
+                    with st.expander(f"Acción: {p_info['accion']} | ${p_info['monto']} ({p_info['metodo']})"):
+                        st.write(f"**Ref:** {p_info['referencia']} | **Fecha:** {p_info['fecha_reporte']}")
+                        btn_col1, btn_col2 = st.columns(2)
+                        with btn_col1:
+                            if st.button("✅ Aprobar", key=f"apr_{p_id}"):
+                                BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"; guardar_bd_pagos(BASE_DATOS_PAGOS)
+                                for ced, info in BASE_DATOS_SOCIOS.items():
+                                    if str(info["accion"]) == str(p_info["accion"]): BASE_DATOS_SOCIOS[ced]["solvencia"] = "Al dia"
+                                guardar_bd(BASE_DATOS_SOCIOS); st.rerun()
+                        with btn_col2:
+                            if st.button("❌ Rechazar", key=f"rec_{p_id}"): BASE_DATOS_PAGOS[p_id]["estatus"] = "Rechazado"; guardar_bd_pagos(BASE_DATOS_PAGOS); st.rerun()
+            else: 
+                st.success("No hay pagos pendientes.")
+
+            st.write("")
+            st.markdown("<h4 style='font-size:16px; color:#aaa;'>📥 Descargar Data (CSV)</h4>", unsafe_allow_html=True)
+            if total_acciones > 0:
+                df_socios = pd.DataFrame(list(BASE_DATOS_SOCIOS.values()))
+                st.download_button("Exportar Matriz de Socios", data=df_socios.to_csv(index=False).encode('utf-8'), file_name="Socios_Ventry.csv", mime="text/csv")
+            
+        with col_admin2:
+            st.markdown("<h4 style='font-size:16px; color:#aaa;'>📝 Gestión Rápida Familiar</h4>", unsafe_allow_html=True)
+            acciones_disponibles = sorted(list(set(d["accion"] for d in BASE_DATOS_SOCIOS.values())))
+            if acciones_disponibles:
+                accion_sel = st.selectbox("Seleccione Acción:", acciones_disponibles)
+                miembros_accion = sorted([info for info in BASE_DATOS_SOCIOS.values() if info["accion"] == accion_sel], key=lambda x: x.get("rol", ""), reverse=True)
+                
+                for m in miembros_accion: 
+                    icono = '👑' if m['rol'] == 'Titular' else '👤'
+                    st.markdown(f"<div style='background:#1a1a1a; padding:10px; border-radius:8px; margin-bottom:5px; font-size:13px;'>{icono} <b>{m['nombre']}</b> - {m['solvencia']}</div>", unsafe_allow_html=True)
+                
+                with st.form("form_estatus_rapido"):
+                    n_estatus = st.radio("Actualizar Estatus de Grupo:", ["Al dia", "Moroso", "Pendiente"], horizontal=True)
+                    if st.form_submit_button("Actualizar Todo"):
+                        for ced, info in BASE_DATOS_SOCIOS.items():
+                            if info["accion"] == accion_sel: BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
+                        guardar_bd(BASE_DATOS_SOCIOS); st.success("Actualizado.")
+
+        st.write("---")
+        if st.button("🔄 Sincronizar Base de Datos en la Nube (Google Sheets)"):
+            st.session_state.db_socios = cargar_bd(); st.session_state.db_invitaciones = cargar_invitaciones(); st.session_state.db_pagos = cargar_pagos(); st.session_state.db_directorio = cargar_directorio()
+            st.success("Base de datos sincronizada.")
 
     # --- MÓDULO AJUSTES ---
     elif modulo_seleccionado == "Ajustes":

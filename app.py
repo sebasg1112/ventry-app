@@ -62,6 +62,15 @@ st.markdown("""
     h1, h2, h3, h4, h5, h6, p, span, label, div { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     
     /* ========================================================= */
+    /* RECUPERACIÓN DE ETIQUETAS (LABELS VISIBLES) */
+    /* ========================================================= */
+    label, label p, label div, div[data-testid="stWidgetLabel"] p, .stTextInput p, .stSelectbox p, .stDateInput p, .stNumberInput p {
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.5px;
+    }
+    
+    /* ========================================================= */
     /* BLINDAJE NUCLEAR DE FORMULARIOS Y ELEMENTOS FLOTANTES */
     /* ========================================================= */
     [data-testid="stForm"] { background-color: #0d0d0d !important; border: 1px solid #333 !important; border-radius: 15px !important; padding: 20px !important; }
@@ -128,9 +137,9 @@ st.markdown("""
 
     /* BILLETERA CARDS */
     .wallet-card { background: linear-gradient(145deg, #1a1a1a, #0d0d0d); border: 1px solid #333; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
-    .wallet-title { color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
-    .wallet-saldo { color: #4ade80; font-size: 32px; font-weight: 800; margin: 0; }
-    .wallet-deuda { color: #ff6b6b; font-size: 24px; font-weight: 700; margin: 0; }
+    .wallet-title { color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: bold; }
+    .wallet-saldo { color: #4ade80 !important; font-size: 32px; font-weight: 800; margin: 0; }
+    .wallet-deuda { color: #ff6b6b !important; font-size: 24px; font-weight: 700; margin: 0; }
 
     /* BOTÓN ABRIR PUERTA */
     .open-button-container { display: flex; justify-content: center; margin-top: 40px; margin-bottom: 20px;}
@@ -507,7 +516,7 @@ else:
                     st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha}
                     st.rerun()
 
-    # --- MÓDULO 4: PAGOS (NUEVA BILLETERA VENTRY) ---
+    # --- MÓDULO 4: PAGOS (BILLETERA VENTRY) ---
     elif modulo_seleccionado == "Pagos":
         st.markdown("<h3 style='font-size:18px; font-weight:700;'>Billetera Ventry</h3>", unsafe_allow_html=True)
         
@@ -556,17 +565,14 @@ else:
             if deuda > 0:
                 st.warning(f"Tienes un saldo pendiente de **${deuda:.2f}**.")
                 
-                # Opción de pagar con Saldo Ventry si le alcanza
                 if saldo_actual >= deuda:
                     st.info("💡 Tienes suficiente saldo en tu Billetera para cubrir esta deuda.")
                     if st.button("Pagar con Saldo Ventry"):
-                        # Actualizar Saldo
                         nuevo_saldo = saldo_actual - deuda
                         BASE_DATOS_SOCIOS[socio_actual['cedula']]['saldo'] = nuevo_saldo
                         BASE_DATOS_SOCIOS[socio_actual['cedula']]['solvencia'] = "Al dia"
                         guardar_bd(BASE_DATOS_SOCIOS)
                         
-                        # Guardar historial de pago
                         id_pago = f"PAG-{str(uuid.uuid4())[:6].upper()}"
                         BASE_DATOS_PAGOS[id_pago] = {
                             "accion": socio_actual["accion"], "metodo": "Saldo Ventry", "referencia": "PAGO-AUTOMATICO", 
@@ -684,7 +690,6 @@ else:
                                 BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"
                                 guardar_bd_pagos(BASE_DATOS_PAGOS)
                                 
-                                # Si es una recarga, sumar al saldo del titular
                                 if tipo_trans == "Recarga Billetera":
                                     for ced, info in BASE_DATOS_SOCIOS.items():
                                         if str(info["accion"]) == str(p_info["accion"]) and info["rol"] == "Titular":
@@ -705,7 +710,7 @@ else:
                 st.download_button("Exportar Matriz de Socios", data=df_socios.to_csv(index=False).encode('utf-8'), file_name="Socios_Ventry.csv", mime="text/csv")
             
         with col_admin2:
-            st.markdown("<h4 style='font-size:16px; color:#aaa;'>📝 Gestión Rápida Familiar / Aprobaciones</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='font-size:16px; color:#aaa;'>📝 Gestión Rápida Familiar</h4>", unsafe_allow_html=True)
             acciones_disponibles = sorted(list(set(d["accion"] for d in BASE_DATOS_SOCIOS.values())))
             if acciones_disponibles:
                 accion_sel = st.selectbox("Seleccione Acción:", acciones_disponibles)

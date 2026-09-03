@@ -72,7 +72,10 @@ st.markdown("""
     li[role="option"]:hover *, li[role="option"][aria-selected="true"] * { background-color: #FF6600 !important; color: #ffffff !important; }
     div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { border-color: #FF6600 !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important; }
 
-    /* BOTONES DE ACCIÓN PRINCIPAL (Naranjas Ventry) */
+    /* ========================================================= */
+    /* BOTONES (NATIVOS Y ACCIÓN) */
+    /* ========================================================= */
+    
     .stButton>button[kind="primary"], .stFormSubmitButton>button { 
         width: 100%; border-radius: 20px !important; background: #FF6600 !important; color: #ffffff !important; 
         font-weight: 700 !important; letter-spacing: 0.5px; border: none !important; padding: 12px !important; 
@@ -80,16 +83,10 @@ st.markdown("""
     }
     .stButton>button[kind="primary"]:active, .stFormSubmitButton>button:active { background: #e65c00 !important; transform: scale(0.98); }
     
-    /* BOTONES SECUNDARIOS ESPECIALES (Volver) */
     .btn-secundario>div>button { background: transparent !important; border: 1px solid #555 !important; color: #aaa !important; justify-content: center !important; box-shadow: none !important; }
     .btn-secundario>div>button:hover { border-color: #FF6600 !important; color: #FF6600 !important; }
     
-    /* BOTÓN CERRAR SESIÓN (SUTIL Y FANTASMA) */
-    .btn-logout>div>button { 
-        background: transparent !important; border: none !important; color: #ff4d4d !important; 
-        justify-content: center !important; box-shadow: none !important; font-weight: 600 !important;
-        padding: 5px !important; opacity: 0.8;
-    }
+    .btn-logout>div>button { background: transparent !important; border: none !important; color: #ff4d4d !important; justify-content: center !important; box-shadow: none !important; font-weight: 600 !important; padding: 5px !important; opacity: 0.8; }
     .btn-logout>div>button:hover { opacity: 1; color: #ff1a1a !important; text-decoration: underline; }
     
     /* BOTTOM NAVIGATION BAR */
@@ -109,6 +106,14 @@ st.markdown("""
     .historial-card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 3px solid #FF6600; }
     .monitor-card { background: #111; padding: 12px 20px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #222; border-left: 4px solid #4ade80;}
     .monitor-card-invitado { border-left: 4px solid #00a8ff; }
+
+    /* RECIBO DIGITAL */
+    .receipt-card { background: #1a1a1a; border: 1px solid #333; border-top: 5px solid #4ade80; border-radius: 10px; padding: 30px; width: 100%; max-width: 350px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .receipt-header { text-align: center; border-bottom: 1px dashed #444; padding-bottom: 15px; margin-bottom: 15px; }
+    .receipt-amount { font-size: 36px; color: #4ade80; font-weight: 900; margin: 10px 0; }
+    .receipt-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+    .receipt-label { color: #888; }
+    .receipt-value { color: #fff; font-weight: bold; text-align: right; }
 
     /* BOTÓN ABRIR PUERTA */
     .open-button-container { display: flex; justify-content: center; margin-top: 40px; margin-bottom: 20px;}
@@ -534,15 +539,17 @@ else:
                     st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha}
                     st.rerun()
 
-    # --- MÓDULO 4: PAGOS ---
+    # --- MÓDULO 4: PAGOS (BILLETERA & RECIBOS DIGITALES) ---
     elif modulo_seleccionado == "Pagos":
         
         if "sub_pagos" not in st.session_state: st.session_state.sub_pagos = "menu"
+        if "recibo_id" not in st.session_state: st.session_state.recibo_id = None
 
         solvencia = socio_actual.get('solvencia', 'Desconocido')
         saldo_actual = float(socio_actual.get('saldo', 0.0))
         deuda = 104.00 if solvencia == "Moroso" else 0.00
         
+        # 4.1 MENÚ PRINCIPAL
         if st.session_state.sub_pagos == "menu":
             st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Billetera Ventry</h3>", unsafe_allow_html=True)
             col1, col2 = st.columns(2)
@@ -553,7 +560,10 @@ else:
             if st.button("Pagar Cuota Mantenimiento", type="primary"): st.session_state.sub_pagos = "pagar"; st.rerun()
             st.write("")
             if st.button("Recargar Billetera", type="primary"): st.session_state.sub_pagos = "recargar"; st.rerun()
+            st.write("")
+            if st.button("Historial de Transacciones", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
 
+        # 4.2 RECARGAR
         elif st.session_state.sub_pagos == "recargar":
             st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Recargar Billetera</h3>", unsafe_allow_html=True)
             with st.form("form_recarga"):
@@ -574,6 +584,7 @@ else:
             if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
+        # 4.3 PAGAR CUOTA
         elif st.session_state.sub_pagos == "pagar":
             st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Pago de Mantenimiento</h3>", unsafe_allow_html=True)
             if deuda > 0:
@@ -610,6 +621,76 @@ else:
             st.write("")
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
             if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # 4.4 HISTORIAL DE TRANSACCIONES
+        elif st.session_state.sub_pagos == "historial":
+            st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Historial de Transacciones</h3>", unsafe_allow_html=True)
+            mis_pagos = {k: v for k, v in BASE_DATOS_PAGOS.items() if str(v["accion"]) == str(socio_actual["accion"])}
+            mis_pagos_lista = list(mis_pagos.items())[::-1] # Invertir para mostrar los más nuevos primero
+            
+            if mis_pagos_lista:
+                for p_id, p_info in mis_pagos_lista:
+                    color_status = "#4ade80" if p_info['estatus'] == "Aprobado" else ("#FF6600" if p_info['estatus'] == "En Revisión" else "#ff6b6b")
+                    st.markdown(f"""
+                    <div style='background:#1a1a1a; padding:15px; border-radius:12px; margin-bottom:10px; border-left: 3px solid {color_status};'>
+                        <div style='display:flex; justify-content:space-between; margin-bottom:5px;'>
+                            <b style='color:#fff;'>{p_info.get('tipo', 'Pago')}</b>
+                            <b style='color:{color_status};'>${float(p_info['monto']):.2f}</b>
+                        </div>
+                        <span style='color:#aaa; font-size:12px;'>Fecha: {p_info['fecha_reporte']} | Vía: {p_info['metodo']}</span><br>
+                        <span style='color:{color_status}; font-size:11px; font-weight:bold; text-transform:uppercase;'>Estatus: {p_info['estatus']}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if p_info['estatus'] == "Aprobado":
+                        st.markdown("<div class='btn-secundario' style='margin-bottom: 15px;'>", unsafe_allow_html=True)
+                        if st.button(f"🧾 Ver Recibo {p_id}", key=f"btn_{p_id}"):
+                            st.session_state.recibo_id = p_id
+                            st.session_state.sub_pagos = "recibo"
+                            st.rerun()
+                        st.markdown("</div>", unsafe_allow_html=True)
+            else:
+                st.info("Aún no has reportado pagos ni recargas.")
+                
+            st.write("")
+            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+            if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # 4.5 VISOR DEL RECIBO DIGITAL
+        elif st.session_state.sub_pagos == "recibo":
+            r_id = st.session_state.recibo_id
+            if r_id in BASE_DATOS_PAGOS:
+                r_info = BASE_DATOS_PAGOS[r_id]
+                
+                st.markdown(f"""
+                <div class="receipt-card">
+                    <div class="receipt-header">
+                        <img src="https://i.ibb.co/t7xWXXR/logo.png" width="40">
+                        <h4 style="color: #fff; margin: 10px 0 0 0; letter-spacing: 2px;">VENTRY</h4>
+                        <p style="color: #888; font-size: 10px; text-transform: uppercase; margin:0;">Recibo de Operación</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <p class="receipt-amount">${float(r_info['monto']):.2f}</p>
+                        <span style="background: #4ade80; color: #000; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">TRANSACCIÓN APROBADA</span>
+                    </div>
+                    <div style="margin-top: 30px;">
+                        <div class="receipt-row"><span class="receipt-label">Recibo ID</span><span class="receipt-value">{r_id}</span></div>
+                        <div class="receipt-row"><span class="receipt-label">Fecha</span><span class="receipt-value">{r_info['fecha_reporte']}</span></div>
+                        <div class="receipt-row"><span class="receipt-label">Tipo</span><span class="receipt-value">{r_info.get('tipo', 'Pago')}</span></div>
+                        <div class="receipt-row"><span class="receipt-label">Método</span><span class="receipt-value">{r_info['metodo']}</span></div>
+                        <div class="receipt-row"><span class="receipt-label">Referencia</span><span class="receipt-value">{r_info['referencia']}</span></div>
+                        <div class="receipt-row"><span class="receipt-label">Acción Titular</span><span class="receipt-value">{r_info['accion']}</span></div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.write("")
+            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+            if st.button("← Volver al Historial", type="primary"): 
+                st.session_state.sub_pagos = "historial"
+                st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
     # --- MÓDULO GARITA ---
@@ -656,7 +737,7 @@ else:
                 except: st.error("❌ Código de carnet ilegible.")
             else: st.error("❌ Código QR no pertenece al sistema Ventry.")
 
-    # --- MÓDULO 5: ADMIN (DASHBOARD RESPONSIVO + MONITOR EN VIVO) ---
+    # --- MÓDULO 5: ADMIN (DASHBOARD RESPONSIVO) ---
     elif modulo_seleccionado == "Admin":
         st.markdown("<h3 style='font-size:24px; font-weight:800; color:#FF6600;'>Consola Administrativa VIP</h3>", unsafe_allow_html=True)
         
@@ -736,15 +817,12 @@ else:
                             if info["accion"] == accion_sel: BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
                         guardar_bd(BASE_DATOS_SOCIOS); st.success("Actualizado.")
 
-        # NUEVA SECCIÓN: MONITOR EN VIVO
         st.write("---")
         st.markdown("<h4 style='font-size:18px; color:#fff;'>📟 Monitor de Acceso en Tiempo Real</h4>", unsafe_allow_html=True)
         if st.session_state.db_historial:
-            # Tomamos los últimos 15 movimientos
             for h in st.session_state.db_historial[:15]:
                 clase_monitor = "monitor-card-invitado" if "Invitado" in h['via'] else ""
                 icono_persona = "🎟️" if "Invitado" in h['via'] else "👤"
-                
                 st.markdown(f"""
                 <div class="monitor-card {clase_monitor}">
                     <div>
@@ -757,8 +835,7 @@ else:
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-        else:
-            st.info("No hay registros de acceso en la base de datos.")
+        else: st.info("No hay registros de acceso en la base de datos.")
 
         st.write("---")
         if st.button("🔄 Sincronizar DB en la Nube (Google Sheets)"):

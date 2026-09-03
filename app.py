@@ -49,7 +49,7 @@ st.markdown(f"""
     </head>
 """, unsafe_allow_html=True)
 
-# --- CSS AVANZADO: DISEÑO PREMIUM Y BLINDAJE ---
+# --- CSS AVANZADO: DISEÑO PREMIUM Y BLINDAJE NUCLEAR DE FORMULARIOS ---
 st.markdown("""
     <style>
     #MainMenu {display: none;}
@@ -61,73 +61,27 @@ st.markdown("""
     h1, h2, h3, h4, h5, h6, p, span, label, div { color: #f5f5f5 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     
     /* BLINDAJE DE FORMULARIOS */
-    [data-testid="stForm"] {
-        background-color: #0d0d0d !important;
-        border: 1px solid #333 !important;
-        border-radius: 15px !important;
-        padding: 20px !important;
-    }
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox select, textarea {
-        background-color: #1a1a1a !important;
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-    }
-    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, div[data-baseweb="base-input"] {
-        background-color: #1a1a1a !important;
-        border-radius: 10px !important;
-        border: 1px solid #333 !important;
-    }
-    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within {
-        border-color: #FF6600 !important;
-        box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important;
-    }
-    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"], li[role="option"] {
-        background-color: #1a1a1a !important;
-        color: #ffffff !important;
-    }
+    [data-testid="stForm"] { background-color: #0d0d0d !important; border: 1px solid #333 !important; border-radius: 15px !important; padding: 20px !important; }
+    
+    /* ATAQUE NUCLEAR A FONDOS BLANCOS */
+    .stTextInput input, .stNumberInput input, .stDateInput input, textarea { background-color: #1a1a1a !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, div[data-baseweb="base-input"] { background-color: #1a1a1a !important; border-radius: 10px !important; border: 1px solid #333 !important; color: #ffffff !important; }
+    div[data-baseweb="select"] span { color: #ffffff !important; }
+    div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"], li[role="option"], div[data-baseweb="calendar"], div[data-baseweb="calendar"] > div { background-color: #1a1a1a !important; color: #ffffff !important; }
+    li[role="option"]:hover, li[role="option"][aria-selected="true"] { background-color: #FF6600 !important; color: #ffffff !important; }
+    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { border-color: #FF6600 !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important; }
 
-    /* BOTÓN PRINCIPAL NARANJA */
-    .stButton>button, .stFormSubmitButton>button { 
-        width: 100%; 
-        border-radius: 20px !important; 
-        background: #FF6600 !important; 
-        color: #ffffff !important; 
-        font-weight: 700 !important; 
-        letter-spacing: 0.5px;
-        border: none !important; 
-        padding: 12px !important;
-        box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3) !important;
-        transition: all 0.2s ease-in-out;
-    }
+    /* BOTONES PRINCIPALES */
+    .stButton>button, .stFormSubmitButton>button { width: 100%; border-radius: 20px !important; background: #FF6600 !important; color: #ffffff !important; font-weight: 700 !important; letter-spacing: 0.5px; border: none !important; padding: 12px !important; box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3) !important; transition: all 0.2s ease-in-out; }
     .stButton>button:active, .stFormSubmitButton>button:active { background: #e65c00 !important; transform: scale(0.98); }
     
-    /* BOTÓN SECUNDARIO (CREAR CUENTA / VOLVER) */
-    .btn-secundario>button {
-        background: transparent !important;
-        border: 1px solid #444 !important;
-        color: #FF6600 !important;
-        box-shadow: none !important;
-    }
-    .btn-peligro>button {
-        background: rgba(220, 53, 69, 0.1) !important;
-        border: 1px solid rgba(220, 53, 69, 0.5) !important;
-        color: #ff6b6b !important;
-        box-shadow: none !important;
-    }
+    /* BOTONES SECUNDARIOS */
+    .btn-secundario>button { background: transparent !important; border: 1px solid #444 !important; color: #FF6600 !important; box-shadow: none !important; }
+    .btn-peligro>button { background: rgba(220, 53, 69, 0.1) !important; border: 1px solid rgba(220, 53, 69, 0.5) !important; color: #ff6b6b !important; box-shadow: none !important; }
     
     /* BOTTOM NAVIGATION BAR */
     .block-container { padding-bottom: 120px !important; }
-    div.stRadio {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        background-color: rgba(13, 13, 13, 0.95) !important;
-        backdrop-filter: blur(20px) !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
-        padding: 15px 0px 25px 0px !important;
-        z-index: 99999 !important;
-    }
+    div.stRadio { position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100% !important; background-color: rgba(13, 13, 13, 0.95) !important; backdrop-filter: blur(20px) !important; border-top: 1px solid rgba(255, 255, 255, 0.05) !important; padding: 15px 0px 25px 0px !important; z-index: 99999 !important; }
     div.stRadio > div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-evenly !important; align-items: center !important; gap: 0 !important; }
     div.stRadio > div[role="radiogroup"] > label { background: transparent !important; border: none !important; padding: 5px 10px !important; margin: 0 !important; cursor: pointer; }
     div.stRadio > div[role="radiogroup"] > label > div:first-child, div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"], div.stRadio > div[role="radiogroup"] > label div[data-baseweb="radio"] { display: none !important; }
@@ -194,6 +148,7 @@ def calcular_edad(fecha_nac_str):
 def registrar_acceso(nombre, accion, via, movimiento):
     hora_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     hoja_historial.append_row([hora_actual, str(accion), nombre, via, movimiento])
+    if "historial" not in st.session_state: st.session_state.historial = []
     st.session_state.historial.insert(0, {"nombre": nombre, "accion": accion, "hora": hora_actual, "via": via, "movimiento": movimiento})
 
 def cargar_bd():
@@ -280,7 +235,7 @@ if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = N
 if "pantalla_auth" not in st.session_state: st.session_state.pantalla_auth = "login"
 
 # ==========================================
-# 🛑 INTERCEPTOR DE PASES DIGITALES (VISTA INVITADO)
+# 🛑 INTERCEPTOR DE PASES DIGITALES (VISTA INVITADO EXTERNO)
 # ==========================================
 params = st.query_params
 if "pase" in params:
@@ -322,7 +277,7 @@ if "pase" in params:
 
 
 # ==========================================
-# PANTALLA INICIAL: LOGIN Y REGISTRO (FLUJO MEJORADO)
+# PANTALLA INICIAL: LOGIN Y REGISTRO
 # ==========================================
 if not st.session_state.logueado:
     st.markdown("""
@@ -333,7 +288,6 @@ if not st.session_state.logueado:
         </div>
     """, unsafe_allow_html=True)
     
-    # ---- PANTALLA DE LOGIN ----
     if st.session_state.pantalla_auth == "login":
         with st.form("login_form"):
             cedula_ingresada = st.text_input("Email o ID (Cédula)")
@@ -341,7 +295,6 @@ if not st.session_state.logueado:
             st.markdown("<br>", unsafe_allow_html=True)
             boton_entrar = st.form_submit_button("INICIAR SESIÓN")
         
-        # Opciones secundarias debajo del login
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
@@ -360,12 +313,10 @@ if not st.session_state.logueado:
             
         st.markdown("<p style='text-align:center; color:#888; font-size:12px; margin-top:25px; cursor:pointer;'>¿Olvidaste tu contraseña?</p>", unsafe_allow_html=True)
 
-        # Lógica estricta de validación
         if boton_entrar:
             if cedula_ingresada in BASE_DATOS_SOCIOS:
                 socio = BASE_DATOS_SOCIOS[cedula_ingresada]
                 if clave_ingresada == str(socio["clave"]):
-                    # AQUÍ ESTÁ EL MURO DE SEGURIDAD PARA NUEVOS REGISTROS
                     if socio.get("solvencia", "") == "En revision":
                         st.warning("⏳ Su cuenta fue creada y está en revisión. Debe esperar aprobación administrativa.")
                     else:
@@ -375,7 +326,6 @@ if not st.session_state.logueado:
             else: 
                 st.error("⚠️ Usuario no registrado.")
 
-    # ---- PANTALLA DE REGISTRO ----
     elif st.session_state.pantalla_auth == "registro":
         with st.form("registro_form"):
             st.markdown("<h3 style='text-align:center; font-size:18px; margin-bottom:20px;'>Solicitud de Ingreso</h3>", unsafe_allow_html=True)
@@ -417,18 +367,12 @@ if not st.session_state.logueado:
                     st.error(f"⚠️ Operación Denegada: La Acción {r_acc_norm} ya tiene un Titular registrado.")
                 else:
                     BASE_DATOS_SOCIOS[r_cedula] = {
-                        "nombre": r_nombre, 
-                        "clave": r_clave, 
-                        "accion": r_acc_norm, 
-                        "rol": r_rol, 
-                        "parentesco": r_parentesco, 
-                        "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"), 
-                        "solvencia": "En revision",  # <-- ESTATUS DE SEGURIDAD APLICADO
-                        "cedula": r_cedula
+                        "nombre": r_nombre, "clave": r_clave, "accion": r_acc_norm, "rol": r_rol, 
+                        "parentesco": r_parentesco, "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"), 
+                        "solvencia": "En revision", "cedula": r_cedula
                     }
                     guardar_bd(BASE_DATOS_SOCIOS)
                     st.success("✅ Su cuenta fue creada, esta en revision, debe esperar aprobacion.")
-                    # Dejamos un mensaje de exito para que la persona sepa que ya terminó.
 
 # ==========================================
 # APP NATIVA INTERNA
@@ -437,7 +381,6 @@ else:
     socio_actual = st.session_state.usuario_actual
     rol_actual = socio_actual["rol"]
 
-    # Header Superior Elegante
     st.markdown(f"""
     <div style="display:flex; align-items:center; gap:10px; margin-bottom: 20px;">
         <img src="https://i.ibb.co/t7xWXXR/logo.png" width="25">
@@ -445,21 +388,14 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # --- BOTTOM NAVIGATION BAR DEFINITION ---
-    if rol_actual in ["Titular", "Familiar"]: 
-        opciones_menu = ["Inicio", "Invitados", "Carnet", "Pagos", "Ajustes"]
-    elif rol_actual == "Vigilante": 
-        opciones_menu = ["Garita", "Ajustes"]
-    elif rol_actual == "Administrador": 
-        opciones_menu = ["Inicio", "Invitados", "Garita", "Admin", "Ajustes"]
+    if rol_actual in ["Titular", "Familiar"]: opciones_menu = ["Inicio", "Invitados", "Carnet", "Pagos", "Ajustes"]
+    elif rol_actual == "Vigilante": opciones_menu = ["Garita", "Ajustes"]
+    elif rol_actual == "Administrador": opciones_menu = ["Inicio", "Invitados", "Garita", "Admin", "Ajustes"]
 
     modulo_seleccionado = st.radio("Nav", opciones_menu, horizontal=True, label_visibility="collapsed")
 
-    if modulo_seleccionado == "Admin":
-        st.markdown("<style>.block-container { max-width: 95% !important; padding-top: 2rem !important; }</style>", unsafe_allow_html=True)
-    else:
-        st.markdown("<style>.block-container { max-width: 46rem !important; }</style>", unsafe_allow_html=True)
-
+    if modulo_seleccionado == "Admin": st.markdown("<style>.block-container { max-width: 95% !important; padding-top: 2rem !important; }</style>", unsafe_allow_html=True)
+    else: st.markdown("<style>.block-container { max-width: 46rem !important; }</style>", unsafe_allow_html=True)
 
     # --- MÓDULO 1: INICIO ---
     if modulo_seleccionado == "Inicio":
@@ -478,16 +414,13 @@ else:
 <p style="color: #666; margin-top: 30px; font-size:12px; text-transform:uppercase;">Estatus: <span style="color:#FF6600; font-weight:bold;">Cerrado</span></p>
 </div>
 """, unsafe_allow_html=True)
-        
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Simular Apertura (Demo ESP32)"):
-            st.success("📡 Señal enviada a garita.")
+        if st.button("Simular Apertura (Demo ESP32)"): st.success("📡 Señal enviada a garita.")
 
     # --- MÓDULO 2: CARNET DIGITAL ---
     elif modulo_seleccionado == "Carnet":
         solvencia = socio_actual.get('solvencia', socio_actual.get('solvency', 'Desconocido'))
         if solvencia == "Moroso": st.error("⚠️ Tu grupo familiar presenta un saldo pendiente.")
-        
         if solvencia == "Al dia": clase_badge = "badge-aldia"; texto_badge = "AL DÍA"
         elif solvencia == "Pendiente": clase_badge = "badge-pendiente"; texto_badge = "PENDIENTE"
         else: clase_badge = "badge-moroso"; texto_badge = "MOROSO"
@@ -498,7 +431,7 @@ else:
         img.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue()).decode()
 
-        carnet_html = f"""
+        st.markdown(f"""
 <div class="dark-wrapper">
 <div class="glass-card">
 <div class="magnum-logo">
@@ -512,13 +445,11 @@ else:
 <div class="info-group"><p class="info-label">Acción</p><p class="info-value">{socio_actual['accion']} <span style="font-size:12px; color:#8892b0; font-weight:normal;">({socio_actual['rol']})</span></p></div>
 <div class="qr-container"><div class="qr-box"><img src="data:image/png;base64,{img_str}"></div><br><span class="status-badge {clase_badge}">{texto_badge}</span></div>
 </div></div>
-"""
-        st.markdown(carnet_html, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
     # --- MÓDULO 3: INVITADOS ---
     elif modulo_seleccionado == "Invitados":
-        if "ultimo_pase_generado" not in st.session_state: 
-            st.session_state.ultimo_pase_generado = None
+        if "ultimo_pase_generado" not in st.session_state: st.session_state.ultimo_pase_generado = None
 
         if st.session_state.ultimo_pase_generado:
             pase_temp = st.session_state.ultimo_pase_generado
@@ -526,10 +457,8 @@ else:
             link_pase_digital = f"{url_base}/?pase={pase_temp['id']}"
             
             st.success(f"✅ Pase de {pase_temp['nombre']} emitido correctamente.")
-            
             mensaje_ws = f"¡Hola {pase_temp['nombre']}! Aquí tienes tu pase para el *Magnum City Club*.\nFecha: {pase_temp['fecha']}\n👉 Abre tu código QR aquí:\n{link_pase_digital}"
             link_ws = f"https://wa.me/?text={urllib.parse.quote(mensaje_ws)}"
-            
             st.markdown(f'<a href="{link_ws}" target="_blank" style="display:block; text-align:center; background:#25D366; color:white; padding:15px; border-radius:20px; text-decoration:none; font-weight:800; letter-spacing:1px; margin-top:20px; margin-bottom:20px; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);">ENVIAR POR WHATSAPP</a>', unsafe_allow_html=True)
             
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
@@ -540,37 +469,29 @@ else:
                 
         else:
             st.markdown("<h3 style='font-size:18px; font-weight:700;'>Pases y Accesos</h3>", unsafe_allow_html=True)
-            
             solvencia = socio_actual.get('solvencia', socio_actual.get('solvency', 'Desconocido'))
+            
             if solvencia != "Al dia":
                 st.error("❌ Operación Denegada. Debes estar al día con la administración para invitar.")
             else:
                 invitados_previos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
-                
                 modo_ingreso = st.selectbox("Método de registro:", ["📝 Ingresar Nuevo Invitado", "⭐ Seleccionar de Favoritos"])
-                
-                n_cedula_def, n_nombre_def, n_correo_def = "", "", ""
-                n_nacimiento_def = datetime.today()
+                n_cedula_def, n_nombre_def, n_correo_def, n_nacimiento_def = "", "", "", datetime.today()
                 
                 if modo_ingreso == "⭐ Seleccionar de Favoritos":
                     if invitados_previos:
                         inv_sel = st.selectbox("Tu directorio:", list(invitados_previos.keys()), format_func=lambda x: f"{invitados_previos[x]['nombre']} (C.I: {x})")
-                        n_cedula_def = inv_sel
-                        n_nombre_def = invitados_previos[inv_sel]['nombre']
-                        n_correo_def = invitados_previos[inv_sel]['correo']
-                    else: 
-                        st.info("Aún no tienes invitados en tu directorio frecuente.")
+                        n_cedula_def, n_nombre_def, n_correo_def = inv_sel, invitados_previos[inv_sel]['nombre'], invitados_previos[inv_sel]['correo']
+                    else: st.info("Aún no tienes invitados en tu directorio frecuente.")
 
                 with st.form("form_invitacion"):
                     n_cedula_inv = st.text_input("Cédula", value=n_cedula_def)
                     n_nombre_inv = st.text_input("Nombre y Apellido", value=n_nombre_def)
                     fecha_visita = st.date_input("Fecha de acceso", min_value=datetime.today(), format="DD/MM/YYYY")
-                    
                     guardar_contacto = False
                     if modo_ingreso == "📝 Ingresar Nuevo Invitado":
                         st.write("")
                         guardar_contacto = st.checkbox("Guardar en mi directorio frecuente", value=True)
-                    
                     st.markdown("<br>", unsafe_allow_html=True)
                     btn_generar = st.form_submit_button("GENERAR PASE DIGITAL")
                     
@@ -583,12 +504,9 @@ else:
                     str_fecha = fecha_visita.strftime("%d/%m/%Y")
                     id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
                     BASE_DATOS_INVITACIONES[id_unico] = {
-                        "accion": socio_actual["accion"], "fecha_visita": str_fecha, 
-                        "cedula_invitado": n_cedula_inv, "nombre_invitado": n_nombre_inv, 
-                        "fecha_nacimiento": "", "correo": "", "estatus": "Activo"
+                        "accion": socio_actual["accion"], "fecha_visita": str_fecha, "cedula_invitado": n_cedula_inv, "nombre_invitado": n_nombre_inv, "fecha_nacimiento": "", "correo": "", "estatus": "Activo"
                     }
                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
-                    
                     st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha}
                     st.rerun()
 
@@ -612,13 +530,69 @@ else:
             st.markdown("<br>", unsafe_allow_html=True)
             btn_reportar = st.form_submit_button("REPORTAR PAGO")
             
-        if btn_reportar and n_referencia:
-            st.success("✅ Recibo enviado a administración.")
+        if btn_reportar and n_referencia: st.success("✅ Recibo enviado a administración.")
 
-    # --- MÓDULO GARITA ---
+    # --- MÓDULO GARITA (RESTABLECIDO CON LÓGICA CV2) ---
     elif modulo_seleccionado == "Garita":
-        st.markdown("<h3 style='font-size:18px; font-weight:700;'>Escáner de Seguridad</h3>", unsafe_allow_html=True)
-        foto_qr = st.camera_input("")
+        st.markdown("<h3 style='font-size:18px; font-weight:700;'>Control de Acceso (Escáner)</h3>", unsafe_allow_html=True)
+        
+        # Opción Pro: Lector USB Físico (Lectura Instantánea sin cámara)
+        data_usb = st.text_input("🔫 Lector de Código Físico (Pistola USB):", placeholder="Haga clic aquí y dispare el escáner...")
+        
+        # Opción Clásica: Cámara
+        st.write("📸 O utilizar cámara del dispositivo:")
+        foto_qr = st.camera_input("Tomar foto del código QR")
+
+        data_qr = None
+        if data_usb: 
+            data_qr = data_usb
+        elif foto_qr is not None:
+            # Lógica OpenCV restaurada
+            bytes_data = foto_qr.getvalue()
+            cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
+            detector = cv2.QRCodeDetector()
+            data, bbox, _ = detector.detectAndDecode(cv2_img)
+            if data: 
+                data_qr = data
+            else: 
+                st.error("⚠️ No se detectó un código QR claro. Intenta acercar la imagen o mejorar la luz.")
+
+        # Lógica de Validación
+        if data_qr:
+            st.write("---")
+            if data_qr.startswith("INVITADO|"):
+                id_pase = data_qr.split("|")[1]
+                if id_pase in BASE_DATOS_INVITACIONES:
+                    pase = BASE_DATOS_INVITACIONES[id_pase]
+                    if pase["estatus"] == "Activo":
+                        st.success(f"✅ ACCESO PERMITIDO\\n\\n**Invitado:** {pase['nombre_invitado']}\\n**Acción:** {pase['accion']}")
+                        BASE_DATOS_INVITACIONES[id_pase]["estatus"] = "Adentro"
+                        guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
+                        registrar_acceso(pase["nombre_invitado"], pase["accion"], "QR Invitado", "Entrada")
+                    elif pase["estatus"] == "Adentro":
+                        st.warning("⚠️ ALERTA: El invitado ya registró entrada previamente.")
+                    else:
+                        st.error(f"❌ ACCESO DENEGADO: Pase {pase['estatus']}")
+                else:
+                    st.error("❌ Pase no encontrado o falsificado.")
+            
+            elif "VENTRY" in data_qr:
+                try:
+                    cedula_qr = data_qr.split("|")[0].split(":")[1]
+                    if cedula_qr in BASE_DATOS_SOCIOS:
+                        socio_qr = BASE_DATOS_SOCIOS[cedula_qr]
+                        solvencia_qr = socio_qr.get("solvencia", socio_qr.get("solvency", ""))
+                        if solvencia_qr == "Al dia":
+                            st.success(f"✅ ACCESO PERMITIDO\\n\\n**Socio:** {socio_qr['nombre']}\\n**Acción:** {socio_qr['accion']}")
+                            registrar_acceso(socio_qr["nombre"], socio_qr["accion"], "QR Socio", "Entrada")
+                        else:
+                            st.error(f"❌ ACCESO DENEGADO\\n\\n**Socio:** {socio_qr['nombre']}\\n**Estatus:** {solvencia_qr.upper()}")
+                    else:
+                        st.error("❌ Cédula de socio no registrada.")
+                except:
+                    st.error("❌ Código de carnet ilegible.")
+            else:
+                st.error("❌ Código QR no pertenece al sistema Ventry.")
 
     # --- MÓDULO 5: ADMIN (DASHBOARD RESPONSIVO) ---
     elif modulo_seleccionado == "Admin":
@@ -629,7 +603,7 @@ else:
             solvencia_s = socio.get("solvencia", socio.get("solvency", ""))
             if solvencia_s == "Moroso": acciones_morosas.add(socio["accion"])
             elif solvencia_s == "Pendiente": acciones_pendientes.add(socio["accion"])
-            elif solvencia_s == "En revision": pass # Las cuentas en revision no cuentan para las métricas financieras
+            elif solvencia_s == "En revision": pass 
             else: acciones_al_dia.add(socio["accion"])
         
         for acc in acciones_morosas: acciones_pendientes.discard(acc); acciones_al_dia.discard(acc)
@@ -641,35 +615,12 @@ else:
         capital_riesgo = morosos_count * 104
 
         col_k1, col_k2, col_k3 = st.columns(3)
-        
-        with col_k1:
-            st.markdown(f"""
-            <div class="kpi-card">
-                <p class="kpi-title">Familias Activas</p>
-                <h3 class="kpi-value">{total_acciones}</h3>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        with col_k2:
-            st.markdown(f"""
-            <div class="kpi-card" style="border-left-color: {'#ff6b6b' if tasa_morosidad > 15 else '#FF6600'};">
-                <p class="kpi-title">Tasa de Morosidad</p>
-                <h3 class="kpi-value">{tasa_morosidad:.1f}%</h3>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        with col_k3:
-            st.markdown(f"""
-            <div class="kpi-card" style="border-left-color: #4ade80;">
-                <p class="kpi-title">Capital por Cobrar</p>
-                <h3 class="kpi-value">${capital_riesgo:,.2f}</h3>
-            </div>
-            """, unsafe_allow_html=True)
-
+        with col_k1: st.markdown(f'<div class="kpi-card"><p class="kpi-title">Familias Activas</p><h3 class="kpi-value">{total_acciones}</h3></div>', unsafe_allow_html=True)
+        with col_k2: st.markdown(f'<div class="kpi-card" style="border-left-color: {"#ff6b6b" if tasa_morosidad > 15 else "#FF6600"};"><p class="kpi-title">Tasa de Morosidad</p><h3 class="kpi-value">{tasa_morosidad:.1f}%</h3></div>', unsafe_allow_html=True)
+        with col_k3: st.markdown(f'<div class="kpi-card" style="border-left-color: #4ade80;"><p class="kpi-title">Capital por Cobrar</p><h3 class="kpi-value">${capital_riesgo:,.2f}</h3></div>', unsafe_allow_html=True)
         st.write("---")
         
         col_admin1, col_admin2 = st.columns([1, 1])
-        
         with col_admin1:
             st.markdown("<h4 style='font-size:16px; color:#aaa;'>💳 Conciliación Pendiente</h4>", unsafe_allow_html=True)
             pagos_pendientes = {k: v for k, v in BASE_DATOS_PAGOS.items() if v["estatus"] == "En Revisión"}
@@ -686,8 +637,7 @@ else:
                                 guardar_bd(BASE_DATOS_SOCIOS); st.rerun()
                         with btn_col2:
                             if st.button("❌ Rechazar", key=f"rec_{p_id}"): BASE_DATOS_PAGOS[p_id]["estatus"] = "Rechazado"; guardar_bd_pagos(BASE_DATOS_PAGOS); st.rerun()
-            else: 
-                st.success("No hay pagos pendientes.")
+            else: st.success("No hay pagos pendientes.")
 
             st.write("")
             st.markdown("<h4 style='font-size:16px; color:#aaa;'>📥 Descargar Data (CSV)</h4>", unsafe_allow_html=True)
@@ -705,15 +655,10 @@ else:
                 for m in miembros_accion: 
                     icono = '👑' if m['rol'] == 'Titular' else '👤'
                     solvencia_m = m.get('solvencia', m.get('solvency', 'Desconocido'))
-                    
-                    # Resaltar si está en revisión
                     color_fondo = "#FF6600" if solvencia_m == "En revision" else "#1a1a1a"
-                    color_texto = "#ffffff"
-                    
-                    st.markdown(f"<div style='background:{color_fondo}; color:{color_texto}; padding:10px; border-radius:8px; margin-bottom:5px; font-size:13px;'>{icono} <b>{m['nombre']}</b> - {solvencia_m}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background:{color_fondo}; color:#ffffff; padding:10px; border-radius:8px; margin-bottom:5px; font-size:13px;'>{icono} <b>{m['nombre']}</b> - {solvencia_m}</div>", unsafe_allow_html=True)
                 
                 with st.form("form_estatus_rapido"):
-                    # SE AÑADE LA OPCIÓN "EN REVISION" PARA QUE EL ADMIN LA GESTIONE
                     n_estatus = st.selectbox("Actualizar Estatus de Grupo:", ["Al dia", "Moroso", "Pendiente", "En revision"])
                     if st.form_submit_button("Actualizar Todo"):
                         for ced, info in BASE_DATOS_SOCIOS.items():
@@ -728,9 +673,7 @@ else:
     # --- MÓDULO AJUSTES ---
     elif modulo_seleccionado == "Ajustes":
         st.markdown("<h3 style='font-size:18px; font-weight:700;'>Ajustes de Perfil</h3>", unsafe_allow_html=True)
-        
         st.info("🔧 Módulo en construcción: Aquí podrás editar tu foto, notificaciones y grupo familiar.")
-        
         st.write("---")
         st.markdown("<div class='btn-peligro'>", unsafe_allow_html=True)
         if st.button("Cerrar Sesión"):

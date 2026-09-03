@@ -60,48 +60,43 @@ st.markdown("""
     .stApp { background-color: #0d0d0d; color: #f5f5f5; }
     h1, h2, h3, h4, h5, h6, p, span, label, div { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     
-    /* ========================================================= */
-    /* RECUPERACIÓN DE ETIQUETAS (LABELS VISIBLES) */
-    /* ========================================================= */
-    label, label p, label div, div[data-testid="stWidgetLabel"] p, .stTextInput p, .stSelectbox p, .stDateInput p, .stNumberInput p {
-        color: #ffffff !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.5px;
-    }
+    /* ETIQUETAS (LABELS VISIBLES) */
+    label, label p, label div, div[data-testid="stWidgetLabel"] p, .stTextInput p, .stSelectbox p, .stDateInput p, .stNumberInput p { color: #ffffff !important; font-weight: 600 !important; letter-spacing: 0.5px; }
     
-    /* ========================================================= */
     /* BLINDAJE NUCLEAR DE FORMULARIOS Y ELEMENTOS FLOTANTES */
-    /* ========================================================= */
     [data-testid="stForm"] { background-color: #0d0d0d !important; border: 1px solid #333 !important; border-radius: 15px !important; padding: 20px !important; }
-    
-    .stTextInput input, .stNumberInput input, .stDateInput input, textarea { 
-        background-color: #1a1a1a !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; 
-    }
-    
-    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, div[data-baseweb="base-input"] { 
-        background-color: #1a1a1a !important; border-radius: 10px !important; border: 1px solid #333 !important; color: #ffffff !important; 
-    }
-    
+    .stTextInput input, .stNumberInput input, .stDateInput input, textarea { background-color: #1a1a1a !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, div[data-baseweb="base-input"] { background-color: #1a1a1a !important; border-radius: 10px !important; border: 1px solid #333 !important; color: #ffffff !important; }
     div[data-baseweb="select"] span { color: #ffffff !important; }
-    
-    div[data-baseweb="popover"] *, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * {
-        background-color: #1a1a1a !important; color: #ffffff !important;
-    }
-    
+    div[data-baseweb="popover"] *, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * { background-color: #1a1a1a !important; color: #ffffff !important; }
     li[role="option"]:hover *, li[role="option"][aria-selected="true"] * { background-color: #FF6600 !important; color: #ffffff !important; }
     div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { border-color: #FF6600 !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important; }
 
-    /* PESTAÑAS (TABS) MODERNAS */
-    [data-testid="stTabs"] button { color: #888888 !important; font-weight: 600; font-size: 15px; }
-    [data-testid="stTabs"] button[aria-selected="true"] { color: #ffffff !important; border-bottom-color: #FF6600 !important; }
-
-    /* BOTONES PRINCIPALES */
-    .stButton>button, .stFormSubmitButton>button { width: 100%; border-radius: 20px !important; background: #FF6600 !important; color: #ffffff !important; font-weight: 700 !important; letter-spacing: 0.5px; border: none !important; padding: 12px !important; box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3) !important; transition: all 0.2s ease-in-out; }
-    .stButton>button:active, .stFormSubmitButton>button:active { background: #e65c00 !important; transform: scale(0.98); }
+    /* ========================================================= */
+    /* NUEVA ARQUITECTURA DE BOTONES (NATIVOS Y ACCIÓN) */
+    /* ========================================================= */
     
-    /* BOTONES SECUNDARIOS */
-    .btn-secundario>button { background: transparent !important; border: 1px solid #444 !important; color: #FF6600 !important; box-shadow: none !important; }
-    .btn-peligro>button { background: rgba(220, 53, 69, 0.1) !important; border: 1px solid rgba(220, 53, 69, 0.5) !important; color: #ff6b6b !important; box-shadow: none !important; }
+    /* 1. BOTONES DE ACCIÓN PRINCIPAL (Naranjas) */
+    .stButton>button[kind="primary"], .stFormSubmitButton>button { 
+        width: 100%; border-radius: 20px !important; background: #FF6600 !important; color: #ffffff !important; 
+        font-weight: 700 !important; letter-spacing: 0.5px; border: none !important; padding: 12px !important; 
+        box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3) !important; transition: all 0.2s ease-in-out; justify-content: center !important;
+    }
+    .stButton>button[kind="primary"]:active, .stFormSubmitButton>button:active { background: #e65c00 !important; transform: scale(0.98); }
+    
+    /* 2. BOTONES DE MENÚ TIPO APP (Oscuros y alineados a la izquierda) */
+    .stButton>button[kind="secondary"] {
+        width: 100%; border-radius: 12px !important; background-color: #1a1a1a !important; 
+        border: 1px solid #333 !important; color: #ffffff !important; font-weight: 600 !important; 
+        padding: 16px 20px !important; justify-content: flex-start !important; font-size: 15px !important;
+        transition: all 0.2s ease-in-out;
+    }
+    .stButton>button[kind="secondary"]:hover { border-color: #FF6600 !important; }
+    
+    /* 3. BOTONES SECUNDARIOS ESPECIALES (Volver / Peligro) */
+    .btn-secundario>div>button { background: transparent !important; border: 1px solid #555 !important; color: #aaa !important; justify-content: center !important; box-shadow: none !important; }
+    .btn-secundario>div>button:hover { border-color: #FF6600 !important; color: #FF6600 !important; }
+    .btn-peligro>div>button { background: rgba(220, 53, 69, 0.1) !important; border: 1px solid rgba(220, 53, 69, 0.5) !important; color: #ff6b6b !important; justify-content: center !important; box-shadow: none !important; }
     
     /* BOTTOM NAVIGATION BAR */
     .block-container { padding-bottom: 120px !important; }
@@ -112,12 +107,11 @@ st.markdown("""
     div.stRadio > div[role="radiogroup"] > label div { color: #777777 !important; font-size: 11px !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: 1px; }
     div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div { color: #FF6600 !important; font-weight: 800 !important; }
 
-    /* BILLETERA Y AJUSTES CARDS */
+    /* BILLETERA CARDS */
     .wallet-card { background: linear-gradient(145deg, #1a1a1a, #0d0d0d); border: 1px solid #333; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
     .wallet-title { color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: bold; }
     .wallet-saldo { color: #4ade80 !important; font-size: 32px; font-weight: 800; margin: 0; }
     .wallet-deuda { color: #ff6b6b !important; font-size: 24px; font-weight: 700; margin: 0; }
-    
     .historial-card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 3px solid #FF6600; }
 
     /* BOTÓN ABRIR PUERTA */
@@ -169,7 +163,6 @@ def cargar_historial():
     try:
         vals = hoja_historial.get_all_values()
         if len(vals) > 1:
-            # Invierte la lista para mostrar primero los más recientes
             return [{"fecha": r[0], "accion": r[1], "nombre": r[2], "via": r[3], "movimiento": r[4]} for r in vals[1:][::-1]]
         return []
     except:
@@ -253,14 +246,12 @@ def guardar_bd_directorio(datos):
     hoja_directorio.update(values=filas, range_name="A1")
     st.session_state.db_directorio = datos
 
-# --- MEMORIA LOCAL ---
-if "datos_cargados" not in st.session_state:
-    st.session_state.db_socios = cargar_bd()
-    st.session_state.db_invitaciones = cargar_invitaciones()
-    st.session_state.db_pagos = cargar_pagos()
-    st.session_state.db_directorio = cargar_directorio()
-    st.session_state.db_historial = cargar_historial()
-    st.session_state.datos_cargados = True
+# --- BLINDAJE DE MEMORIA INDEPENDIENTE ---
+if "db_socios" not in st.session_state: st.session_state.db_socios = cargar_bd()
+if "db_invitaciones" not in st.session_state: st.session_state.db_invitaciones = cargar_invitaciones()
+if "db_pagos" not in st.session_state: st.session_state.db_pagos = cargar_pagos()
+if "db_directorio" not in st.session_state: st.session_state.db_directorio = cargar_directorio()
+if "db_historial" not in st.session_state: st.session_state.db_historial = cargar_historial()
 
 BASE_DATOS_SOCIOS = st.session_state.db_socios
 BASE_DATOS_INVITACIONES = st.session_state.db_invitaciones
@@ -270,6 +261,47 @@ BASE_DATOS_DIRECTORIO = st.session_state.db_directorio
 if "logueado" not in st.session_state: st.session_state.logueado = False
 if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = None
 if "pantalla_auth" not in st.session_state: st.session_state.pantalla_auth = "login"
+
+# ==========================================
+# 🛑 INTERCEPTOR DE PASES DIGITALES
+# ==========================================
+params = st.query_params
+if "pase" in params:
+    id_pase_url = params["pase"]
+    if id_pase_url in BASE_DATOS_INVITACIONES:
+        pase = BASE_DATOS_INVITACIONES[id_pase_url]
+        datos_qr = f"INVITADO|{id_pase_url}"
+        img = qrcode.make(datos_qr)
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        img_str = base64.b64encode(buffer.getvalue()).decode()
+        
+        if pase["estatus"] == "Activo": clase_badge = "badge-aldia"; texto_badge = "PASE VÁLIDO"
+        elif pase["estatus"] == "Adentro": clase_badge = "badge-aldia"; texto_badge = "EN INSTALACIONES"
+        else: clase_badge = "badge-moroso"; texto_badge = pase["estatus"].upper()
+            
+        if pase["fecha_visita"] != datetime.now().strftime("%d/%m/%Y") and pase["estatus"] == "Activo":
+            clase_badge = "badge-pendiente"; texto_badge = "FECHA INVÁLIDA"
+
+        st.markdown(f"""
+<div class="dark-wrapper" style="margin-top: 50px;">
+<div class="glass-card">
+<div class="magnum-logo">
+<p class="logo-m">M</p>
+<p class="logo-magnum">MAGNUM</p>
+<p class="logo-city">CITY CLUB</p>
+<div class="logo-line"></div>
+</div>
+<div style="text-align:center; color:#d4af37; font-size:12px; font-weight:bold; letter-spacing:2px; margin-bottom:20px;">PASE DE INVITADO</div>
+<div class="info-group"><p class="info-label">Invitado</p><p class="info-value">{pase['nombre_invitado']}</p></div>
+<div class="info-group"><p class="info-label">Válido para el día</p><p class="info-value">{pase['fecha_visita']}</p></div>
+<div class="info-group"><p class="info-label">Autorizado por (Acción)</p><p class="info-value">{pase['accion']}</p></div>
+<div class="qr-container"><div class="qr-box"><img src="data:image/png;base64,{img_str}"></div><br><span class="status-badge {clase_badge}">{texto_badge}</span></div>
+</div></div>
+""", unsafe_allow_html=True)
+        st.info("💡 Muestra esta pantalla en garita al llegar al club.")
+    else: st.error("❌ Enlace de pase inválido o vencido.")
+    st.stop()
 
 
 # ==========================================
@@ -294,7 +326,7 @@ if not st.session_state.logueado:
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            if st.button("Crear cuenta"):
+            if st.button("Crear cuenta", type="primary"):
                 st.session_state.pantalla_auth = "registro"
                 st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
@@ -343,7 +375,7 @@ if not st.session_state.logueado:
             btn_registrar = st.form_submit_button("ENVIAR SOLICITUD")
             
         st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-        if st.button("← Volver a Iniciar Sesión"):
+        if st.button("← Volver a Iniciar Sesión", type="primary"):
             st.session_state.pantalla_auth = "login"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
@@ -411,7 +443,7 @@ else:
 </div>
 """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Simular Apertura (Demo ESP32)"): st.success("📡 Señal enviada a garita.")
+        if st.button("Simular Apertura (Demo ESP32)", type="primary"): st.success("📡 Señal enviada a garita.")
 
     # --- MÓDULO 2: CARNET DIGITAL ---
     elif modulo_seleccionado == "Carnet":
@@ -458,7 +490,7 @@ else:
             st.markdown(f'<a href="{link_ws}" target="_blank" style="display:block; text-align:center; background:#25D366; color:white; padding:15px; border-radius:20px; text-decoration:none; font-weight:800; letter-spacing:1px; margin-top:20px; margin-bottom:20px; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);">ENVIAR POR WHATSAPP</a>', unsafe_allow_html=True)
             
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            if st.button("← Volver a crear otra invitación"):
+            if st.button("← Volver a crear otra invitación", type="primary"):
                 st.session_state.ultimo_pase_generado = None
                 st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
@@ -557,7 +589,7 @@ else:
                 
                 if saldo_actual >= deuda:
                     st.info("💡 Tienes suficiente saldo en tu Billetera para cubrir esta deuda.")
-                    if st.button("Pagar con Saldo Ventry"):
+                    if st.button("Pagar con Saldo Ventry", type="primary"):
                         nuevo_saldo = saldo_actual - deuda
                         BASE_DATOS_SOCIOS[socio_actual['cedula']]['saldo'] = nuevo_saldo
                         BASE_DATOS_SOCIOS[socio_actual['cedula']]['solvencia'] = "Al dia"
@@ -676,7 +708,7 @@ else:
                         st.write(f"**Ref:** {p_info['referencia']} | **Fecha:** {p_info['fecha_reporte']}")
                         btn_col1, btn_col2 = st.columns(2)
                         with btn_col1:
-                            if st.button("✅ Aprobar", key=f"apr_{p_id}"):
+                            if st.button("✅ Aprobar", key=f"apr_{p_id}"): # Dejamos default para paneles admin limpios
                                 BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"
                                 guardar_bd_pagos(BASE_DATOS_PAGOS)
                                 
@@ -723,19 +755,43 @@ else:
                         guardar_bd(BASE_DATOS_SOCIOS); st.success("Actualizado.")
 
         st.write("---")
-        if st.button("🔄 Sincronizar Base de Datos en la Nube (Google Sheets)"):
+        if st.button("🔄 Sincronizar DB en la Nube (Google Sheets)"):
             st.session_state.db_socios = cargar_bd(); st.session_state.db_invitaciones = cargar_invitaciones(); st.session_state.db_pagos = cargar_pagos(); st.session_state.db_directorio = cargar_directorio()
             st.success("Base de datos sincronizada.")
 
-    # --- MÓDULO 6: AJUSTES (¡AHORA VIVO Y FUNCIONAL!) ---
+    # --- MÓDULO 6: AJUSTES (NUEVA NAVEGACIÓN "DRILL-DOWN") ---
     elif modulo_seleccionado == "Ajustes":
-        st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Ajustes de Perfil</h3>", unsafe_allow_html=True)
         
-        tab_perfil, tab_familia, tab_historial = st.tabs(["👤 Perfil", "👨‍👩‍👧 Familia", "🕒 Historial"])
-        
-        # SUB-MÓDULO: PERFIL (CAMBIO DE CONTRASEÑA)
-        with tab_perfil:
-            st.markdown("<h4 style='font-size:15px; color:#aaa; margin-top:10px;'>Seguridad de Cuenta</h4>", unsafe_allow_html=True)
+        # Inicializador del sub-menú nativo
+        if "sub_ajustes" not in st.session_state: 
+            st.session_state.sub_ajustes = "menu"
+
+        # VISTA 1: EL MENÚ PRINCIPAL
+        if st.session_state.sub_ajustes == "menu":
+            st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Ajustes</h3>", unsafe_allow_html=True)
+            
+            # Botones de navegación (Estilo Menú Nativo)
+            if st.button("👤 Seguridad de Cuenta"): 
+                st.session_state.sub_ajustes = "perfil"; st.rerun()
+            if st.button("👨‍👩‍👧 Grupo Familiar"): 
+                st.session_state.sub_ajustes = "familia"; st.rerun()
+            if st.button("🕒 Historial de Accesos"): 
+                st.session_state.sub_ajustes = "historial"; st.rerun()
+            
+            st.write("---")
+            st.markdown("<div class='btn-peligro'>", unsafe_allow_html=True)
+            if st.button("🚪 Cerrar Sesión", type="primary"):
+                st.session_state.logueado = False
+                st.session_state.usuario_actual = None
+                st.session_state.pantalla_auth = "login"
+                st.session_state.sub_ajustes = "menu"
+                st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # VISTA 2: PERFIL
+        elif st.session_state.sub_ajustes == "perfil":
+            st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Seguridad</h3>", unsafe_allow_html=True)
+            
             with st.form("form_cambio_clave"):
                 clave_actual = st.text_input("Contraseña Actual", type="password")
                 clave_nueva = st.text_input("Nueva Contraseña", type="password")
@@ -755,18 +811,24 @@ else:
                     guardar_bd(BASE_DATOS_SOCIOS)
                     st.session_state.usuario_actual["clave"] = clave_nueva
                     st.success("✅ Contraseña actualizada exitosamente.")
-        
-        # SUB-MÓDULO: FAMILIA (SOLO TITULARES)
-        with tab_familia:
+            
+            st.write("")
+            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+            if st.button("← Volver a Ajustes", type="primary"): 
+                st.session_state.sub_ajustes = "menu"; st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # VISTA 3: FAMILIA
+        elif st.session_state.sub_ajustes == "familia":
+            st.markdown(f"<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Acción {socio_actual['accion']}</h3>", unsafe_allow_html=True)
+            
             if rol_actual == "Titular":
-                st.markdown(f"<h4 style='font-size:15px; color:#aaa; margin-top:10px;'>Grupo Familiar (Acción {socio_actual['accion']})</h4>", unsafe_allow_html=True)
                 miembros = [m for m in BASE_DATOS_SOCIOS.values() if m["accion"] == socio_actual["accion"] and m["cedula"] != socio_actual["cedula"]]
-                
                 if miembros:
                     for m in miembros:
                         st.markdown(f"""
                         <div class="historial-card">
-                            <b style="font-size: 16px;">{m['nombre']}</b><br>
+                            <b style="font-size: 16px; color:#fff;">{m['nombre']}</b><br>
                             <span style="color:#aaa; font-size:12px;">C.I: {m['cedula']} | Parentesco: {m['parentesco']}</span><br>
                             <span style="color:#FF6600; font-size:12px; font-weight:bold;">Estatus: {m.get('solvencia', 'Desconocido')}</span>
                         </div>
@@ -774,30 +836,33 @@ else:
                 else:
                     st.info("No hay familiares registrados bajo tu acción en este momento.")
             else:
-                st.warning("🔒 Esta sección es exclusiva para el Titular de la Acción.")
+                st.warning("🔒 Esta sección es exclusiva para la cuenta Titular de la Acción.")
                 
-        # SUB-MÓDULO: HISTORIAL (ÚLTIMOS ACCESOS)
-        with tab_historial:
-            st.markdown("<h4 style='font-size:15px; color:#aaa; margin-top:10px;'>Actividad Reciente en Garita</h4>", unsafe_allow_html=True)
-            historial_accion = [h for h in st.session_state.db_historial if h["accion"] == str(socio_actual["accion"])]
+            st.write("")
+            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+            if st.button("← Volver a Ajustes", type="primary"): 
+                st.session_state.sub_ajustes = "menu"; st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # VISTA 4: HISTORIAL
+        elif st.session_state.sub_ajustes == "historial":
+            st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Actividad Reciente</h3>", unsafe_allow_html=True)
             
+            historial_accion = [h for h in st.session_state.db_historial if h["accion"] == str(socio_actual["accion"])]
             if historial_accion:
-                for h in historial_accion[:10]: # Muestra solo los últimos 10 registros
+                for h in historial_accion[:10]:
                     st.markdown(f"""
                     <div style='background:#1a1a1a; padding:12px; border-radius:8px; margin-bottom:8px; border-left: 2px solid #FF6600;'>
                         <span style='color:#FF6600; font-weight:bold; font-size:11px;'>{h['fecha']}</span><br>
                         <b style='font-size:14px; color:#fff;'>{h['nombre']}</b><br>
-                        <span style='color:#aaa; font-size:12px;'>Método: {h['via']} - Acción: {h['movimiento']}</span>
+                        <span style='color:#aaa; font-size:12px;'>Método: {h['via']} - Tipo: {h['movimiento']}</span>
                     </div>
                     """, unsafe_allow_html=True)
             else:
                 st.info("No hay registros de acceso recientes para tu acción.")
-
-        st.write("---")
-        st.markdown("<div class='btn-peligro'>", unsafe_allow_html=True)
-        if st.button("🚪 Cerrar Sesión"):
-            st.session_state.logueado = False
-            st.session_state.usuario_actual = None
-            st.session_state.pantalla_auth = "login"
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+                
+            st.write("")
+            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+            if st.button("← Volver a Ajustes", type="primary"): 
+                st.session_state.sub_ajustes = "menu"; st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)

@@ -52,7 +52,6 @@ st.markdown(f"""
 # --- CSS AVANZADO: BLINDAJE NUCLEAR Y DISEÑO PREMIUM ---
 st.markdown("""
     <style>
-    /* Ocultamos rastros de Streamlit web */
     #MainMenu {display: none;}
     footer {display: none;}
     [data-testid="collapsedControl"] {display: none;} 
@@ -75,44 +74,22 @@ st.markdown("""
     /* ========================================================= */
     [data-testid="stForm"] { background-color: #0d0d0d !important; border: 1px solid #333 !important; border-radius: 15px !important; padding: 20px !important; }
     
-    /* Cajas de texto estándar */
     .stTextInput input, .stNumberInput input, .stDateInput input, textarea { 
-        background-color: #1a1a1a !important; 
-        color: #ffffff !important; 
-        -webkit-text-fill-color: #ffffff !important; 
+        background-color: #1a1a1a !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; 
     }
     
     div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, div[data-baseweb="base-input"] { 
-        background-color: #1a1a1a !important; 
-        border-radius: 10px !important; 
-        border: 1px solid #333 !important; 
-        color: #ffffff !important; 
+        background-color: #1a1a1a !important; border-radius: 10px !important; border: 1px solid #333 !important; color: #ffffff !important; 
     }
     
-    /* El texto de la lista desplegable cerrada */
     div[data-baseweb="select"] span { color: #ffffff !important; }
     
-    /* ATAQUE A POPOVERS: Listas abiertas y Calendarios */
-    div[data-baseweb="popover"] *, 
-    div[data-baseweb="menu"] *, 
-    ul[role="listbox"] *, 
-    li[role="option"] *,
-    div[role="dialog"] *,
-    div[data-baseweb="calendar"] * {
-        background-color: #1a1a1a !important;
-        color: #ffffff !important;
+    div[data-baseweb="popover"] *, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * {
+        background-color: #1a1a1a !important; color: #ffffff !important;
     }
     
-    /* Efecto hover en las listas oscuras */
-    li[role="option"]:hover *, li[role="option"][aria-selected="true"] * {
-        background-color: #FF6600 !important;
-        color: #ffffff !important;
-    }
-    
-    /* Efecto Neón naranja al enfocar */
-    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { 
-        border-color: #FF6600 !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important; 
-    }
+    li[role="option"]:hover *, li[role="option"][aria-selected="true"] * { background-color: #FF6600 !important; color: #ffffff !important; }
+    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { border-color: #FF6600 !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important; }
 
     /* PESTAÑAS (TABS) MODERNAS */
     [data-testid="stTabs"] button { color: #888888 !important; font-weight: 600; font-size: 15px; }
@@ -135,11 +112,13 @@ st.markdown("""
     div.stRadio > div[role="radiogroup"] > label div { color: #777777 !important; font-size: 11px !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: 1px; }
     div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div { color: #FF6600 !important; font-weight: 800 !important; }
 
-    /* BILLETERA CARDS */
+    /* BILLETERA Y AJUSTES CARDS */
     .wallet-card { background: linear-gradient(145deg, #1a1a1a, #0d0d0d); border: 1px solid #333; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
     .wallet-title { color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: bold; }
     .wallet-saldo { color: #4ade80 !important; font-size: 32px; font-weight: 800; margin: 0; }
     .wallet-deuda { color: #ff6b6b !important; font-size: 24px; font-weight: 700; margin: 0; }
+    
+    .historial-card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 3px solid #FF6600; }
 
     /* BOTÓN ABRIR PUERTA */
     .open-button-container { display: flex; justify-content: center; margin-top: 40px; margin-bottom: 20px;}
@@ -186,11 +165,21 @@ except Exception as e:
     st.stop()
 
 # --- FUNCIONES ---
+def cargar_historial():
+    try:
+        vals = hoja_historial.get_all_values()
+        if len(vals) > 1:
+            # Invierte la lista para mostrar primero los más recientes
+            return [{"fecha": r[0], "accion": r[1], "nombre": r[2], "via": r[3], "movimiento": r[4]} for r in vals[1:][::-1]]
+        return []
+    except:
+        return []
+
 def registrar_acceso(nombre, accion, via, movimiento):
     hora_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     hoja_historial.append_row([hora_actual, str(accion), nombre, via, movimiento])
-    if "historial" not in st.session_state: st.session_state.historial = []
-    st.session_state.historial.insert(0, {"nombre": nombre, "accion": accion, "hora": hora_actual, "via": via, "movimiento": movimiento})
+    if "db_historial" not in st.session_state: st.session_state.db_historial = []
+    st.session_state.db_historial.insert(0, {"fecha": hora_actual, "accion": str(accion), "nombre": nombre, "via": via, "movimiento": movimiento})
 
 def cargar_bd():
     registros = hoja_bd.get_all_records()
@@ -270,6 +259,7 @@ if "datos_cargados" not in st.session_state:
     st.session_state.db_invitaciones = cargar_invitaciones()
     st.session_state.db_pagos = cargar_pagos()
     st.session_state.db_directorio = cargar_directorio()
+    st.session_state.db_historial = cargar_historial()
     st.session_state.datos_cargados = True
 
 BASE_DATOS_SOCIOS = st.session_state.db_socios
@@ -334,7 +324,7 @@ if not st.session_state.logueado:
 
     elif st.session_state.pantalla_auth == "registro":
         with st.form("registro_form"):
-            st.markdown("<h3 style='text-align:center; font-size:18px; margin-bottom:20px;'>Solicitud de Ingreso</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='text-align:center; font-size:18px; margin-bottom:20px; color:#fff;'>Solicitud de Ingreso</h3>", unsafe_allow_html=True)
             r_cedula = st.text_input("Cédula de Identidad")
             r_nombre = st.text_input("Nombre y Apellido")
             r_nacimiento = st.date_input("Fecha de Nacimiento", min_value=datetime(1920, 1, 1), max_value=datetime.today(), format="DD/MM/YYYY")
@@ -407,7 +397,7 @@ else:
     if modulo_seleccionado == "Inicio":
         st.markdown("""
 <div style="text-align: center; margin-top: 20px;">
-<h2 style="margin-bottom: 5px; font-size:22px; font-weight:800;">Magnum City Club</h2>
+<h2 style="margin-bottom: 5px; font-size:22px; font-weight:800; color:#fff;">Magnum City Club</h2>
 <p style="color: #666; font-size:12px; text-transform:uppercase; letter-spacing:2px;">Puerta Principal</p>
 <div class="open-button-container">
 <div class="open-button-glow">
@@ -474,7 +464,7 @@ else:
             st.markdown("</div>", unsafe_allow_html=True)
                 
         else:
-            st.markdown("<h3 style='font-size:18px; font-weight:700;'>Pases y Accesos</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size:18px; font-weight:700; color:#fff;'>Pases y Accesos</h3>", unsafe_allow_html=True)
             solvencia = socio_actual.get('solvencia', 'Desconocido')
             
             if solvencia != "Al dia":
@@ -518,7 +508,7 @@ else:
 
     # --- MÓDULO 4: PAGOS (BILLETERA VENTRY) ---
     elif modulo_seleccionado == "Pagos":
-        st.markdown("<h3 style='font-size:18px; font-weight:700;'>Billetera Ventry</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='font-size:18px; font-weight:700; color:#fff;'>Billetera Ventry</h3>", unsafe_allow_html=True)
         
         solvencia = socio_actual.get('solvencia', 'Desconocido')
         saldo_actual = float(socio_actual.get('saldo', 0.0))
@@ -607,7 +597,7 @@ else:
 
     # --- MÓDULO GARITA ---
     elif modulo_seleccionado == "Garita":
-        st.markdown("<h3 style='font-size:18px; font-weight:700;'>Control de Acceso (Escáner)</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='font-size:18px; font-weight:700; color:#fff;'>Control de Acceso (Escáner)</h3>", unsafe_allow_html=True)
         data_usb = st.text_input("🔫 Lector de Código Físico (Pistola USB):", placeholder="Haga clic aquí y dispare el escáner...")
         st.write("📸 O utilizar cámara del dispositivo:")
         foto_qr = st.camera_input("Tomar foto del código QR")
@@ -737,13 +727,75 @@ else:
             st.session_state.db_socios = cargar_bd(); st.session_state.db_invitaciones = cargar_invitaciones(); st.session_state.db_pagos = cargar_pagos(); st.session_state.db_directorio = cargar_directorio()
             st.success("Base de datos sincronizada.")
 
-    # --- MÓDULO AJUSTES ---
+    # --- MÓDULO 6: AJUSTES (¡AHORA VIVO Y FUNCIONAL!) ---
     elif modulo_seleccionado == "Ajustes":
-        st.markdown("<h3 style='font-size:18px; font-weight:700;'>Ajustes de Perfil</h3>", unsafe_allow_html=True)
-        st.info("🔧 Módulo en construcción: Aquí podrás editar tu foto, notificaciones y grupo familiar.")
+        st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Ajustes de Perfil</h3>", unsafe_allow_html=True)
+        
+        tab_perfil, tab_familia, tab_historial = st.tabs(["👤 Perfil", "👨‍👩‍👧 Familia", "🕒 Historial"])
+        
+        # SUB-MÓDULO: PERFIL (CAMBIO DE CONTRASEÑA)
+        with tab_perfil:
+            st.markdown("<h4 style='font-size:15px; color:#aaa; margin-top:10px;'>Seguridad de Cuenta</h4>", unsafe_allow_html=True)
+            with st.form("form_cambio_clave"):
+                clave_actual = st.text_input("Contraseña Actual", type="password")
+                clave_nueva = st.text_input("Nueva Contraseña", type="password")
+                clave_confirma = st.text_input("Confirmar Nueva Contraseña", type="password")
+                st.markdown("<br>", unsafe_allow_html=True)
+                btn_cambiar_clave = st.form_submit_button("ACTUALIZAR CONTRASEÑA")
+                
+            if btn_cambiar_clave:
+                if clave_actual != str(socio_actual["clave"]):
+                    st.error("❌ La contraseña actual es incorrecta.")
+                elif clave_nueva != clave_confirma:
+                    st.error("❌ Las contraseñas nuevas no coinciden.")
+                elif len(clave_nueva) < 4:
+                    st.error("⚠️ La contraseña debe tener al menos 4 caracteres.")
+                else:
+                    BASE_DATOS_SOCIOS[socio_actual["cedula"]]["clave"] = clave_nueva
+                    guardar_bd(BASE_DATOS_SOCIOS)
+                    st.session_state.usuario_actual["clave"] = clave_nueva
+                    st.success("✅ Contraseña actualizada exitosamente.")
+        
+        # SUB-MÓDULO: FAMILIA (SOLO TITULARES)
+        with tab_familia:
+            if rol_actual == "Titular":
+                st.markdown(f"<h4 style='font-size:15px; color:#aaa; margin-top:10px;'>Grupo Familiar (Acción {socio_actual['accion']})</h4>", unsafe_allow_html=True)
+                miembros = [m for m in BASE_DATOS_SOCIOS.values() if m["accion"] == socio_actual["accion"] and m["cedula"] != socio_actual["cedula"]]
+                
+                if miembros:
+                    for m in miembros:
+                        st.markdown(f"""
+                        <div class="historial-card">
+                            <b style="font-size: 16px;">{m['nombre']}</b><br>
+                            <span style="color:#aaa; font-size:12px;">C.I: {m['cedula']} | Parentesco: {m['parentesco']}</span><br>
+                            <span style="color:#FF6600; font-size:12px; font-weight:bold;">Estatus: {m.get('solvencia', 'Desconocido')}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.info("No hay familiares registrados bajo tu acción en este momento.")
+            else:
+                st.warning("🔒 Esta sección es exclusiva para el Titular de la Acción.")
+                
+        # SUB-MÓDULO: HISTORIAL (ÚLTIMOS ACCESOS)
+        with tab_historial:
+            st.markdown("<h4 style='font-size:15px; color:#aaa; margin-top:10px;'>Actividad Reciente en Garita</h4>", unsafe_allow_html=True)
+            historial_accion = [h for h in st.session_state.db_historial if h["accion"] == str(socio_actual["accion"])]
+            
+            if historial_accion:
+                for h in historial_accion[:10]: # Muestra solo los últimos 10 registros
+                    st.markdown(f"""
+                    <div style='background:#1a1a1a; padding:12px; border-radius:8px; margin-bottom:8px; border-left: 2px solid #FF6600;'>
+                        <span style='color:#FF6600; font-weight:bold; font-size:11px;'>{h['fecha']}</span><br>
+                        <b style='font-size:14px; color:#fff;'>{h['nombre']}</b><br>
+                        <span style='color:#aaa; font-size:12px;'>Método: {h['via']} - Acción: {h['movimiento']}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.info("No hay registros de acceso recientes para tu acción.")
+
         st.write("---")
         st.markdown("<div class='btn-peligro'>", unsafe_allow_html=True)
-        if st.button("Cerrar Sesión"):
+        if st.button("🚪 Cerrar Sesión"):
             st.session_state.logueado = False
             st.session_state.usuario_actual = None
             st.session_state.pantalla_auth = "login"

@@ -84,10 +84,17 @@ st.markdown("""
     }
     .stButton>button[kind="primary"]:active, .stFormSubmitButton>button:active { background: #e65c00 !important; transform: scale(0.98); }
     
-    /* BOTONES SECUNDARIOS ESPECIALES (Volver / Peligro) */
+    /* BOTONES SECUNDARIOS ESPECIALES (Volver) */
     .btn-secundario>div>button { background: transparent !important; border: 1px solid #555 !important; color: #aaa !important; justify-content: center !important; box-shadow: none !important; }
     .btn-secundario>div>button:hover { border-color: #FF6600 !important; color: #FF6600 !important; }
-    .btn-peligro>div>button { background: rgba(220, 53, 69, 0.1) !important; border: 1px solid rgba(220, 53, 69, 0.5) !important; color: #ff6b6b !important; justify-content: center !important; box-shadow: none !important; }
+    
+    /* NUEVO: BOTÓN CERRAR SESIÓN (SUTIL Y FANTASMA) */
+    .btn-logout>div>button { 
+        background: transparent !important; border: none !important; color: #ff4d4d !important; 
+        justify-content: center !important; box-shadow: none !important; font-weight: 600 !important;
+        padding: 5px !important; opacity: 0.8;
+    }
+    .btn-logout>div>button:hover { opacity: 1; color: #ff1a1a !important; text-decoration: underline; }
     
     /* BOTTOM NAVIGATION BAR */
     .block-container { padding-bottom: 120px !important; }
@@ -539,25 +546,14 @@ else:
         saldo_actual = float(socio_actual.get('saldo', 0.0))
         deuda = 104.00 if solvencia == "Moroso" else 0.00
         
-        # VISTA 1: MENÚ PRINCIPAL Y BILLETERA
         if st.session_state.sub_pagos == "menu":
             st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Billetera Ventry</h3>", unsafe_allow_html=True)
             
             col1, col2 = st.columns(2)
             with col1:
-                st.markdown(f"""
-                <div class="wallet-card">
-                    <p class="wallet-title">Saldo a Favor</p>
-                    <h3 class="wallet-saldo">${saldo_actual:.2f}</h3>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f'<div class="wallet-card"><p class="wallet-title">Saldo a Favor</p><h3 class="wallet-saldo">${saldo_actual:.2f}</h3></div>', unsafe_allow_html=True)
             with col2:
-                st.markdown(f"""
-                <div class="wallet-card">
-                    <p class="wallet-title">Deuda Actual</p>
-                    <h3 class="wallet-deuda">${deuda:.2f}</h3>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f'<div class="wallet-card"><p class="wallet-title">Deuda Actual</p><h3 class="wallet-deuda">${deuda:.2f}</h3></div>', unsafe_allow_html=True)
 
             st.write("")
             if st.button("Pagar Cuota Mantenimiento", type="primary"): 
@@ -566,7 +562,6 @@ else:
             if st.button("Recargar Billetera", type="primary"): 
                 st.session_state.sub_pagos = "recargar"; st.rerun()
 
-        # VISTA 2: RECARGAR BILLETERA
         elif st.session_state.sub_pagos == "recargar":
             st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Recargar Billetera</h3>", unsafe_allow_html=True)
             st.write("Deposita dinero en tu cuenta para consumos del club o futuras cuotas.")
@@ -594,13 +589,11 @@ else:
                 st.session_state.sub_pagos = "menu"; st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # VISTA 3: PAGAR CUOTA
         elif st.session_state.sub_pagos == "pagar":
             st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Pago de Mantenimiento</h3>", unsafe_allow_html=True)
             
             if deuda > 0:
                 st.warning(f"Tienes un saldo pendiente de **${deuda:.2f}**.")
-                
                 if saldo_actual >= deuda:
                     st.info("💡 Tienes saldo suficiente en Ventry para cubrir la deuda.")
                     if st.button("Pagar con Saldo Ventry", type="primary"):
@@ -779,7 +772,7 @@ else:
             st.session_state.db_socios = cargar_bd(); st.session_state.db_invitaciones = cargar_invitaciones(); st.session_state.db_pagos = cargar_pagos(); st.session_state.db_directorio = cargar_directorio()
             st.success("Base de datos sincronizada.")
 
-    # --- MÓDULO 6: AJUSTES (NAVEGACIÓN "DRILL-DOWN" SIN EMOJIS) ---
+    # --- MÓDULO 6: AJUSTES (NAVEGACIÓN "DRILL-DOWN" SEGURA Y LIMPIA) ---
     elif modulo_seleccionado == "Ajustes":
         
         if "sub_ajustes" not in st.session_state: 
@@ -788,7 +781,7 @@ else:
         if st.session_state.sub_ajustes == "menu":
             st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Ajustes</h3>", unsafe_allow_html=True)
             
-            if st.button("Seguridad de Cuenta", type="primary"): 
+            if st.button("Perfil y Seguridad", type="primary"): 
                 st.session_state.sub_ajustes = "perfil"; st.rerun()
             st.write("")
             if st.button("Grupo Familiar", type="primary"): 
@@ -796,20 +789,9 @@ else:
             st.write("")
             if st.button("Historial de Accesos", type="primary"): 
                 st.session_state.sub_ajustes = "historial"; st.rerun()
-            
-            st.write("---")
-            st.markdown("<div class='btn-peligro'>", unsafe_allow_html=True)
-            if st.button("Cerrar Sesión", type="primary"):
-                st.session_state.logueado = False
-                st.session_state.usuario_actual = None
-                st.session_state.pantalla_auth = "login"
-                st.session_state.sub_ajustes = "menu"
-                st.session_state.sub_pagos = "menu"
-                st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
 
         elif st.session_state.sub_ajustes == "perfil":
-            st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Seguridad de Cuenta</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Perfil y Seguridad</h3>", unsafe_allow_html=True)
             
             with st.form("form_cambio_clave"):
                 clave_actual = st.text_input("Contraseña Actual", type="password")
@@ -835,6 +817,18 @@ else:
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
             if st.button("← Volver a Ajustes", type="primary"): 
                 st.session_state.sub_ajustes = "menu"; st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            # BOTÓN DE CERRAR SESIÓN OCULTO Y SUTIL
+            st.write("---")
+            st.markdown("<div class='btn-logout'>", unsafe_allow_html=True)
+            if st.button("Cerrar Sesión de Ventry"):
+                st.session_state.logueado = False
+                st.session_state.usuario_actual = None
+                st.session_state.pantalla_auth = "login"
+                st.session_state.sub_ajustes = "menu"
+                st.session_state.sub_pagos = "menu"
+                st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
         elif st.session_state.sub_ajustes == "familia":

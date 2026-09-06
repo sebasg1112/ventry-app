@@ -71,11 +71,22 @@ st.markdown("""
     .stTextInput input, .stNumberInput input, .stDateInput input, textarea { background-color: #1a1a1a !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
     div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, div[data-baseweb="base-input"] { background-color: #1a1a1a !important; border-radius: 10px !important; border: 1px solid #333 !important; color: #ffffff !important; }
     div[data-baseweb="select"] span { color: #ffffff !important; }
-    div[data-baseweb="popover"] *, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * { background-color: #1a1a1a !important; color: #ffffff !important; }
+    
+    /* MODIFICACIÓN PARA POPOVERS (NOTIFICACIONES) Y LISTAS */
+    div[data-baseweb="popover"] > div, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * { 
+        background-color: #1a1a1a !important; color: #ffffff !important; 
+    }
+    div[data-testid="stPopoverBody"] {
+        background-color: #1a1a1a !important; border: 1px solid #333 !important; border-radius: 15px !important; padding: 15px !important;
+    }
+    
     li[role="option"]:hover *, li[role="option"][aria-selected="true"] * { background-color: #FF6600 !important; color: #ffffff !important; }
     div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { border-color: #FF6600 !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important; }
 
+    /* ========================================================= */
     /* BOTONES (NATIVOS Y ACCIÓN) */
+    /* ========================================================= */
+    
     .stButton>button[kind="primary"], .stFormSubmitButton>button { 
         width: 100%; border-radius: 20px !important; background: #FF6600 !important; color: #ffffff !important; 
         font-weight: 700 !important; letter-spacing: 0.5px; border: none !important; padding: 12px !important; 
@@ -86,6 +97,11 @@ st.markdown("""
     .btn-secundario>div>button:hover { border-color: #FF6600 !important; color: #FF6600 !important; }
     .btn-logout>div>button { background: transparent !important; border: none !important; color: #ff4d4d !important; justify-content: center !important; box-shadow: none !important; font-weight: 600 !important; padding: 5px !important; opacity: 0.8; }
     .btn-logout>div>button:hover { opacity: 1; color: #ff1a1a !important; text-decoration: underline; }
+    
+    /* BOTÓN INVISIBLE DE LA CAMPANA */
+    div[data-testid="stPopover"] > button {
+        background: transparent !important; border: none !important; color: #ffffff !important; font-size: 20px !important; padding: 0 !important; box-shadow: none !important; display: inline-block !important; margin-top: -5px;
+    }
     
     /* BOTTOM NAVIGATION BAR */
     .block-container { padding-bottom: 120px !important; }
@@ -429,13 +445,40 @@ else:
     socio_actual = st.session_state.usuario_actual
     rol_actual = socio_actual["rol"]
 
-    st.markdown(f"""
-    <div style="display:flex; align-items:center; gap:10px; margin-bottom: 20px;">
-        <img src="https://i.ibb.co/t7xWXXR/logo.png" width="25">
-        <span style="font-size:16px; font-weight:700; letter-spacing: 1px;">VENTRY</span>
-    </div>
-    """, unsafe_allow_html=True)
+    # --- HEADER CON CENTRO DE NOTIFICACIONES ---
+    col_logo, col_campana = st.columns([5, 1])
+    with col_logo:
+        st.markdown(f"""
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 20px;">
+            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="25">
+            <span style="font-size:16px; font-weight:700; letter-spacing: 1px;">VENTRY</span>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_campana:
+        # Generación Inteligente de Notificaciones
+        notificaciones = []
+        
+        # 1. Pagos Aprobados o Rechazados Recientes
+        mis_pagos = [p for p in BASE_DATOS_PAGOS.values() if str(p["accion"]) == str(socio_actual["accion"])]
+        for p in mis_pagos[-3:]: # Tomamos los últimos 3
+            if p["estatus"] == "Aprobado": notificaciones.append(f"💰 Tu {p.get('tipo','pago').lower()} de **${p['monto']}** fue Aprobado.")
+            elif p["estatus"] == "Rechazado": notificaciones.append(f"❌ Tu {p.get('tipo','pago').lower()} de **${p['monto']}** fue Rechazado.")
+                
+        # 2. Invitados que acaban de entrar
+        mis_accesos = [h for h in st.session_state.db_historial if h["accion"] == str(socio_actual["accion"]) and h["movimiento"] == "Entrada"]
+        for h in mis_accesos[:3]: # Tomamos las 3 entradas más recientes
+            if "Invitado" in h["via"]: notificaciones.append(f"🎟️ Tu invitado **{h['nombre']}** ingresó al club.")
 
+        # Popover Nativo (Campana)
+        with st.popover("🔔"):
+            st.markdown("<h4 style='color:#FF6600; font-size:14px; margin-bottom:10px;'>Centro de Notificaciones</h4>", unsafe_allow_html=True)
+            if notificaciones:
+                for n in notificaciones[:5]: # Mostrar tope de 5
+                    st.markdown(f"<div style='background:#0d0d0d; padding:10px; border-radius:8px; margin-bottom:5px; font-size:12px; border-left:2px solid #FF6600;'>{n}</div>", unsafe_allow_html=True)
+            else:
+                st.write("No tienes notificaciones nuevas.")
+
+    # --- DEFINICIÓN DE MENÚ INFERIOR ---
     if rol_actual in ["Titular", "Familiar"]: opciones_menu = ["Inicio", "Invitados", "Carnet", "Pagos", "Ajustes"]
     elif rol_actual == "Vigilante": opciones_menu = ["Garita", "Ajustes"]
     elif rol_actual == "Administrador": opciones_menu = ["Inicio", "Invitados", "Garita", "Admin", "Ajustes"]
@@ -448,7 +491,7 @@ else:
     # --- MÓDULO 1: INICIO ---
     if modulo_seleccionado == "Inicio":
         st.markdown("""
-<div style="text-align: center; margin-top: 20px;">
+<div style="text-align: center; margin-top: 0px;">
 <h2 style="margin-bottom: 5px; font-size:22px; font-weight:800; color:#fff;">Magnum City Club</h2>
 <p style="color: #666; font-size:12px; text-transform:uppercase; letter-spacing:2px;">Puerta Principal</p>
 <div class="open-button-container">
@@ -512,8 +555,7 @@ else:
             
             if pase_temp.get('correo'):
                 enviado = enviar_correo_invitacion(pase_temp['correo'], pase_temp['nombre'], pase_temp['fecha'], link_pase_digital)
-                if enviado:
-                    st.info(f"📧 Copia del pase enviada exitosamente a: {pase_temp['correo']}")
+                if enviado: st.info(f"📧 Copia del pase enviada exitosamente a: {pase_temp['correo']}")
             
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
             if st.button("← Volver a crear otra invitación", type="primary"):
@@ -553,12 +595,8 @@ else:
                 if btn_generar and n_cedula_inv and n_nombre_inv:
                     if guardar_contacto:
                         if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
-                        
-                        # EXPLICACIÓN: SI YA ESTÁ, AVISA QUE SE ACTUALIZÓ. SI NO, AVISA QUE ES NUEVO.
-                        if n_cedula_inv in BASE_DATOS_DIRECTORIO[socio_actual["accion"]]:
-                            st.toast("ℹ️ Este invitado ya estaba en tu directorio. Sus datos han sido actualizados.")
-                        else:
-                            st.toast("✅ Contacto nuevo guardado en tu directorio frecuente.")
+                        if n_cedula_inv in BASE_DATOS_DIRECTORIO[socio_actual["accion"]]: st.toast("ℹ️ Este invitado ya estaba en tu directorio. Sus datos han sido actualizados.")
+                        else: st.toast("✅ Contacto nuevo guardado en tu directorio frecuente.")
                             
                         BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {"nombre": n_nombre_inv, "correo": n_correo_inv, "fecha_nacimiento": n_nacimiento_def.strftime("%d/%m/%Y")}
                         guardar_bd_directorio(BASE_DATOS_DIRECTORIO)

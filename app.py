@@ -159,7 +159,6 @@ except Exception as e:
 
 # --- FUNCIONES ---
 def enviar_correo_invitacion(correo_dest, nombre_inv, fecha_inv, link_qr):
-    # Función real de despacho SMTP
     if "smtp_user" in st.secrets and "smtp_pass" in st.secrets:
         try:
             msg = MIMEMultipart()
@@ -176,10 +175,8 @@ def enviar_correo_invitacion(correo_dest, nombre_inv, fecha_inv, link_qr):
             server.quit()
             return True
         except Exception as e:
-            print("Error enviando correo:", e)
             return False
     else:
-        # Modo simulación (hasta que configures las credenciales en producción)
         return True
 
 def cargar_historial():
@@ -544,7 +541,6 @@ else:
                 with st.form("form_invitacion"):
                     n_cedula_inv = st.text_input("Cédula", value=n_cedula_def)
                     n_nombre_inv = st.text_input("Nombre y Apellido", value=n_nombre_def)
-                    # NUEVO: CAMPO DE CORREO AÑADIDO
                     n_correo_inv = st.text_input("Correo Electrónico (Opcional)", value=n_correo_def, placeholder="ejemplo@correo.com")
                     fecha_visita = st.date_input("Fecha de acceso", min_value=datetime.today(), format="DD/MM/YYYY")
                     guardar_contacto = False
@@ -557,6 +553,13 @@ else:
                 if btn_generar and n_cedula_inv and n_nombre_inv:
                     if guardar_contacto:
                         if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
+                        
+                        # EXPLICACIÓN: SI YA ESTÁ, AVISA QUE SE ACTUALIZÓ. SI NO, AVISA QUE ES NUEVO.
+                        if n_cedula_inv in BASE_DATOS_DIRECTORIO[socio_actual["accion"]]:
+                            st.toast("ℹ️ Este invitado ya estaba en tu directorio. Sus datos han sido actualizados.")
+                        else:
+                            st.toast("✅ Contacto nuevo guardado en tu directorio frecuente.")
+                            
                         BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {"nombre": n_nombre_inv, "correo": n_correo_inv, "fecha_nacimiento": n_nacimiento_def.strftime("%d/%m/%Y")}
                         guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
                         
@@ -569,7 +572,7 @@ else:
                     st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha, "correo": n_correo_inv}
                     st.rerun()
 
-    # --- MÓDULO 4: PAGOS (BILLETERA & RECIBOS DIGITALES) ---
+    # --- MÓDULO 4: PAGOS ---
     elif modulo_seleccionado == "Pagos":
         
         if "sub_pagos" not in st.session_state: st.session_state.sub_pagos = "menu"
@@ -736,10 +739,7 @@ else:
                 id_pase = data_qr.split("|")[1]
                 if id_pase in BASE_DATOS_INVITACIONES:
                     pase = BASE_DATOS_INVITACIONES[id_pase]
-                    
-                    # SEGURIDAD: VERIFICACIÓN DE FECHA ACTIVA
                     fecha_hoy = datetime.now().strftime("%d/%m/%Y")
-                    
                     if pase["fecha_visita"] != fecha_hoy:
                         st.error(f"❌ ACCESO DENEGADO\\n\\nEste pase está programado para el **{pase['fecha_visita']}** y hoy es **{fecha_hoy}**.")
                     elif pase["estatus"] == "Activo":
@@ -764,7 +764,7 @@ else:
                 except: st.error("❌ Código de carnet ilegible.")
             else: st.error("❌ Código QR no pertenece al sistema Ventry.")
 
-    # --- MÓDULO 5: ADMIN (DASHBOARD + BUSCADOR INTELIGENTE CRM) ---
+    # --- MÓDULO 5: ADMIN (DASHBOARD RESPONSIVO) ---
     elif modulo_seleccionado == "Admin":
         st.markdown("<h3 style='font-size:24px; font-weight:800; color:#FF6600;'>Consola Administrativa VIP</h3>", unsafe_allow_html=True)
         
@@ -824,8 +824,6 @@ else:
             
         with col_admin2:
             st.markdown("<h4 style='font-size:16px; color:#aaa;'>🔍 Buscador CRM Familiar</h4>", unsafe_allow_html=True)
-            
-            # NUEVO: BUSCADOR INTELIGENTE EN LUGAR DE SELECTBOX INFINITO
             busqueda_admin = st.text_input("Buscar por Acción, Cédula o Nombre:")
             acciones_encontradas = set()
             
@@ -884,7 +882,7 @@ else:
             st.session_state.db_socios = cargar_bd(); st.session_state.db_invitaciones = cargar_invitaciones(); st.session_state.db_pagos = cargar_pagos(); st.session_state.db_directorio = cargar_directorio(); st.session_state.db_historial = cargar_historial()
             st.success("Base de datos sincronizada.")
 
-    # --- MÓDULO 6: AJUSTES (DIRECTORIO EN VIVO) ---
+    # --- MÓDULO 6: AJUSTES ---
     elif modulo_seleccionado == "Ajustes":
         
         if "sub_ajustes" not in st.session_state: st.session_state.sub_ajustes = "menu"

@@ -182,7 +182,6 @@ def enviar_correo_invitacion(correo_dest, nombre_inv, fecha_inv, link_qr):
             msg['Subject'] = "Tu Pase Digital - Magnum City Club"
             cuerpo = f"Hola {nombre_inv},\n\nTienes un pase de invitado autorizado para el {fecha_inv}.\n\nPor favor, abre el siguiente enlace para mostrar tu código QR al llegar a la garita:\n{link_qr}\n\n¡Te esperamos!"
             msg.attach(MIMEText(cuerpo, 'plain'))
-            
             server = smtplib.SMTP('smtp.gmail.com', 587)
             server.starttls()
             server.login(st.secrets["smtp_user"], st.secrets["smtp_pass"])
@@ -191,8 +190,17 @@ def enviar_correo_invitacion(correo_dest, nombre_inv, fecha_inv, link_qr):
             return True
         except Exception as e:
             return False
-    else:
-        return True
+    else: return True
+
+def calcular_edad(fecha_nac_str):
+    if not fecha_nac_str: return 0
+    try:
+        fecha_nac = datetime.strptime(fecha_nac_str, "%d/%m/%Y").date()
+        hoy = datetime.today().date()
+        edad = hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day))
+        return edad
+    except:
+        return 0
 
 def cargar_historial():
     try:
@@ -249,13 +257,13 @@ def cargar_pagos():
         datos = {}
         for f in registros:
             id_p = str(f.get("id_pago", ""))
-            if id_p: datos[id_p] = {"accion": str(f.get("accion", "")), "metodo": str(f.get("metodo", "")), "referencia": str(f.get("referencia", "")), "monto": str(f.get("monto", "")), "fecha_reporte": str(f.get("fecha_reporte", "")), "estatus": str(f.get("estatus", "")), "tipo": str(f.get("tipo", "Pago de Cuota"))}
+            if id_p: datos[id_p] = {"accion": str(f.get("accion", "")), "metodo": str(f.get("metodo", "")), "referencia": str(f.get("referencia", "")), "monto": str(f.get("monto", "")), "fecha_reporte": str(f.get("fecha_reporte", "")), "estatus": str(f.get("estatus", "")), "tipo": str(f.get("tipo", "Abono a Billetera"))}
         return datos
     except: return {}
 
 def guardar_bd_pagos(datos):
     filas = [["id_pago", "accion", "metodo", "referencia", "monto", "fecha_reporte", "estatus", "tipo"]]
-    for k, v in datos.items(): filas.append([k, v["accion"], v["metodo"], v["referencia"], v["monto"], v["fecha_reporte"], v["estatus"], v.get("tipo", "Pago de Cuota")])
+    for k, v in datos.items(): filas.append([k, v["accion"], v["metodo"], v["referencia"], v["monto"], v["fecha_reporte"], v["estatus"], v.get("tipo", "Abono a Billetera")])
     hoja_pagos.clear()
     hoja_pagos.update(values=filas, range_name="A1")
     st.session_state.db_pagos = datos
@@ -439,7 +447,7 @@ if not st.session_state.logueado:
 # APP NATIVA INTERNA
 # ==========================================
 else:
-    # 🔴 SOLUCIÓN 1: BLINDAJE DE SESIÓN Y SALDO FAMILIAR
+    # 🔴 SOLUCIÓN DE SESIÓN: SIEMPRE LEEMOS LA DB ACTUALIZADA
     if st.session_state.usuario_actual["cedula"] in BASE_DATOS_SOCIOS:
         st.session_state.usuario_actual = BASE_DATOS_SOCIOS[st.session_state.usuario_actual["cedula"]]
         
@@ -459,8 +467,8 @@ else:
         notificaciones = []
         mis_pagos = [p for p in BASE_DATOS_PAGOS.values() if str(p["accion"]) == str(socio_actual["accion"])]
         for p in mis_pagos[-3:]:
-            if p["estatus"] == "Aprobado": notificaciones.append(f"💰 Tu {p.get('tipo','pago').lower()} de **${float(p['monto']):.2f}** fue Aprobado.")
-            elif p["estatus"] == "Rechazado": notificaciones.append(f"❌ Tu {p.get('tipo','pago').lower()} de **${float(p['monto']):.2f}** fue Rechazado.")
+            if p["estatus"] == "Aprobado" and p["tipo"] == "Abono a Billetera": notificaciones.append(f"💰 Tu Abono de **${float(p['monto']):.2f}** fue Aprobado.")
+            elif p["estatus"] == "Aprobado" and p["tipo"] == "Cargo Mensual": notificaciones.append(f"🧾 Cargo mensual de **${float(p['monto']):.2f}** procesado.")
                 
         mis_accesos = [h for h in st.session_state.db_historial if h["accion"] == str(socio_actual["accion"]) and h["movimiento"] == "Entrada"]
         for h in mis_accesos[:3]:
@@ -610,151 +618,176 @@ else:
                     st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha, "correo": n_correo_inv}
                     st.rerun()
 
-    # --- MÓDULO 4: PAGOS (AHORA UNIFICADO POR ACCIÓN) ---
+    # --- MÓDULO 4: PAGOS (RBAC POR EDAD Y ROL) ---
     elif modulo_seleccionado == "Pagos":
         
-        if "sub_pagos" not in st.session_state: st.session_state.sub_pagos = "menu"
-        if "recibo_id" not in st.session_state: st.session_state.recibo_id = None
-
-        # 🔴 LÓGICA DE SALDO FAMILIAR: Siempre buscaremos el saldo del Titular de la Acción
-        saldo_accion = 0.0
-        for m in BASE_DATOS_SOCIOS.values():
-            if str(m["accion"]) == str(socio_actual["accion"]) and m["rol"] == "Titular":
-                saldo_accion = float(m.get('saldo', 0.0))
-                break
-
-        saldo_favor = saldo_accion if saldo_accion > 0 else 0.0
-        deuda = abs(saldo_accion) if saldo_accion < 0 else 0.0
+        # 🔴 LÓGICA DE CONTROL DE ACCESO (MENORES DE EDAD)
+        edad_usuario = calcular_edad(socio_actual.get("fecha_nacimiento", ""))
         
-        if st.session_state.sub_pagos == "menu":
+        if edad_usuario < 18 and edad_usuario > 0:
             st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Billetera Ventry</h3>", unsafe_allow_html=True)
-            col1, col2 = st.columns(2)
-            with col1: st.markdown(f'<div class="wallet-card"><p class="wallet-title">Saldo a Favor</p><h3 class="wallet-saldo">${saldo_favor:.2f}</h3></div>', unsafe_allow_html=True)
-            with col2: st.markdown(f'<div class="wallet-card"><p class="wallet-title">Deuda Actual</p><h3 class="wallet-deuda">${deuda:.2f}</h3></div>', unsafe_allow_html=True)
+            st.error("🔒 Acceso Restringido: El módulo financiero es exclusivo para los administradores del grupo familiar (Mayores de edad).")
+            
+        else:
+            if "sub_pagos" not in st.session_state: st.session_state.sub_pagos = "menu"
+            if "recibo_id" not in st.session_state: st.session_state.recibo_id = None
 
-            st.write("")
-            if st.button("Pagar Cuota Mantenimiento", type="primary"): st.session_state.sub_pagos = "pagar"; st.rerun()
-            st.write("")
-            if st.button("Recargar Billetera", type="primary"): st.session_state.sub_pagos = "recargar"; st.rerun()
-            st.write("")
-            if st.button("Historial de Transacciones", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
+            # Buscar saldo del Titular de la Acción
+            saldo_accion = 0.0
+            for m in BASE_DATOS_SOCIOS.values():
+                if str(m["accion"]) == str(socio_actual["accion"]) and m["rol"] == "Titular":
+                    saldo_accion = float(m.get('saldo', 0.0))
+                    break
 
-        elif st.session_state.sub_pagos == "recargar":
-            st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Recargar Billetera</h3>", unsafe_allow_html=True)
-            with st.form("form_recarga"):
-                metodo_r = st.selectbox("Método de Depósito", ["Pago Móvil (Ej. Mercantil, Banesco, etc.)", "Transferencia Nacional", "Zelle", "Efectivo en Taquilla"])
-                ref_r = st.text_input("Nº de Referencia (Deje en blanco si es efectivo)")
-                monto_r = st.number_input("Monto a depositar ($)", min_value=1.0)
-                st.markdown("<br>", unsafe_allow_html=True)
-                btn_recarga = st.form_submit_button("REPORTAR RECARGA")
+            saldo_favor = saldo_accion if saldo_accion > 0 else 0.0
+            deuda = abs(saldo_accion) if saldo_accion < 0 else 0.0
+            
+            if st.session_state.sub_pagos == "menu":
+                st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Billetera Ventry</h3>", unsafe_allow_html=True)
+                col1, col2 = st.columns(2)
+                with col1: st.markdown(f'<div class="wallet-card"><p class="wallet-title">Saldo a Favor</p><h3 class="wallet-saldo">${saldo_favor:.2f}</h3></div>', unsafe_allow_html=True)
+                with col2: st.markdown(f'<div class="wallet-card"><p class="wallet-title">Deuda Actual</p><h3 class="wallet-deuda">${deuda:.2f}</h3></div>', unsafe_allow_html=True)
+
+                st.write("")
                 
-            if btn_recarga:
-                # 🔴 SOLUCIÓN 2: VALIDACIÓN INTELIGENTE DE EFECTIVO
-                if "Efectivo" not in metodo_r and not ref_r:
-                    st.error("⚠️ Ingrese el número de referencia de su transferencia o pago móvil.")
+                # 🔴 RBAC: SOLO EL TITULAR PUEDE PAGAR LA CUOTA
+                if rol_actual == "Titular":
+                    if st.button("Pagar Cuota Mantenimiento", type="primary"): st.session_state.sub_pagos = "pagar"; st.rerun()
+                    st.write("")
                 else:
-                    ref_final = ref_r if ref_r else "EFECTIVO-TAQ"
-                    id_pago = f"REC-{str(uuid.uuid4())[:6].upper()}"
-                    BASE_DATOS_PAGOS[id_pago] = {"accion": socio_actual["accion"], "metodo": metodo_r, "referencia": ref_final, "monto": monto_r, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "En Revisión", "tipo": "Recarga Billetera"}
-                    guardar_bd_pagos(BASE_DATOS_PAGOS)
-                    st.success("✅ Depósito reportado. Se sumará a su saldo tras la validación administrativa.")
-            
-            st.write("")
-            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
+                    st.info("ℹ️ El pago de la cuota de mantenimiento es gestionado exclusivamente por el Titular de la acción.")
+                
+                if st.button("📥 Reportar Abono / Depósito", type="primary"): st.session_state.sub_pagos = "recargar"; st.rerun()
+                st.write("")
+                if st.button("🕒 Movimientos de Billetera", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
 
-        elif st.session_state.sub_pagos == "pagar":
-            st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Pago de Mantenimiento</h3>", unsafe_allow_html=True)
-            if deuda > 0:
-                st.warning(f"Tu Grupo Familiar tiene una deuda actual de **${deuda:.2f}**.")
-                st.write("Reportar un pago externo:")
-                with st.form("form_pago_cuota"):
-                    metodo_p = st.selectbox("Vía de pago", ["Zelle", "Pago Móvil (Ej. Mercantil, Banesco, etc.)", "Transferencia Nacional", "Efectivo en Taquilla"])
-                    ref_p = st.text_input("Nº de Referencia (Deje en blanco si es efectivo)")
-                    monto_p = st.number_input("Monto reportado ($)", min_value=1.0, value=float(deuda))
+            elif st.session_state.sub_pagos == "recargar":
+                st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Reportar Abono</h3>", unsafe_allow_html=True)
+                if deuda > 0:
+                    st.warning(f"⚠️ Tu familia tiene una deuda de **${deuda:.2f}**. Cualquier depósito cubrirá primero este monto.")
+                
+                with st.form("form_recarga"):
+                    metodo_r = st.selectbox("Método de Pago", ["Pago Móvil (Ej. Mercantil, Banesco, etc.)", "Transferencia Nacional", "Zelle", "Efectivo en Taquilla"])
+                    ref_r = st.text_input("Nº de Referencia (Deje en blanco si es efectivo)")
+                    monto_sugerido = deuda if deuda > 0 else 1.0
+                    monto_r = st.number_input("Monto depositado ($)", min_value=1.0, value=float(monto_sugerido))
                     st.markdown("<br>", unsafe_allow_html=True)
-                    btn_pago = st.form_submit_button("REPORTAR PAGO DE CUOTA")
+                    btn_recarga = st.form_submit_button("ENVIAR REPORTE")
                     
-                if btn_pago:
-                    if "Efectivo" not in metodo_p and not ref_p:
-                        st.error("⚠️ Ingrese el número de referencia.")
+                if btn_recarga:
+                    if "Efectivo" not in metodo_r and not ref_r:
+                        st.error("⚠️ Ingrese el número de referencia de su transferencia o Zelle.")
                     else:
-                        ref_final = ref_p if ref_p else "EFECTIVO-TAQ"
-                        id_pago = f"PAG-{str(uuid.uuid4())[:6].upper()}"
-                        BASE_DATOS_PAGOS[id_pago] = {"accion": socio_actual["accion"], "metodo": metodo_p, "referencia": ref_final, "monto": monto_p, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "En Revisión", "tipo": "Pago de Cuota"}
+                        ref_final = ref_r if ref_r else "EFECTIVO-TAQ"
+                        id_pago = f"ABN-{str(uuid.uuid4())[:6].upper()}"
+                        BASE_DATOS_PAGOS[id_pago] = {"accion": socio_actual["accion"], "metodo": metodo_r, "referencia": ref_final, "monto": monto_r, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "En Revisión", "tipo": "Abono a Billetera"}
                         guardar_bd_pagos(BASE_DATOS_PAGOS)
-                        st.success("✅ Recibo enviado a administración.")
-            else: st.success("🎉 ¡Estás al día! No tienes deudas pendientes de mantenimiento.")
-            
-            st.write("")
-            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
+                        st.success("✅ Reporte enviado. El saldo se actualizará tras la aprobación administrativa.")
+                
+                st.write("")
+                st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+                if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
 
-        elif st.session_state.sub_pagos == "historial":
-            st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Historial de Transacciones</h3>", unsafe_allow_html=True)
-            mis_pagos = {k: v for k, v in BASE_DATOS_PAGOS.items() if str(v["accion"]) == str(socio_actual["accion"])}
-            mis_pagos_lista = list(mis_pagos.items())[::-1]
-            
-            if mis_pagos_lista:
-                for p_id, p_info in mis_pagos_lista:
-                    color_status = "#4ade80" if p_info['estatus'] == "Aprobado" else ("#FF6600" if p_info['estatus'] == "En Revisión" else "#ff6b6b")
-                    st.markdown(f"""
-                    <div style='background:#1a1a1a; padding:15px; border-radius:12px; margin-bottom:10px; border-left: 3px solid {color_status};'>
-                        <div style='display:flex; justify-content:space-between; margin-bottom:5px;'>
-                            <b style='color:#fff;'>{p_info.get('tipo', 'Pago')}</b>
-                            <b style='color:{color_status};'>${float(p_info['monto']):.2f}</b>
+            elif st.session_state.sub_pagos == "pagar":
+                st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Pago de Mantenimiento</h3>", unsafe_allow_html=True)
+                if deuda > 0:
+                    st.warning(f"Tu Grupo Familiar tiene una deuda actual de **${deuda:.2f}**.")
+                    st.write("Reportar un pago externo:")
+                    with st.form("form_pago_cuota"):
+                        metodo_p = st.selectbox("Vía de pago", ["Zelle", "Pago Móvil (Ej. Mercantil, Banesco, etc.)", "Transferencia Nacional", "Efectivo en Taquilla"])
+                        ref_p = st.text_input("Nº de Referencia (Deje en blanco si es efectivo)")
+                        monto_p = st.number_input("Monto reportado ($)", min_value=1.0, value=float(deuda))
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        btn_pago = st.form_submit_button("REPORTAR PAGO DE CUOTA")
+                        
+                    if btn_pago:
+                        if "Efectivo" not in metodo_p and not ref_p:
+                            st.error("⚠️ Ingrese el número de referencia.")
+                        else:
+                            ref_final = ref_p if ref_p else "EFECTIVO-TAQ"
+                            id_pago = f"PAG-{str(uuid.uuid4())[:6].upper()}"
+                            BASE_DATOS_PAGOS[id_pago] = {"accion": socio_actual["accion"], "metodo": metodo_p, "referencia": ref_final, "monto": monto_p, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "En Revisión", "tipo": "Pago de Cuota"}
+                            guardar_bd_pagos(BASE_DATOS_PAGOS)
+                            st.success("✅ Recibo enviado a administración.")
+                else: st.success("🎉 ¡Estás al día! No tienes deudas pendientes de mantenimiento.")
+                
+                st.write("")
+                st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+                if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            elif st.session_state.sub_pagos == "historial":
+                st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Libro de Transacciones</h3>", unsafe_allow_html=True)
+                mis_pagos = {k: v for k, v in BASE_DATOS_PAGOS.items() if str(v["accion"]) == str(socio_actual["accion"])}
+                mis_pagos_lista = list(mis_pagos.items())[::-1]
+                
+                if mis_pagos_lista:
+                    for p_id, p_info in mis_pagos_lista:
+                        es_cargo = p_info.get('tipo', '') == "Cargo Mensual"
+                        if es_cargo: color_status = "#ff6b6b"
+                        elif p_info['estatus'] == "Aprobado": color_status = "#4ade80"
+                        elif p_info['estatus'] == "En Revisión": color_status = "#FF6600"
+                        else: color_status = "#ff6b6b"
+                        
+                        signo = "-" if es_cargo else "+"
+                        monto_str = f"{signo}${float(p_info['monto']):.2f}"
+                        
+                        st.markdown(f"""
+                        <div style='background:#1a1a1a; padding:15px; border-radius:12px; margin-bottom:10px; border-left: 3px solid {color_status};'>
+                            <div style='display:flex; justify-content:space-between; margin-bottom:5px;'>
+                                <b style='color:#fff;'>{p_info.get('tipo', 'Abono a Billetera')}</b>
+                                <b style='color:{color_status};'>{monto_str}</b>
+                            </div>
+                            <span style='color:#aaa; font-size:12px;'>Fecha: {p_info['fecha_reporte']} | Vía: {p_info['metodo']}</span><br>
+                            <span style='color:{color_status}; font-size:11px; font-weight:bold; text-transform:uppercase;'>Estatus: {p_info['estatus']}</span>
                         </div>
-                        <span style='color:#aaa; font-size:12px;'>Fecha: {p_info['fecha_reporte']} | Vía: {p_info['metodo']}</span><br>
-                        <span style='color:{color_status}; font-size:11px; font-weight:bold; text-transform:uppercase;'>Estatus: {p_info['estatus']}</span>
+                        """, unsafe_allow_html=True)
+                        
+                        if not es_cargo and p_info['estatus'] == "Aprobado":
+                            st.markdown("<div class='btn-secundario' style='margin-bottom: 15px;'>", unsafe_allow_html=True)
+                            if st.button(f"🧾 Ver Recibo {p_id}", key=f"btn_{p_id}"):
+                                st.session_state.recibo_id = p_id
+                                st.session_state.sub_pagos = "recibo"
+                                st.rerun()
+                            st.markdown("</div>", unsafe_allow_html=True)
+                else: st.info("No hay movimientos financieros registrados.")
+                    
+                st.write("")
+                st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+                if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            elif st.session_state.sub_pagos == "recibo":
+                r_id = st.session_state.recibo_id
+                if r_id in BASE_DATOS_PAGOS:
+                    r_info = BASE_DATOS_PAGOS[r_id]
+                    st.markdown(f"""
+                    <div class="receipt-card">
+                        <div class="receipt-header">
+                            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="40">
+                            <h4 style="color: #fff; margin: 10px 0 0 0; letter-spacing: 2px;">VENTRY</h4>
+                            <p style="color: #888; font-size: 10px; text-transform: uppercase; margin:0;">Recibo de Operación</p>
+                        </div>
+                        <div style="text-align: center;">
+                            <p class="receipt-amount">${float(r_info['monto']):.2f}</p>
+                            <span style="background: #4ade80; color: #000; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">TRANSACCIÓN APROBADA</span>
+                        </div>
+                        <div style="margin-top: 30px;">
+                            <div class="receipt-row"><span class="receipt-label">Recibo ID</span><span class="receipt-value">{r_id}</span></div>
+                            <div class="receipt-row"><span class="receipt-label">Fecha</span><span class="receipt-value">{r_info['fecha_reporte']}</span></div>
+                            <div class="receipt-row"><span class="receipt-label">Tipo</span><span class="receipt-value">{r_info.get('tipo', 'Abono a Billetera')}</span></div>
+                            <div class="receipt-row"><span class="receipt-label">Método</span><span class="receipt-value">{r_info['metodo']}</span></div>
+                            <div class="receipt-row"><span class="receipt-label">Referencia</span><span class="receipt-value">{r_info['referencia']}</span></div>
+                            <div class="receipt-row"><span class="receipt-label">Acción Titular</span><span class="receipt-value">{r_info['accion']}</span></div>
+                        </div>
                     </div>
                     """, unsafe_allow_html=True)
-                    
-                    if p_info['estatus'] == "Aprobado":
-                        st.markdown("<div class='btn-secundario' style='margin-bottom: 15px;'>", unsafe_allow_html=True)
-                        if st.button(f"🧾 Ver Recibo {p_id}", key=f"btn_{p_id}"):
-                            st.session_state.recibo_id = p_id
-                            st.session_state.sub_pagos = "recibo"
-                            st.rerun()
-                        st.markdown("</div>", unsafe_allow_html=True)
-            else: st.info("Aún no has reportado pagos ni recargas.")
                 
-            st.write("")
-            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        elif st.session_state.sub_pagos == "recibo":
-            r_id = st.session_state.recibo_id
-            if r_id in BASE_DATOS_PAGOS:
-                r_info = BASE_DATOS_PAGOS[r_id]
-                st.markdown(f"""
-                <div class="receipt-card">
-                    <div class="receipt-header">
-                        <img src="https://i.ibb.co/t7xWXXR/logo.png" width="40">
-                        <h4 style="color: #fff; margin: 10px 0 0 0; letter-spacing: 2px;">VENTRY</h4>
-                        <p style="color: #888; font-size: 10px; text-transform: uppercase; margin:0;">Recibo de Operación</p>
-                    </div>
-                    <div style="text-align: center;">
-                        <p class="receipt-amount">${float(r_info['monto']):.2f}</p>
-                        <span style="background: #4ade80; color: #000; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">TRANSACCIÓN APROBADA</span>
-                    </div>
-                    <div style="margin-top: 30px;">
-                        <div class="receipt-row"><span class="receipt-label">Recibo ID</span><span class="receipt-value">{r_id}</span></div>
-                        <div class="receipt-row"><span class="receipt-label">Fecha</span><span class="receipt-value">{r_info['fecha_reporte']}</span></div>
-                        <div class="receipt-row"><span class="receipt-label">Tipo</span><span class="receipt-value">{r_info.get('tipo', 'Pago')}</span></div>
-                        <div class="receipt-row"><span class="receipt-label">Método</span><span class="receipt-value">{r_info['metodo']}</span></div>
-                        <div class="receipt-row"><span class="receipt-label">Referencia</span><span class="receipt-value">{r_info['referencia']}</span></div>
-                        <div class="receipt-row"><span class="receipt-label">Acción Titular</span><span class="receipt-value">{r_info['accion']}</span></div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            st.write("")
-            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            if st.button("← Volver al Historial", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
+                st.write("")
+                st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+                if st.button("← Volver al Historial", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
 
     # --- MÓDULO GARITA ---
     elif modulo_seleccionado == "Garita":
@@ -854,14 +887,13 @@ else:
                                     BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"
                                     guardar_bd_pagos(BASE_DATOS_PAGOS)
                                     
-                                    # LÓGICA FINANCIERA PERFECCIONADA: Sumar el dinero aprobado al saldo de la familia siempre.
                                     nuevo_saldo = 0.0
                                     for ced, info in BASE_DATOS_SOCIOS.items():
                                         if str(info["accion"]) == str(p_info["accion"]) and info["rol"] == "Titular":
                                             nuevo_saldo = float(info.get("saldo", 0)) + float(p_info['monto'])
                                             BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
+                                            break
                                             
-                                    # Recalcular estatus de toda la familia
                                     nueva_solvencia = "Al dia" if nuevo_saldo >= 0 else "Moroso"
                                     for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
                                         if str(info_fam["accion"]) == str(p_info["accion"]):
@@ -936,16 +968,23 @@ else:
 
         with tab_facturacion:
             st.markdown("<h4 style='color:#FF6600;'>Ejecución de Cobro Mensual</h4>", unsafe_allow_html=True)
-            st.write("Al presionar este botón, el sistema debitará el monto de mantenimiento de la Billetera Ventry de todas las Familias (Acciones) y actualizará su estatus de solvencia instantáneamente.")
+            st.write("Al presionar este botón, el sistema debitará el monto de mantenimiento de la Billetera Ventry de todas las Familias (Acciones) y generará un recibo en su historial.")
             
             monto_cuota = st.number_input("Monto de la Cuota a cobrar ($):", min_value=1.0, value=104.0, step=1.0)
             st.warning("⚠️ **ATENCIÓN:** Esta acción modificará los saldos de toda la base de datos de socios. Ejecutar solo el día correspondiente al corte mensual.")
             
             if st.button("🚨 EJECUTAR COBRO MASIVO", type="primary"):
+                fecha_cobro = datetime.now().strftime("%d/%m/%Y")
                 for ced, info in BASE_DATOS_SOCIOS.items():
                     if info["rol"] == "Titular":
                         nuevo_saldo = float(info.get("saldo", 0)) - monto_cuota
                         BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
+                        
+                        id_cargo = f"CRG-{str(uuid.uuid4())[:6].upper()}"
+                        BASE_DATOS_PAGOS[id_cargo] = {
+                            "accion": info["accion"], "metodo": "Sistema Ventry", "referencia": "FACTURACIÓN", 
+                            "monto": monto_cuota, "fecha_reporte": fecha_cobro, "estatus": "Aprobado", "tipo": "Cargo Mensual"
+                        }
                         
                         nueva_solvencia = "Al dia" if nuevo_saldo >= 0 else "Moroso"
                         for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
@@ -953,7 +992,8 @@ else:
                                 BASE_DATOS_SOCIOS[ced_fam]["solvencia"] = nueva_solvencia
                                 
                 guardar_bd(BASE_DATOS_SOCIOS)
-                st.success(f"✅ ¡FACTURACIÓN EXITOSA! Se han debitado ${monto_cuota} de todas las acciones y los estatus han sido actualizados.")
+                guardar_bd_pagos(BASE_DATOS_PAGOS)
+                st.success(f"✅ ¡FACTURACIÓN EXITOSA! Se han debitado ${monto_cuota} de todas las acciones y se han generado los recibos de cargo.")
                 st.rerun()
 
         st.write("---")

@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import gspread
 import json
-import pd
+import pandas as pd
 import uuid
 import base64
 import urllib.parse
@@ -154,7 +154,7 @@ except Exception as e:
     st.error(f"Error conectando a Google Sheets: {e}")
     st.stop()
 
-# --- FUNCIONES MAESTRAS DE TIEMPO Y LENGUAJE ---
+# --- FUNCIONES DE TIEMPO Y LENGUAJE ---
 def calcular_edad(fecha_nac_str):
     if not fecha_nac_str: return 0
     try:
@@ -166,17 +166,8 @@ def calcular_edad(fecha_nac_str):
 def mes_actual_str():
     return datetime.now().strftime("%m/%Y")
 
-def sumar_un_mes(mes_str):
-    if not mes_str or "/" not in mes_str: return mes_actual_str()
-    m, y = map(int, mes_str.split("/"))
-    m += 1
-    if m > 12:
-        m = 1
-        y += 1
-    return f"{m:02d}/{y}"
-
 def comparar_meses(mes1, mes2):
-    if not mes1 or not mes2: return 0
+    if not mes1 or not mes2: return -1
     m1, y1 = map(int, mes1.split("/"))
     m2, y2 = map(int, mes2.split("/"))
     if y1 < y2: return -1
@@ -438,7 +429,6 @@ if not st.session_state.logueado:
                 
                 if titular_existente: st.error(f"⚠️ Operación Denegada: La Acción {r_acc_norm} ya tiene un Titular registrado.")
                 else:
-                    # Inicializamos los nuevos sin fecha de pago para que les cobre el mes actual de inmediato
                     BASE_DATOS_SOCIOS[r_cedula] = {
                         "nombre": r_nombre, "clave": r_clave, "accion": r_acc_norm, "rol": r_rol, 
                         "parentesco": r_parentesco, "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"), 
@@ -451,7 +441,6 @@ if not st.session_state.logueado:
 # APP NATIVA INTERNA
 # ==========================================
 else:
-    # 🔴 SOLUCIÓN DE SESIÓN: SIEMPRE LEEMOS LA DB ACTUALIZADA
     if st.session_state.usuario_actual["cedula"] in BASE_DATOS_SOCIOS:
         st.session_state.usuario_actual = BASE_DATOS_SOCIOS[st.session_state.usuario_actual["cedula"]]
         
@@ -656,7 +645,7 @@ else:
                         st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha, "correo": n_correo_inv}
                         st.rerun()
 
-    # --- MÓDULO 4: PAGOS (CAP DE ADELANTO IMPLEMENTADO) ---
+    # --- MÓDULO 4: PAGOS (POLÍTICA: SOLO MES EN CURSO) ---
     elif modulo_seleccionado == "Pagos":
         
         edad_usuario = calcular_edad(socio_actual.get("fecha_nacimiento", ""))
@@ -669,19 +658,14 @@ else:
             if "recibo_id" not in st.session_state: st.session_state.recibo_id = None
 
             saldo_favor = saldo_accion if saldo_accion > 0 else 0.0
-            
-            # VARIABLES MAESTRAS DE TIEMPO
             mes_actual = mes_actual_str()
             dia_actual = datetime.now().day
-            mes_a_cobrar = sumar_un_mes(mes_pagado_accion)
-            nombre_mes = formato_mes_espanol(mes_a_cobrar)
-            mes_adelanto_permitido = sumar_un_mes(mes_actual)
+            nombre_mes_actual = formato_mes_espanol(mes_actual)
             
             # --- VISTA 1: BILLETERA ---
             if st.session_state.sub_pagos == "menu":
                 st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Billetera Ventry</h3>", unsafe_allow_html=True)
                 
-                # INYECCIÓN DEL MENSAJE DE ÉXITO GUARDADO
                 if "mensaje_pago_exitoso" in st.session_state:
                     st.success(st.session_state.mensaje_pago_exitoso)
                     del st.session_state.mensaje_pago_exitoso
@@ -690,24 +674,20 @@ else:
                 st.write("")
                 
                 if rol_actual == "Titular":
-                    diferencia = comparar_meses(mes_a_cobrar, mes_actual)
-                    
-                    if diferencia < 0:
-                        st.error(f"⚠️ Tu Acción presenta meses de atraso. Próxima cuota pendiente: **{nombre_mes}** ($120).")
-                        if st.button(f"Pagar Mensualidad de {nombre_mes}", type="primary"): st.session_state.sub_pagos = "pagar"; st.rerun()
-                    
-                    elif diferencia == 0:
-                        if dia_actual <= 10: st.info(f"🌟 Beneficio de Pronto Pago vigente (Días 1-10). Cuota de **{nombre_mes}**: $104 + 10 Pases Gratis.")
-                        else: st.warning(f"⚠️ Fecha de corte superada. Cuota de **{nombre_mes}**: $120. No incluye pases gratis.")
-                        if st.button(f"Pagar Mensualidad de {nombre_mes}", type="primary"): st.session_state.sub_pagos = "pagar"; st.rerun()
-                    
-                    elif mes_a_cobrar == mes_adelanto_permitido:
-                        st.success(f"🎉 Tu Acción está solvente. Tienes la opción de adelantar tu próxima mensualidad.")
-                        if st.button(f"Adelantar Cuota de {nombre_mes}", type="primary"): st.session_state.sub_pagos = "pagar"; st.rerun()
-                        
+                    # POLÍTICA CLUB: ¿YA PAGÓ EL MES CORRIENTE?
+                    if mes_pagado_accion == mes_actual:
+                        st.success(f"🎉 **Cuota de {nombre_mes_actual} pagada.** Tu acción está solvente.")
+                        st.caption("ℹ️ *Por políticas del club y resguardo tarifario, las cuotas mensuales solo se habilitan a partir del 1° de cada mes.*")
                     else:
-                        st.success(f"🚀 ¡Al Máximo! Tienes tus pagos adelantados hasta **{formato_mes_espanol(mes_pagado_accion)}**. Has alcanzado el límite de adelantos permitidos por el club.")
+                        if dia_actual <= 10:
+                            st.info(f"🌟 Beneficio de Pronto Pago vigente (Días 1-10). Cuota de **{nombre_mes_actual}**: $104 + 10 Pases Gratis.")
+                        else:
+                            st.warning(f"⚠️ Fecha de corte superada. Cuota de **{nombre_mes_actual}**: $120. No incluye pases gratis.")
                         
+                        if st.button(f"Pagar Mensualidad de {nombre_mes_actual}", type="primary"): 
+                            st.session_state.sub_pagos = "pagar"
+                            st.rerun()
+                            
                     st.write("")
                 else:
                     st.info("ℹ️ El pago de la cuota de mantenimiento es gestionado por el Titular de la acción.")
@@ -719,6 +699,7 @@ else:
             # --- VISTA 2: RECARGAR ---
             elif st.session_state.sub_pagos == "recargar":
                 st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Reportar Abono</h3>", unsafe_allow_html=True)
+                st.write("Abona dinero a tu Fondo Familiar. El saldo quedará guardado para pagos de cuotas y consumos del club.")
                 
                 with st.form("form_recarga"):
                     metodo_r = st.selectbox("Método de Pago", ["Pago Móvil (Ej. Mercantil, Banesco, etc.)", "Transferencia Nacional", "Zelle", "Efectivo en Taquilla"])
@@ -744,66 +725,50 @@ else:
                 if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
 
-            # --- VISTA 3: PAGAR CUOTA AUTOMÁTICA ---
+            # --- VISTA 3: PAGAR CUOTA (SOLO MES EN CURSO) ---
             elif st.session_state.sub_pagos == "pagar":
-                # Determinamos montos exactos basados en la fecha y el atraso
-                diferencia = comparar_meses(mes_a_cobrar, mes_actual)
+                if mes_pagado_accion == mes_actual:
+                    st.session_state.sub_pagos = "menu"
+                    st.rerun()
                 
-                if diferencia < 0:
-                    monto_cobro = 120.0
-                    invites_premio = 0
-                    tipo_cobro = f"Mensualidad de {nombre_mes} (Tardío)"
-                    mostrar_pago = True
-                elif diferencia == 0:
-                    if dia_actual <= 10:
-                        monto_cobro = 104.0
-                        invites_premio = 10
-                        tipo_cobro = f"Mensualidad de {nombre_mes} (Pronto Pago)"
-                    else:
-                        monto_cobro = 120.0
-                        invites_premio = 0
-                        tipo_cobro = f"Mensualidad de {nombre_mes} (Tardío)"
-                    mostrar_pago = True
-                elif mes_a_cobrar == mes_adelanto_permitido:
+                if dia_actual <= 10:
                     monto_cobro = 104.0
                     invites_premio = 10
-                    tipo_cobro = f"Mensualidad de {nombre_mes} (Adelanto)"
-                    mostrar_pago = True
+                    tipo_cobro = f"Mensualidad de {nombre_mes_actual} (Pronto Pago)"
                 else:
-                    mostrar_pago = False
+                    monto_cobro = 120.0
+                    invites_premio = 0
+                    tipo_cobro = f"Mensualidad de {nombre_mes_actual} (Tardío)"
 
-                if mostrar_pago:
-                    st.markdown(f"<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Confirmación de Pago</h3>", unsafe_allow_html=True)
-                    if saldo_accion >= monto_cobro:
-                        st.info(f"💡 Tienes suficiente Saldo Ventry. Se debitarán **${monto_cobro:.2f}** de tu Billetera Familiar.")
+                st.markdown(f"<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Confirmación de Pago ({nombre_mes_actual})</h3>", unsafe_allow_html=True)
+                
+                if saldo_accion >= monto_cobro:
+                    st.info(f"💡 Se debitarán **${monto_cobro:.2f}** de tu Fondo Familiar Disponible.")
+                    
+                    if st.button(f"Pagar {nombre_mes_actual} (${monto_cobro:.2f})", key="btn_pagar_mes_corriente", type="primary"):
+                        nuevo_saldo = saldo_accion - monto_cobro
+                        for ced, info in BASE_DATOS_SOCIOS.items():
+                            if str(info["accion"]) == str(socio_actual["accion"]) and info["rol"] == "Titular":
+                                BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
+                                BASE_DATOS_SOCIOS[ced]["mes_pagado"] = mes_actual
+                                BASE_DATOS_SOCIOS[ced]["invitaciones"] = int(info.get('invitaciones', 0)) + invites_premio
+                                break
                         
-                        # REDIRECCIÓN SEGURA ANTI-CLIC DOBLE Y BUCLE
-                        if st.button(f"Pagar Mensualidad de {nombre_mes} (${monto_cobro:.2f})", key="btn_pagar_cuota_dinamico", type="primary"):
-                            nuevo_saldo = saldo_accion - monto_cobro
-                            for ced, info in BASE_DATOS_SOCIOS.items():
-                                if str(info["accion"]) == str(socio_actual["accion"]) and info["rol"] == "Titular":
-                                    BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
-                                    BASE_DATOS_SOCIOS[ced]["mes_pagado"] = mes_a_cobrar
-                                    BASE_DATOS_SOCIOS[ced]["invitaciones"] = int(info.get('invitaciones',0)) + invites_premio
-                                    break
-                            
-                            for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
-                                if str(info_fam["accion"]) == str(socio_actual["accion"]):
-                                    BASE_DATOS_SOCIOS[ced_fam]["solvencia"] = "Al dia"
-                            
-                            guardar_bd(BASE_DATOS_SOCIOS)
-                            
-                            id_cargo = f"CRG-{str(uuid.uuid4())[:6].upper()}"
-                            BASE_DATOS_PAGOS[id_cargo] = {"accion": socio_actual["accion"], "metodo": "Sistema Ventry", "referencia": f"CUOTA-{mes_a_cobrar.replace('/','-')}", "monto": monto_cobro, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "Aprobado", "tipo": tipo_cobro}
-                            guardar_bd_pagos(BASE_DATOS_PAGOS)
-                            
-                            st.session_state.mensaje_pago_exitoso = f"✅ Mensualidad de {nombre_mes} cancelada con éxito. Se habilitaron {invites_premio} pases."
-                            st.session_state.sub_pagos = "menu"
-                            st.rerun()
-                    else:
-                        st.error(f"❌ Saldo Insuficiente. Necesitas **${monto_cobro:.2f}** para pagar la mensualidad de {nombre_mes}. Regresa y reporta un Abono a tu billetera.")
+                        for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
+                            if str(info_fam["accion"]) == str(socio_actual["accion"]):
+                                BASE_DATOS_SOCIOS[ced_fam]["solvencia"] = "Al dia"
+                        
+                        guardar_bd(BASE_DATOS_SOCIOS)
+                        
+                        id_cargo = f"CRG-{str(uuid.uuid4())[:6].upper()}"
+                        BASE_DATOS_PAGOS[id_cargo] = {"accion": socio_actual["accion"], "metodo": "Sistema Ventry", "referencia": f"CUOTA-{mes_actual.replace('/','-')}", "monto": monto_cobro, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "Aprobado", "tipo": tipo_cobro}
+                        guardar_bd_pagos(BASE_DATOS_PAGOS)
+                        
+                        st.session_state.mensaje_pago_exitoso = f"✅ Mensualidad de {nombre_mes_actual} cancelada con éxito. Recibiste {invites_premio} invitaciones de cortesía."
+                        st.session_state.sub_pagos = "menu"
+                        st.rerun()
                 else:
-                    st.success("🚀 ¡Al Máximo! No puedes pagar más meses por ahora.")
+                    st.error(f"❌ Saldo Insuficiente. Necesitas **${monto_cobro:.2f}** para pagar {nombre_mes_actual}. Regresa y abona dinero a tu billetera.")
                 
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
@@ -942,6 +907,10 @@ else:
     elif modulo_seleccionado == "Admin":
         st.markdown("<h3 style='font-size:24px; font-weight:800; color:#FF6600;'>Consola Administrativa VIP</h3>", unsafe_allow_html=True)
         
+        if "mensaje_admin_exitoso" in st.session_state:
+            st.success(st.session_state.mensaje_admin_exitoso)
+            del st.session_state.mensaje_admin_exitoso
+        
         tab_dashboard, tab_facturacion = st.tabs(["📊 Dashboard & Conciliación", "⚙️ Motor de Facturación"])
         
         with tab_dashboard:
@@ -1064,27 +1033,26 @@ else:
 
         with tab_facturacion:
             st.markdown("<h4 style='color:#FF6600;'>Auditoría y Cobro de Morosos (Post-Día 10)</h4>", unsafe_allow_html=True)
-            st.write("Este botón debe ser accionado por el Administrador **después del día 10** de cada mes. Cobrará la cuota de **$120** (Sin premio de pases gratis) a todas las familias que tengan deudas.")
+            st.write("Este botón debe ser accionado por el Administrador **después del día 10** de cada mes. Cobrará la cuota de **$120** (Sin premio de pases gratis) a todas las familias que no hayan cancelado el mes actual.")
             
             if st.button("🚨 EJECUTAR COBRO DE MOROSOS", type="primary"):
                 fecha_cobro = datetime.now().strftime("%d/%m/%Y")
                 mes_actual = mes_actual_str()
                 familias_cobradas = 0
+                nombre_mes_actual = formato_mes_espanol(mes_actual)
                 
                 for ced, info in BASE_DATOS_SOCIOS.items():
                     if info["rol"] == "Titular":
-                        mes_a_cobrar = sumar_un_mes(info.get("mes_pagado", ""))
-                        if comparar_meses(mes_a_cobrar, mes_actual) <= 0:
+                        if info.get("mes_pagado", "") != mes_actual:
                             monto_tardio = 120.0
                             nuevo_saldo = float(info.get("saldo", 0)) - monto_tardio
                             BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
-                            BASE_DATOS_SOCIOS[ced]["mes_pagado"] = mes_a_cobrar
+                            BASE_DATOS_SOCIOS[ced]["mes_pagado"] = mes_actual
                             BASE_DATOS_SOCIOS[ced]["invitaciones"] = 0 
                             familias_cobradas += 1
                             
                             id_cargo = f"CRG-{str(uuid.uuid4())[:6].upper()}"
-                            nombre_mes = formato_mes_espanol(mes_a_cobrar)
-                            BASE_DATOS_PAGOS[id_cargo] = {"accion": info["accion"], "metodo": "Sistema Ventry", "referencia": "MORA", "monto": monto_tardio, "fecha_reporte": fecha_cobro, "estatus": "Aprobado", "tipo": f"Mensualidad de {nombre_mes} (Tardío)"}
+                            BASE_DATOS_PAGOS[id_cargo] = {"accion": info["accion"], "metodo": "Sistema Ventry", "referencia": "MORA", "monto": monto_tardio, "fecha_reporte": fecha_cobro, "estatus": "Aprobado", "tipo": f"Mensualidad de {nombre_mes_actual} (Tardío)"}
                             
                             nueva_solvencia = "Al dia" if nuevo_saldo >= 0 else "Moroso"
                             for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():

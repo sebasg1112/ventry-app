@@ -381,7 +381,6 @@ if not st.session_state.logueado:
                     if socio.get("solvencia", "") == "En revision":
                         st.warning("⏳ Su cuenta fue creada y está en revisión. Debe esperar aprobación administrativa.")
                     else:
-                        # Actualizar el saldo local en caso de modificaciones en vivo
                         st.session_state.logueado = True; st.session_state.usuario_actual = socio; st.rerun()
                 else: 
                     st.error("❌ Contraseña incorrecta.")
@@ -440,7 +439,7 @@ if not st.session_state.logueado:
 # APP NATIVA INTERNA
 # ==========================================
 else:
-    # Aseguramos que la sesión actual se actualice con la DB más reciente
+    # 🔴 SOLUCIÓN 1: BLINDAJE DE SESIÓN Y SALDO FAMILIAR
     if st.session_state.usuario_actual["cedula"] in BASE_DATOS_SOCIOS:
         st.session_state.usuario_actual = BASE_DATOS_SOCIOS[st.session_state.usuario_actual["cedula"]]
         
@@ -460,8 +459,8 @@ else:
         notificaciones = []
         mis_pagos = [p for p in BASE_DATOS_PAGOS.values() if str(p["accion"]) == str(socio_actual["accion"])]
         for p in mis_pagos[-3:]:
-            if p["estatus"] == "Aprobado": notificaciones.append(f"💰 Tu {p.get('tipo','pago').lower()} de **${p['monto']}** fue Aprobado.")
-            elif p["estatus"] == "Rechazado": notificaciones.append(f"❌ Tu {p.get('tipo','pago').lower()} de **${p['monto']}** fue Rechazado.")
+            if p["estatus"] == "Aprobado": notificaciones.append(f"💰 Tu {p.get('tipo','pago').lower()} de **${float(p['monto']):.2f}** fue Aprobado.")
+            elif p["estatus"] == "Rechazado": notificaciones.append(f"❌ Tu {p.get('tipo','pago').lower()} de **${float(p['monto']):.2f}** fue Rechazado.")
                 
         mis_accesos = [h for h in st.session_state.db_historial if h["accion"] == str(socio_actual["accion"]) and h["movimiento"] == "Entrada"]
         for h in mis_accesos[:3]:
@@ -505,7 +504,7 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Simular Apertura (Demo ESP32)", type="primary"): st.success("📡 Señal enviada a garita.")
 
-    # --- MÓDULO 2: CARNET DIGITAL (DINÁMICO TOTP) ---
+    # --- MÓDULO 2: CARNET DIGITAL ---
     elif modulo_seleccionado == "Carnet":
         solvencia = socio_actual.get('solvencia', 'Desconocido')
         if solvencia == "Moroso": st.error("⚠️ Tu grupo familiar presenta un saldo pendiente.")
@@ -549,6 +548,7 @@ else:
             link_pase_digital = f"{url_base}/?pase={pase_temp['id']}"
             
             st.success(f"✅ Pase de {pase_temp['nombre']} emitido correctamente.")
+            
             mensaje_ws = f"¡Hola {pase_temp['nombre']}! Aquí tienes tu pase para el *Magnum City Club*.\nFecha: {pase_temp['fecha']}\n👉 Abre tu código QR aquí:\n{link_pase_digital}"
             link_ws = f"https://wa.me/?text={urllib.parse.quote(mensaje_ws)}"
             st.markdown(f'<a href="{link_ws}" target="_blank" style="display:block; text-align:center; background:#25D366; color:white; padding:15px; border-radius:20px; text-decoration:none; font-weight:800; letter-spacing:1px; margin-top:20px; margin-bottom:20px; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);">ENVIAR POR WHATSAPP</a>', unsafe_allow_html=True)
@@ -568,7 +568,7 @@ else:
             solvencia = socio_actual.get('solvencia', 'Desconocido')
             
             if solvencia != "Al dia":
-                st.error("❌ Operación Denegada. Debes estar al día con la administración para invitar.")
+                st.error("❌ Operación Denegada. Tu grupo familiar debe estar al día con la administración para invitar.")
             else:
                 invitados_previos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
                 modo_ingreso = st.selectbox("Método de registro:", ["📝 Ingresar Nuevo Invitado", "⭐ Seleccionar de Favoritos"])
@@ -610,15 +610,21 @@ else:
                     st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha, "correo": n_correo_inv}
                     st.rerun()
 
-    # --- MÓDULO 4: PAGOS (DINÁMICO CON SALDO REAL) ---
+    # --- MÓDULO 4: PAGOS (AHORA UNIFICADO POR ACCIÓN) ---
     elif modulo_seleccionado == "Pagos":
         
         if "sub_pagos" not in st.session_state: st.session_state.sub_pagos = "menu"
         if "recibo_id" not in st.session_state: st.session_state.recibo_id = None
 
-        saldo_real = float(socio_actual.get('saldo', 0.0))
-        saldo_favor = saldo_real if saldo_real > 0 else 0.0
-        deuda = abs(saldo_real) if saldo_real < 0 else 0.0
+        # 🔴 LÓGICA DE SALDO FAMILIAR: Siempre buscaremos el saldo del Titular de la Acción
+        saldo_accion = 0.0
+        for m in BASE_DATOS_SOCIOS.values():
+            if str(m["accion"]) == str(socio_actual["accion"]) and m["rol"] == "Titular":
+                saldo_accion = float(m.get('saldo', 0.0))
+                break
+
+        saldo_favor = saldo_accion if saldo_accion > 0 else 0.0
+        deuda = abs(saldo_accion) if saldo_accion < 0 else 0.0
         
         if st.session_state.sub_pagos == "menu":
             st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Billetera Ventry</h3>", unsafe_allow_html=True)
@@ -637,16 +643,21 @@ else:
             st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Recargar Billetera</h3>", unsafe_allow_html=True)
             with st.form("form_recarga"):
                 metodo_r = st.selectbox("Método de Depósito", ["Pago Móvil (Ej. Mercantil, Banesco, etc.)", "Transferencia Nacional", "Zelle", "Efectivo en Taquilla"])
-                ref_r = st.text_input("Nº de Referencia (Últimos 6 dígitos)")
+                ref_r = st.text_input("Nº de Referencia (Deje en blanco si es efectivo)")
                 monto_r = st.number_input("Monto a depositar ($)", min_value=1.0)
                 st.markdown("<br>", unsafe_allow_html=True)
                 btn_recarga = st.form_submit_button("REPORTAR RECARGA")
                 
-            if btn_recarga and ref_r:
-                id_pago = f"REC-{str(uuid.uuid4())[:6].upper()}"
-                BASE_DATOS_PAGOS[id_pago] = {"accion": socio_actual["accion"], "metodo": metodo_r, "referencia": ref_r, "monto": monto_r, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "En Revisión", "tipo": "Recarga Billetera"}
-                guardar_bd_pagos(BASE_DATOS_PAGOS)
-                st.success("✅ Depósito reportado. Se sumará a su saldo tras la conciliación.")
+            if btn_recarga:
+                # 🔴 SOLUCIÓN 2: VALIDACIÓN INTELIGENTE DE EFECTIVO
+                if "Efectivo" not in metodo_r and not ref_r:
+                    st.error("⚠️ Ingrese el número de referencia de su transferencia o pago móvil.")
+                else:
+                    ref_final = ref_r if ref_r else "EFECTIVO-TAQ"
+                    id_pago = f"REC-{str(uuid.uuid4())[:6].upper()}"
+                    BASE_DATOS_PAGOS[id_pago] = {"accion": socio_actual["accion"], "metodo": metodo_r, "referencia": ref_final, "monto": monto_r, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "En Revisión", "tipo": "Recarga Billetera"}
+                    guardar_bd_pagos(BASE_DATOS_PAGOS)
+                    st.success("✅ Depósito reportado. Se sumará a su saldo tras la validación administrativa.")
             
             st.write("")
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
@@ -656,20 +667,24 @@ else:
         elif st.session_state.sub_pagos == "pagar":
             st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Pago de Mantenimiento</h3>", unsafe_allow_html=True)
             if deuda > 0:
-                st.warning(f"Tienes una deuda actual de **${deuda:.2f}**.")
+                st.warning(f"Tu Grupo Familiar tiene una deuda actual de **${deuda:.2f}**.")
                 st.write("Reportar un pago externo:")
                 with st.form("form_pago_cuota"):
-                    metodo_p = st.selectbox("Vía de pago", ["Zelle", "Pago Móvil (Ej. Mercantil, Banesco, etc.)", "Transferencia Nacional"])
-                    ref_p = st.text_input("Nº de Referencia (Últimos 6 dígitos)")
+                    metodo_p = st.selectbox("Vía de pago", ["Zelle", "Pago Móvil (Ej. Mercantil, Banesco, etc.)", "Transferencia Nacional", "Efectivo en Taquilla"])
+                    ref_p = st.text_input("Nº de Referencia (Deje en blanco si es efectivo)")
                     monto_p = st.number_input("Monto reportado ($)", min_value=1.0, value=float(deuda))
                     st.markdown("<br>", unsafe_allow_html=True)
                     btn_pago = st.form_submit_button("REPORTAR PAGO DE CUOTA")
                     
-                if btn_pago and ref_p:
-                    id_pago = f"PAG-{str(uuid.uuid4())[:6].upper()}"
-                    BASE_DATOS_PAGOS[id_pago] = {"accion": socio_actual["accion"], "metodo": metodo_p, "referencia": ref_p, "monto": monto_p, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "En Revisión", "tipo": "Pago de Cuota"}
-                    guardar_bd_pagos(BASE_DATOS_PAGOS)
-                    st.success("✅ Recibo enviado a administración.")
+                if btn_pago:
+                    if "Efectivo" not in metodo_p and not ref_p:
+                        st.error("⚠️ Ingrese el número de referencia.")
+                    else:
+                        ref_final = ref_p if ref_p else "EFECTIVO-TAQ"
+                        id_pago = f"PAG-{str(uuid.uuid4())[:6].upper()}"
+                        BASE_DATOS_PAGOS[id_pago] = {"accion": socio_actual["accion"], "metodo": metodo_p, "referencia": ref_final, "monto": monto_p, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "En Revisión", "tipo": "Pago de Cuota"}
+                        guardar_bd_pagos(BASE_DATOS_PAGOS)
+                        st.success("✅ Recibo enviado a administración.")
             else: st.success("🎉 ¡Estás al día! No tienes deudas pendientes de mantenimiento.")
             
             st.write("")
@@ -795,11 +810,10 @@ else:
                 st.error("❌ ACCESO DENEGADO\\n\\nEstás intentando usar un carnet estático obsoleto. Por favor, actualiza o refresca tu aplicación Ventry para generar tu nuevo Código Dinámico.")
             else: st.error("❌ Código QR no pertenece al sistema Ventry.")
 
-    # --- MÓDULO 5: ADMIN (CON MOTOR DE FACTURACIÓN) ---
+    # --- MÓDULO 5: ADMIN (DASHBOARD RESPONSIVO) ---
     elif modulo_seleccionado == "Admin":
         st.markdown("<h3 style='font-size:24px; font-weight:800; color:#FF6600;'>Consola Administrativa VIP</h3>", unsafe_allow_html=True)
         
-        # 5.1 Motor de Facturación y KPIs
         tab_dashboard, tab_facturacion = st.tabs(["📊 Dashboard & Conciliación", "⚙️ Motor de Facturación"])
         
         with tab_dashboard:
@@ -817,8 +831,6 @@ else:
             morosos_count = len(acciones_morosas)
             total_acciones = len(acciones_al_dia) + morosos_count + len(acciones_pendientes)
             tasa_morosidad = (morosos_count / total_acciones * 100) if total_acciones > 0 else 0
-            
-            # Sumar la deuda real de todos los Titulares morosos
             capital_riesgo = sum([abs(float(info.get("saldo", 0))) for info in BASE_DATOS_SOCIOS.values() if info["rol"] == "Titular" and float(info.get("saldo", 0)) < 0])
 
             col_k1, col_k2, col_k3 = st.columns(3)
@@ -842,19 +854,21 @@ else:
                                     BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"
                                     guardar_bd_pagos(BASE_DATOS_PAGOS)
                                     
-                                    # LÓGICA FINANCIERA REAL: Sumar el dinero aprobado al saldo de la familia
+                                    # LÓGICA FINANCIERA PERFECCIONADA: Sumar el dinero aprobado al saldo de la familia siempre.
+                                    nuevo_saldo = 0.0
                                     for ced, info in BASE_DATOS_SOCIOS.items():
                                         if str(info["accion"]) == str(p_info["accion"]) and info["rol"] == "Titular":
                                             nuevo_saldo = float(info.get("saldo", 0)) + float(p_info['monto'])
                                             BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
                                             
-                                            # Evaluar nueva solvencia global de la familia
-                                            nueva_solvencia = "Al dia" if nuevo_saldo >= 0 else "Moroso"
-                                            for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
-                                                if str(info_fam["accion"]) == str(p_info["accion"]):
-                                                    BASE_DATOS_SOCIOS[ced_fam]["solvencia"] = nueva_solvencia
+                                    # Recalcular estatus de toda la familia
+                                    nueva_solvencia = "Al dia" if nuevo_saldo >= 0 else "Moroso"
+                                    for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
+                                        if str(info_fam["accion"]) == str(p_info["accion"]):
+                                            BASE_DATOS_SOCIOS[ced_fam]["solvencia"] = nueva_solvencia
                                     
-                                    guardar_bd(BASE_DATOS_SOCIOS); st.rerun()
+                                    guardar_bd(BASE_DATOS_SOCIOS)
+                                    st.rerun()
                             with btn_col2:
                                 if st.button("❌ Rechazar", key=f"rec_{p_id}"): BASE_DATOS_PAGOS[p_id]["estatus"] = "Rechazado"; guardar_bd_pagos(BASE_DATOS_PAGOS); st.rerun()
                 else: st.success("No hay pagos ni recargas pendientes de revisión.")
@@ -890,6 +904,13 @@ else:
                         color_fondo = "#FF6600" if solvencia_m == "En revision" else "#1a1a1a"
                         saldo_txt = f" | Saldo: ${saldo_m:.2f}" if m['rol'] == 'Titular' else ""
                         st.markdown(f"<div style='background:{color_fondo}; color:#ffffff; padding:10px; border-radius:8px; margin-bottom:5px; font-size:13px;'>{icono} <b>{m['nombre']}</b> - {solvencia_m}{saldo_txt}</div>", unsafe_allow_html=True)
+                    
+                    with st.form("form_estatus_rapido"):
+                        n_estatus = st.selectbox("Actualizar Estatus de Grupo:", ["Al dia", "Moroso", "Pendiente", "En revision"])
+                        if st.form_submit_button("Actualizar Todo"):
+                            for ced, info in BASE_DATOS_SOCIOS.items():
+                                if info["accion"] == accion_sel: BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
+                            guardar_bd(BASE_DATOS_SOCIOS); st.success("Actualizado.")
                 else:
                     st.warning("No se encontraron familias con esa búsqueda.")
 
@@ -913,7 +934,6 @@ else:
                     """, unsafe_allow_html=True)
             else: st.info("No hay registros de acceso en la base de datos.")
 
-        # EL BOTÓN NUCLEAR: MOTOR DE FACTURACIÓN
         with tab_facturacion:
             st.markdown("<h4 style='color:#FF6600;'>Ejecución de Cobro Mensual</h4>", unsafe_allow_html=True)
             st.write("Al presionar este botón, el sistema debitará el monto de mantenimiento de la Billetera Ventry de todas las Familias (Acciones) y actualizará su estatus de solvencia instantáneamente.")
@@ -927,7 +947,6 @@ else:
                         nuevo_saldo = float(info.get("saldo", 0)) - monto_cuota
                         BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
                         
-                        # Actualizar la solvencia de TODA la familia según el nuevo saldo del Titular
                         nueva_solvencia = "Al dia" if nuevo_saldo >= 0 else "Moroso"
                         for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
                             if str(info_fam["accion"]) == str(info["accion"]):

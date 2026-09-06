@@ -94,6 +94,7 @@ st.markdown("""
     .btn-secundario>div>button:hover { border-color: #FF6600 !important; color: #FF6600 !important; }
     .btn-logout>div>button { background: transparent !important; border: none !important; color: #ff4d4d !important; justify-content: center !important; box-shadow: none !important; font-weight: 600 !important; padding: 5px !important; opacity: 0.8; }
     .btn-logout>div>button:hover { opacity: 1; color: #ff1a1a !important; text-decoration: underline; }
+    .btn-peligro>div>button { background: rgba(220, 53, 69, 0.1) !important; border: 1px solid rgba(220, 53, 69, 0.5) !important; color: #ff6b6b !important; justify-content: center !important; box-shadow: none !important; }
     
     /* BOTÓN INVISIBLE DE LA CAMPANA */
     div[data-testid="stPopover"] > button {
@@ -117,6 +118,7 @@ st.markdown("""
     .historial-card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 3px solid #FF6600; }
     .monitor-card { background: #111; padding: 12px 20px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #222; border-left: 4px solid #4ade80;}
     .monitor-card-invitado { border-left: 4px solid #00a8ff; }
+    .admin-card-moroso { border-left: 4px solid #ff6b6b !important; }
 
     /* RECIBO DIGITAL */
     .receipt-card { background: #1a1a1a; border: 1px solid #333; border-top: 5px solid #4ade80; border-radius: 10px; padding: 30px; width: 100%; max-width: 350px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -217,7 +219,7 @@ def cargar_bd():
                 "nombre": str(fila.get("nombre", "")), "clave": str(fila.get("clave", "")), 
                 "accion": str(fila.get("accion", "")), "rol": str(fila.get("rol", "")), 
                 "parentesco": str(fila.get("parentesco", "N/A")), "fecha_nacimiento": str(fila.get("fecha_nacimiento", "")), 
-                "solvencia": str(fila.get("solvencia", "")), "saldo": float(fila.get("saldo", 0.0)), "cedula": ced
+                "solvencia": str(fila.get("solvencia", "Pendiente")), "saldo": float(fila.get("saldo", 0.0)), "cedula": ced
             }
     return datos
 
@@ -225,7 +227,7 @@ def guardar_bd(datos):
     lista_socios = list(datos.values())
     lista_socios.sort(key=lambda x: (x.get("accion", ""), x.get("rol", "")), reverse=True) 
     filas_a_subir = [["cedula", "nombre", "clave", "accion", "rol", "parentesco", "fecha_nacimiento", "solvencia", "saldo"]]
-    for socio in lista_socios: filas_a_subir.append([socio["cedula"], socio["nombre"], socio["clave"], socio["accion"], socio["rol"], socio["parentesco"], socio.get("fecha_nacimiento", ""), socio.get("solvencia", "Pendiente"), socio.get("saldo", 0.0)])
+    for socio in lista_socios: filas_a_subir.append([socio["cedula"], socio["nombre"], socio["clave"], socio["accion"], socio["rol"], socio["parentesco"], socio.get("fecha_nacimiento", ""), socio.get("solvencia", "Pendiente"), float(socio.get("saldo", 0.0))])
     hoja_bd.clear()
     hoja_bd.update(values=filas_a_subir, range_name="A1")
     st.session_state.db_socios = datos
@@ -296,7 +298,7 @@ if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = N
 if "pantalla_auth" not in st.session_state: st.session_state.pantalla_auth = "login"
 
 # ==========================================
-# 🛑 INTERCEPTOR DE PASES DIGITALES (VISTA INVITADO)
+# 🛑 INTERCEPTOR DE PASES DIGITALES
 # ==========================================
 params = st.query_params
 if "pase" in params:
@@ -335,6 +337,7 @@ if "pase" in params:
         st.info("💡 Muestra esta pantalla en garita al llegar al club.")
     else: st.error("❌ Enlace de pase inválido o vencido.")
     st.stop()
+
 
 # ==========================================
 # PANTALLA INICIAL: LOGIN Y REGISTRO
@@ -378,6 +381,7 @@ if not st.session_state.logueado:
                     if socio.get("solvencia", "") == "En revision":
                         st.warning("⏳ Su cuenta fue creada y está en revisión. Debe esperar aprobación administrativa.")
                     else:
+                        # Actualizar el saldo local en caso de modificaciones en vivo
                         st.session_state.logueado = True; st.session_state.usuario_actual = socio; st.rerun()
                 else: 
                     st.error("❌ Contraseña incorrecta.")
@@ -436,6 +440,10 @@ if not st.session_state.logueado:
 # APP NATIVA INTERNA
 # ==========================================
 else:
+    # Aseguramos que la sesión actual se actualice con la DB más reciente
+    if st.session_state.usuario_actual["cedula"] in BASE_DATOS_SOCIOS:
+        st.session_state.usuario_actual = BASE_DATOS_SOCIOS[st.session_state.usuario_actual["cedula"]]
+        
     socio_actual = st.session_state.usuario_actual
     rol_actual = socio_actual["rol"]
 
@@ -497,7 +505,7 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Simular Apertura (Demo ESP32)", type="primary"): st.success("📡 Señal enviada a garita.")
 
-    # --- MÓDULO 2: CARNET DIGITAL (AHORA DINÁMICO TOTP) ---
+    # --- MÓDULO 2: CARNET DIGITAL (DINÁMICO TOTP) ---
     elif modulo_seleccionado == "Carnet":
         solvencia = socio_actual.get('solvencia', 'Desconocido')
         if solvencia == "Moroso": st.error("⚠️ Tu grupo familiar presenta un saldo pendiente.")
@@ -505,7 +513,6 @@ else:
         elif solvencia == "Pendiente": clase_badge = "badge-pendiente"; texto_badge = "PENDIENTE"
         else: clase_badge = "badge-moroso"; texto_badge = "MOROSO"
 
-        # CÓDIGO NUEVO: GENERACIÓN DE TIMESTAMP PARA QR DINÁMICO
         timestamp_actual = int(datetime.now().timestamp())
         datos_qr = f"VENTRY_DYN|{socio_actual['cedula']}|{timestamp_actual}"
         
@@ -529,11 +536,8 @@ else:
 <div class="qr-container"><div class="qr-box"><img src="data:image/png;base64,{img_str}"></div><br><span class="status-badge {clase_badge}">{texto_badge}</span></div>
 </div></div>
 """, unsafe_allow_html=True)
-        
-        # MENSAJE DE SEGURIDAD Y BOTÓN DE ACTUALIZACIÓN
         st.info("⏱️ Este código de seguridad es dinámico. Válido por 60 segundos para evitar clonaciones.")
-        if st.button("🔄 Actualizar Código QR", type="primary"):
-            st.rerun()
+        if st.button("🔄 Actualizar Código QR", type="primary"): st.rerun()
 
     # --- MÓDULO 3: INVITADOS ---
     elif modulo_seleccionado == "Invitados":
@@ -545,7 +549,6 @@ else:
             link_pase_digital = f"{url_base}/?pase={pase_temp['id']}"
             
             st.success(f"✅ Pase de {pase_temp['nombre']} emitido correctamente.")
-            
             mensaje_ws = f"¡Hola {pase_temp['nombre']}! Aquí tienes tu pase para el *Magnum City Club*.\nFecha: {pase_temp['fecha']}\n👉 Abre tu código QR aquí:\n{link_pase_digital}"
             link_ws = f"https://wa.me/?text={urllib.parse.quote(mensaje_ws)}"
             st.markdown(f'<a href="{link_ws}" target="_blank" style="display:block; text-align:center; background:#25D366; color:white; padding:15px; border-radius:20px; text-decoration:none; font-weight:800; letter-spacing:1px; margin-top:20px; margin-bottom:20px; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);">ENVIAR POR WHATSAPP</a>', unsafe_allow_html=True)
@@ -607,20 +610,20 @@ else:
                     st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha, "correo": n_correo_inv}
                     st.rerun()
 
-    # --- MÓDULO 4: PAGOS ---
+    # --- MÓDULO 4: PAGOS (DINÁMICO CON SALDO REAL) ---
     elif modulo_seleccionado == "Pagos":
         
         if "sub_pagos" not in st.session_state: st.session_state.sub_pagos = "menu"
         if "recibo_id" not in st.session_state: st.session_state.recibo_id = None
 
-        solvencia = socio_actual.get('solvencia', 'Desconocido')
-        saldo_actual = float(socio_actual.get('saldo', 0.0))
-        deuda = 104.00 if solvencia == "Moroso" else 0.00
+        saldo_real = float(socio_actual.get('saldo', 0.0))
+        saldo_favor = saldo_real if saldo_real > 0 else 0.0
+        deuda = abs(saldo_real) if saldo_real < 0 else 0.0
         
         if st.session_state.sub_pagos == "menu":
             st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Billetera Ventry</h3>", unsafe_allow_html=True)
             col1, col2 = st.columns(2)
-            with col1: st.markdown(f'<div class="wallet-card"><p class="wallet-title">Saldo a Favor</p><h3 class="wallet-saldo">${saldo_actual:.2f}</h3></div>', unsafe_allow_html=True)
+            with col1: st.markdown(f'<div class="wallet-card"><p class="wallet-title">Saldo a Favor</p><h3 class="wallet-saldo">${saldo_favor:.2f}</h3></div>', unsafe_allow_html=True)
             with col2: st.markdown(f'<div class="wallet-card"><p class="wallet-title">Deuda Actual</p><h3 class="wallet-deuda">${deuda:.2f}</h3></div>', unsafe_allow_html=True)
 
             st.write("")
@@ -653,22 +656,8 @@ else:
         elif st.session_state.sub_pagos == "pagar":
             st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Pago de Mantenimiento</h3>", unsafe_allow_html=True)
             if deuda > 0:
-                st.warning(f"Tienes un saldo pendiente de **${deuda:.2f}**.")
-                if saldo_actual >= deuda:
-                    st.info("💡 Tienes saldo suficiente en Ventry para cubrir la deuda.")
-                    if st.button("Pagar con Saldo Ventry", type="primary"):
-                        nuevo_saldo = saldo_actual - deuda
-                        BASE_DATOS_SOCIOS[socio_actual['cedula']]['saldo'] = nuevo_saldo
-                        BASE_DATOS_SOCIOS[socio_actual['cedula']]['solvencia'] = "Al dia"
-                        guardar_bd(BASE_DATOS_SOCIOS)
-                        id_pago = f"PAG-{str(uuid.uuid4())[:6].upper()}"
-                        BASE_DATOS_PAGOS[id_pago] = {"accion": socio_actual["accion"], "metodo": "Saldo Ventry", "referencia": "PAGO-AUTOMATICO", "monto": deuda, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "Aprobado", "tipo": "Pago de Cuota"}
-                        guardar_bd_pagos(BASE_DATOS_PAGOS)
-                        st.session_state.usuario_actual['saldo'] = nuevo_saldo
-                        st.session_state.usuario_actual['solvencia'] = "Al dia"
-                        st.success("✅ Deuda pagada exitosamente. Tu cuenta está al día.")
-                        st.rerun()
-                st.write("O reportar un pago externo:")
+                st.warning(f"Tienes una deuda actual de **${deuda:.2f}**.")
+                st.write("Reportar un pago externo:")
                 with st.form("form_pago_cuota"):
                     metodo_p = st.selectbox("Vía de pago", ["Zelle", "Pago Móvil (Ej. Mercantil, Banesco, etc.)", "Transferencia Nacional"])
                     ref_p = st.text_input("Nº de Referencia (Últimos 6 dígitos)")
@@ -752,7 +741,7 @@ else:
             if st.button("← Volver al Historial", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
-    # --- MÓDULO GARITA (CON DETECCIÓN DE CÓDIGOS DINÁMICOS) ---
+    # --- MÓDULO GARITA ---
     elif modulo_seleccionado == "Garita":
         st.markdown("<h3 style='font-size:18px; font-weight:700; color:#fff;'>Control de Acceso (Escáner)</h3>", unsafe_allow_html=True)
         data_usb = st.text_input("🔫 Lector de Código Físico (Pistola USB):", placeholder="Haga clic aquí y dispare el escáner...")
@@ -770,7 +759,6 @@ else:
 
         if data_qr:
             st.write("---")
-            # 1. FLUJO INVITADO (Mantenemos la validación estricta de la fecha)
             if data_qr.startswith("INVITADO|"):
                 id_pase = data_qr.split("|")[1]
                 if id_pase in BASE_DATOS_INVITACIONES:
@@ -786,16 +774,12 @@ else:
                     elif pase["estatus"] == "Adentro": st.warning("⚠️ ALERTA: El invitado ya registró entrada previamente.")
                     else: st.error(f"❌ ACCESO DENEGADO: Pase {pase['estatus']}")
                 else: st.error("❌ Pase no encontrado o falsificado.")
-            
-            # 2. NUEVO FLUJO SOCIO (CÓDIGO DINÁMICO TOTP)
             elif data_qr.startswith("VENTRY_DYN|"):
                 try:
                     partes = data_qr.split("|")
                     cedula_qr = partes[1]
                     timestamp_qr = int(partes[2])
                     timestamp_ahora = int(datetime.now().timestamp())
-                    
-                    # Verificación de "Time-to-Live" (60 segundos máximo)
                     if (timestamp_ahora - timestamp_qr) > 60:
                         st.error("❌ ACCESO DENEGADO\\n\\nEl código QR ha **expirado** (Tiene más de 60 segundos). Por favor, actualiza el código en tu aplicación.\\n*(Posible intento de ingreso con captura de pantalla).*")
                     elif cedula_qr in BASE_DATOS_SOCIOS:
@@ -804,131 +788,154 @@ else:
                         if solvencia_qr == "Al dia":
                             st.success(f"✅ ACCESO PERMITIDO\\n\\n**Socio:** {socio_qr['nombre']}\\n**Acción:** {socio_qr['accion']}")
                             registrar_acceso(socio_qr["nombre"], socio_qr["accion"], "QR Dinámico Socio", "Entrada")
-                        else: 
-                            st.error(f"❌ ACCESO DENEGADO\\n\\n**Socio:** {socio_qr['nombre']}\\n**Estatus:** {solvencia_qr.upper()}")
-                    else: 
-                        st.error("❌ Cédula de socio no registrada.")
-                except Exception as e: 
-                    st.error("❌ Código de carnet ilegible o corrupto.")
-                    
-            # 3. INTERCEPTOR DE CARNETS VIEJOS (ESTÁTICOS)
+                        else: st.error(f"❌ ACCESO DENEGADO\\n\\n**Socio:** {socio_qr['nombre']}\\n**Estatus:** {solvencia_qr.upper()}")
+                    else: st.error("❌ Cédula de socio no registrada.")
+                except: st.error("❌ Código de carnet ilegible o corrupto.")
             elif "VENTRY" in data_qr:
                 st.error("❌ ACCESO DENEGADO\\n\\nEstás intentando usar un carnet estático obsoleto. Por favor, actualiza o refresca tu aplicación Ventry para generar tu nuevo Código Dinámico.")
-            else: 
-                st.error("❌ Código QR no pertenece al sistema Ventry.")
+            else: st.error("❌ Código QR no pertenece al sistema Ventry.")
 
-    # --- MÓDULO 5: ADMIN (DASHBOARD RESPONSIVO) ---
+    # --- MÓDULO 5: ADMIN (CON MOTOR DE FACTURACIÓN) ---
     elif modulo_seleccionado == "Admin":
         st.markdown("<h3 style='font-size:24px; font-weight:800; color:#FF6600;'>Consola Administrativa VIP</h3>", unsafe_allow_html=True)
         
-        acciones_al_dia, acciones_morosas, acciones_pendientes = set(), set(), set()
-        for socio in BASE_DATOS_SOCIOS.values():
-            solvencia_s = socio.get("solvencia", "")
-            if solvencia_s == "Moroso": acciones_morosas.add(socio["accion"])
-            elif solvencia_s == "Pendiente": acciones_pendientes.add(socio["accion"])
-            elif solvencia_s == "En revision": pass 
-            else: acciones_al_dia.add(socio["accion"])
+        # 5.1 Motor de Facturación y KPIs
+        tab_dashboard, tab_facturacion = st.tabs(["📊 Dashboard & Conciliación", "⚙️ Motor de Facturación"])
         
-        for acc in acciones_morosas: acciones_pendientes.discard(acc); acciones_al_dia.discard(acc)
-        for acc in acciones_pendientes: acciones_al_dia.discard(acc)
+        with tab_dashboard:
+            acciones_al_dia, acciones_morosas, acciones_pendientes = set(), set(), set()
+            for socio in BASE_DATOS_SOCIOS.values():
+                solvencia_s = socio.get("solvencia", "")
+                if solvencia_s == "Moroso": acciones_morosas.add(socio["accion"])
+                elif solvencia_s == "Pendiente": acciones_pendientes.add(socio["accion"])
+                elif solvencia_s == "En revision": pass 
+                else: acciones_al_dia.add(socio["accion"])
             
-        morosos_count = len(acciones_morosas)
-        total_acciones = len(acciones_al_dia) + morosos_count + len(acciones_pendientes)
-        tasa_morosidad = (morosos_count / total_acciones * 100) if total_acciones > 0 else 0
-        capital_riesgo = morosos_count * 104
+            for acc in acciones_morosas: acciones_pendientes.discard(acc); acciones_al_dia.discard(acc)
+            for acc in acciones_pendientes: acciones_al_dia.discard(acc)
+                
+            morosos_count = len(acciones_morosas)
+            total_acciones = len(acciones_al_dia) + morosos_count + len(acciones_pendientes)
+            tasa_morosidad = (morosos_count / total_acciones * 100) if total_acciones > 0 else 0
+            
+            # Sumar la deuda real de todos los Titulares morosos
+            capital_riesgo = sum([abs(float(info.get("saldo", 0))) for info in BASE_DATOS_SOCIOS.values() if info["rol"] == "Titular" and float(info.get("saldo", 0)) < 0])
 
-        col_k1, col_k2, col_k3 = st.columns(3)
-        with col_k1: st.markdown(f'<div class="kpi-card"><p class="kpi-title">Familias Activas</p><h3 class="kpi-value">{total_acciones}</h3></div>', unsafe_allow_html=True)
-        with col_k2: st.markdown(f'<div class="kpi-card" style="border-left-color: {"#ff6b6b" if tasa_morosidad > 15 else "#FF6600"};"><p class="kpi-title">Tasa de Morosidad</p><h3 class="kpi-value">{tasa_morosidad:.1f}%</h3></div>', unsafe_allow_html=True)
-        with col_k3: st.markdown(f'<div class="kpi-card" style="border-left-color: #4ade80;"><p class="kpi-title">Capital por Cobrar</p><h3 class="kpi-value">${capital_riesgo:,.2f}</h3></div>', unsafe_allow_html=True)
-        st.write("---")
-        
-        col_admin1, col_admin2 = st.columns([1, 1])
-        with col_admin1:
-            st.markdown("<h4 style='font-size:16px; color:#aaa;'>💳 Conciliación Pendiente</h4>", unsafe_allow_html=True)
-            pagos_pendientes = {k: v for k, v in BASE_DATOS_PAGOS.items() if v["estatus"] == "En Revisión"}
-            if pagos_pendientes:
-                for p_id, p_info in pagos_pendientes.items():
-                    tipo_trans = p_info.get("tipo", "Pago de Cuota")
-                    with st.expander(f"Acción: {p_info['accion']} | ${p_info['monto']} ({p_info['metodo']}) - {tipo_trans}"):
-                        st.write(f"**Ref:** {p_info['referencia']} | **Fecha:** {p_info['fecha_reporte']}")
-                        btn_col1, btn_col2 = st.columns(2)
-                        with btn_col1:
-                            if st.button("✅ Aprobar", key=f"apr_{p_id}"):
-                                BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"
-                                guardar_bd_pagos(BASE_DATOS_PAGOS)
-                                if tipo_trans == "Recarga Billetera":
+            col_k1, col_k2, col_k3 = st.columns(3)
+            with col_k1: st.markdown(f'<div class="kpi-card"><p class="kpi-title">Familias Activas</p><h3 class="kpi-value">{total_acciones}</h3></div>', unsafe_allow_html=True)
+            with col_k2: st.markdown(f'<div class="kpi-card" style="border-left-color: {"#ff6b6b" if tasa_morosidad > 15 else "#FF6600"};"><p class="kpi-title">Tasa de Morosidad</p><h3 class="kpi-value">{tasa_morosidad:.1f}%</h3></div>', unsafe_allow_html=True)
+            with col_k3: st.markdown(f'<div class="kpi-card" style="border-left-color: #4ade80;"><p class="kpi-title">Capital por Cobrar</p><h3 class="kpi-value">${capital_riesgo:,.2f}</h3></div>', unsafe_allow_html=True)
+            st.write("---")
+            
+            col_admin1, col_admin2 = st.columns([1, 1])
+            with col_admin1:
+                st.markdown("<h4 style='font-size:16px; color:#aaa;'>💳 Conciliación Pendiente</h4>", unsafe_allow_html=True)
+                pagos_pendientes = {k: v for k, v in BASE_DATOS_PAGOS.items() if v["estatus"] == "En Revisión"}
+                if pagos_pendientes:
+                    for p_id, p_info in pagos_pendientes.items():
+                        tipo_trans = p_info.get("tipo", "Pago de Cuota")
+                        with st.expander(f"Acción: {p_info['accion']} | ${p_info['monto']} ({p_info['metodo']}) - {tipo_trans}"):
+                            st.write(f"**Ref:** {p_info['referencia']} | **Fecha:** {p_info['fecha_reporte']}")
+                            btn_col1, btn_col2 = st.columns(2)
+                            with btn_col1:
+                                if st.button("✅ Aprobar", key=f"apr_{p_id}"):
+                                    BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"
+                                    guardar_bd_pagos(BASE_DATOS_PAGOS)
+                                    
+                                    # LÓGICA FINANCIERA REAL: Sumar el dinero aprobado al saldo de la familia
                                     for ced, info in BASE_DATOS_SOCIOS.items():
                                         if str(info["accion"]) == str(p_info["accion"]) and info["rol"] == "Titular":
-                                            BASE_DATOS_SOCIOS[ced]["saldo"] = float(info.get("saldo", 0)) + float(p_info['monto'])
-                                elif tipo_trans == "Pago de Cuota":
-                                    for ced, info in BASE_DATOS_SOCIOS.items():
-                                        if str(info["accion"]) == str(p_info["accion"]): BASE_DATOS_SOCIOS[ced]["solvencia"] = "Al dia"
-                                guardar_bd(BASE_DATOS_SOCIOS); st.rerun()
-                        with btn_col2:
-                            if st.button("❌ Rechazar", key=f"rec_{p_id}"): BASE_DATOS_PAGOS[p_id]["estatus"] = "Rechazado"; guardar_bd_pagos(BASE_DATOS_PAGOS); st.rerun()
-            else: st.success("No hay pagos ni recargas pendientes de revisión.")
+                                            nuevo_saldo = float(info.get("saldo", 0)) + float(p_info['monto'])
+                                            BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
+                                            
+                                            # Evaluar nueva solvencia global de la familia
+                                            nueva_solvencia = "Al dia" if nuevo_saldo >= 0 else "Moroso"
+                                            for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
+                                                if str(info_fam["accion"]) == str(p_info["accion"]):
+                                                    BASE_DATOS_SOCIOS[ced_fam]["solvencia"] = nueva_solvencia
+                                    
+                                    guardar_bd(BASE_DATOS_SOCIOS); st.rerun()
+                            with btn_col2:
+                                if st.button("❌ Rechazar", key=f"rec_{p_id}"): BASE_DATOS_PAGOS[p_id]["estatus"] = "Rechazado"; guardar_bd_pagos(BASE_DATOS_PAGOS); st.rerun()
+                else: st.success("No hay pagos ni recargas pendientes de revisión.")
 
-            st.write("")
-            st.markdown("<h4 style='font-size:16px; color:#aaa;'>📥 Descargar Data (CSV)</h4>", unsafe_allow_html=True)
-            if len(BASE_DATOS_SOCIOS) > 0:
-                df_socios = pd.DataFrame(list(BASE_DATOS_SOCIOS.values()))
-                st.download_button("Exportar Matriz de Socios", data=df_socios.to_csv(index=False).encode('utf-8'), file_name="Socios_Ventry.csv", mime="text/csv")
+                st.write("")
+                st.markdown("<h4 style='font-size:16px; color:#aaa;'>📥 Descargar Data (CSV)</h4>", unsafe_allow_html=True)
+                if len(BASE_DATOS_SOCIOS) > 0:
+                    df_socios = pd.DataFrame(list(BASE_DATOS_SOCIOS.values()))
+                    st.download_button("Exportar Matriz de Socios", data=df_socios.to_csv(index=False).encode('utf-8'), file_name="Socios_Ventry.csv", mime="text/csv")
+                
+            with col_admin2:
+                st.markdown("<h4 style='font-size:16px; color:#aaa;'>🔍 Buscador CRM Familiar</h4>", unsafe_allow_html=True)
+                busqueda_admin = st.text_input("Buscar por Acción, Cédula o Nombre:")
+                acciones_encontradas = set()
+                
+                if busqueda_admin:
+                    for ced, info in BASE_DATOS_SOCIOS.items():
+                        if busqueda_admin.lower() in str(info['accion']).lower() or \
+                           busqueda_admin.lower() in str(ced).lower() or \
+                           busqueda_admin.lower() in str(info['nombre']).lower():
+                            acciones_encontradas.add(info['accion'])
+                else:
+                    acciones_encontradas = set(d["accion"] for d in BASE_DATOS_SOCIOS.values())
+                
+                if acciones_encontradas:
+                    accion_sel = st.selectbox("Familias encontradas (Seleccione Acción):", sorted(list(acciones_encontradas)))
+                    miembros_accion = sorted([info for info in BASE_DATOS_SOCIOS.values() if info["accion"] == accion_sel], key=lambda x: x.get("rol", ""), reverse=True)
+                    
+                    for m in miembros_accion: 
+                        icono = '👑' if m['rol'] == 'Titular' else '👤'
+                        solvencia_m = m.get('solvencia', 'Desconocido')
+                        saldo_m = float(m.get('saldo', 0.0)) if m['rol'] == 'Titular' else "N/A"
+                        color_fondo = "#FF6600" if solvencia_m == "En revision" else "#1a1a1a"
+                        saldo_txt = f" | Saldo: ${saldo_m:.2f}" if m['rol'] == 'Titular' else ""
+                        st.markdown(f"<div style='background:{color_fondo}; color:#ffffff; padding:10px; border-radius:8px; margin-bottom:5px; font-size:13px;'>{icono} <b>{m['nombre']}</b> - {solvencia_m}{saldo_txt}</div>", unsafe_allow_html=True)
+                else:
+                    st.warning("No se encontraron familias con esa búsqueda.")
+
+            st.write("---")
+            st.markdown("<h4 style='font-size:18px; color:#fff;'>📟 Monitor de Acceso en Tiempo Real</h4>", unsafe_allow_html=True)
+            if st.session_state.db_historial:
+                for h in st.session_state.db_historial[:15]:
+                    clase_monitor = "monitor-card-invitado" if "Invitado" in h['via'] else ""
+                    icono_persona = "🎟️" if "Invitado" in h['via'] else "👤"
+                    st.markdown(f"""
+                    <div class="monitor-card {clase_monitor}">
+                        <div>
+                            <span style="color:#aaa; font-size:11px;">{h['fecha']}</span><br>
+                            <b style="color:#fff; font-size:14px;">{icono_persona} {h['nombre']}</b>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="color:#FF6600; font-size:12px; font-weight:bold;">Acción {h['accion']}</span><br>
+                            <span style="color:#666; font-size:11px; text-transform:uppercase;">{h['via']}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else: st.info("No hay registros de acceso en la base de datos.")
+
+        # EL BOTÓN NUCLEAR: MOTOR DE FACTURACIÓN
+        with tab_facturacion:
+            st.markdown("<h4 style='color:#FF6600;'>Ejecución de Cobro Mensual</h4>", unsafe_allow_html=True)
+            st.write("Al presionar este botón, el sistema debitará el monto de mantenimiento de la Billetera Ventry de todas las Familias (Acciones) y actualizará su estatus de solvencia instantáneamente.")
             
-        with col_admin2:
-            st.markdown("<h4 style='font-size:16px; color:#aaa;'>🔍 Buscador CRM Familiar</h4>", unsafe_allow_html=True)
-            busqueda_admin = st.text_input("Buscar por Acción, Cédula o Nombre:")
-            acciones_encontradas = set()
+            monto_cuota = st.number_input("Monto de la Cuota a cobrar ($):", min_value=1.0, value=104.0, step=1.0)
+            st.warning("⚠️ **ATENCIÓN:** Esta acción modificará los saldos de toda la base de datos de socios. Ejecutar solo el día correspondiente al corte mensual.")
             
-            if busqueda_admin:
+            if st.button("🚨 EJECUTAR COBRO MASIVO", type="primary"):
                 for ced, info in BASE_DATOS_SOCIOS.items():
-                    if busqueda_admin.lower() in str(info['accion']).lower() or \
-                       busqueda_admin.lower() in str(ced).lower() or \
-                       busqueda_admin.lower() in str(info['nombre']).lower():
-                        acciones_encontradas.add(info['accion'])
-            else:
-                acciones_encontradas = set(d["accion"] for d in BASE_DATOS_SOCIOS.values())
-            
-            if acciones_encontradas:
-                accion_sel = st.selectbox("Familias encontradas (Seleccione Acción):", sorted(list(acciones_encontradas)))
-                miembros_accion = sorted([info for info in BASE_DATOS_SOCIOS.values() if info["accion"] == accion_sel], key=lambda x: x.get("rol", ""), reverse=True)
-                
-                for m in miembros_accion: 
-                    icono = '👑' if m['rol'] == 'Titular' else '👤'
-                    solvencia_m = m.get('solvencia', 'Desconocido')
-                    saldo_m = float(m.get('saldo', 0.0)) if m['rol'] == 'Titular' else "N/A"
-                    color_fondo = "#FF6600" if solvencia_m == "En revision" else "#1a1a1a"
-                    saldo_txt = f" | Saldo: ${saldo_m:.2f}" if m['rol'] == 'Titular' else ""
-                    st.markdown(f"<div style='background:{color_fondo}; color:#ffffff; padding:10px; border-radius:8px; margin-bottom:5px; font-size:13px;'>{icono} <b>{m['nombre']}</b> - {solvencia_m}{saldo_txt}</div>", unsafe_allow_html=True)
-                
-                with st.form("form_estatus_rapido"):
-                    n_estatus = st.selectbox("Actualizar Estatus de Grupo:", ["Al dia", "Moroso", "Pendiente", "En revision"])
-                    if st.form_submit_button("Actualizar Todo"):
-                        for ced, info in BASE_DATOS_SOCIOS.items():
-                            if info["accion"] == accion_sel: BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
-                        guardar_bd(BASE_DATOS_SOCIOS); st.success("Actualizado.")
-            else:
-                st.warning("No se encontraron familias con esa búsqueda.")
-
-        st.write("---")
-        st.markdown("<h4 style='font-size:18px; color:#fff;'>📟 Monitor de Acceso en Tiempo Real</h4>", unsafe_allow_html=True)
-        if st.session_state.db_historial:
-            for h in st.session_state.db_historial[:15]:
-                clase_monitor = "monitor-card-invitado" if "Invitado" in h['via'] else ""
-                icono_persona = "🎟️" if "Invitado" in h['via'] else "👤"
-                st.markdown(f"""
-                <div class="monitor-card {clase_monitor}">
-                    <div>
-                        <span style="color:#aaa; font-size:11px;">{h['fecha']}</span><br>
-                        <b style="color:#fff; font-size:14px;">{icono_persona} {h['nombre']}</b>
-                    </div>
-                    <div style="text-align: right;">
-                        <span style="color:#FF6600; font-size:12px; font-weight:bold;">Acción {h['accion']}</span><br>
-                        <span style="color:#666; font-size:11px; text-transform:uppercase;">{h['via']}</span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-        else: st.info("No hay registros de acceso en la base de datos.")
+                    if info["rol"] == "Titular":
+                        nuevo_saldo = float(info.get("saldo", 0)) - monto_cuota
+                        BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
+                        
+                        # Actualizar la solvencia de TODA la familia según el nuevo saldo del Titular
+                        nueva_solvencia = "Al dia" if nuevo_saldo >= 0 else "Moroso"
+                        for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
+                            if str(info_fam["accion"]) == str(info["accion"]):
+                                BASE_DATOS_SOCIOS[ced_fam]["solvencia"] = nueva_solvencia
+                                
+                guardar_bd(BASE_DATOS_SOCIOS)
+                st.success(f"✅ ¡FACTURACIÓN EXITOSA! Se han debitado ${monto_cuota} de todas las acciones y los estatus han sido actualizados.")
+                st.rerun()
 
         st.write("---")
         if st.button("🔄 Sincronizar DB en la Nube (Google Sheets)"):

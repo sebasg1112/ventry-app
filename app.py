@@ -82,13 +82,33 @@ st.markdown("""
     
     [data-testid="stForm"] { background: rgba(20, 20, 25, 0.4) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(255, 255, 255, 0.05) !important; border-radius: 20px !important; padding: 25px !important; }
     
-    /* 🔴 CORRECCIÓN AQUÍ: Fondo sólido oscuro para inputs sin importar el tema del navegador */
-    .stTextInput input, .stNumberInput input, .stDateInput input, textarea { background-color: transparent !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-size: 16px !important; font-weight: 500 !important;}
-    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, div[data-baseweb="base-input"] { background-color: #1a1a1f !important; border-radius: 12px !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; transition: all 0.3s ease; }
-    div[data-baseweb="select"] span { color: #ffffff !important; font-weight: 500 !important; }
-    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { border-color: #FF6600 !important; background-color: #24242a !important; box-shadow: 0 0 15px rgba(255, 102, 0, 0.15) !important; }
+    /* 🔴 BLINDAJE NUCLEAR DE FORMULARIOS: Forzar fondo oscuro en todos los inputs */
+    input[type="text"], input[type="password"], input[type="number"], textarea, 
+    .stTextInput div[data-baseweb="base-input"], 
+    .stDateInput div[data-baseweb="base-input"], 
+    .stNumberInput div[data-baseweb="base-input"], 
+    .stSelectbox div[data-baseweb="select"] > div,
+    div[data-baseweb="input"] { 
+        background-color: #1E1E24 !important; 
+        color: #FFFFFF !important; 
+        -webkit-text-fill-color: #FFFFFF !important; 
+        border-radius: 12px !important;
+    }
     
-    div[data-baseweb="popover"] > div, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * { background-color: #1a1a1f !important; color: #ffffff !important; border-radius: 12px; }
+    /* Eliminar bordes blancos nativos de Streamlit */
+    div[data-baseweb="base-input"], div[data-baseweb="select"] > div {
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    div[data-baseweb="select"] span { color: #ffffff !important; font-weight: 500 !important; }
+    
+    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within, div[data-baseweb="base-input"]:focus-within { 
+        border-color: #FF6600 !important; 
+        background-color: #2A2A35 !important; 
+        box-shadow: 0 0 15px rgba(255, 102, 0, 0.15) !important; 
+    }
+    
+    div[data-baseweb="popover"] > div, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * { background-color: #1E1E24 !important; color: #ffffff !important; border-radius: 12px; }
     div[data-testid="stPopoverBody"] { background: rgba(15, 15, 18, 0.95) !important; backdrop-filter: blur(15px) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 20px !important; padding: 20px !important; box-shadow: 0 15px 40px rgba(0,0,0,0.8) !important; }
     li[role="option"]:hover *, li[role="option"][aria-selected="true"] * { background-color: #FF6600 !important; color: #ffffff !important; }
 
@@ -305,7 +325,7 @@ if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = N
 if "pantalla_auth" not in st.session_state: st.session_state.pantalla_auth = "login"
 
 # ==========================================
-# 🛑 INTERCEPTOR DE PASES DIGITALES & API ESP32
+# 🛑 INTERCEPTOR DE PASES DIGITALES Y API ESP32
 # ==========================================
 params = st.query_params
 
@@ -399,7 +419,6 @@ if not st.session_state.logueado:
     """, unsafe_allow_html=True)
     
     if st.session_state.pantalla_auth == "login":
-        # INYECCIÓN DEL MENSAJE DE ÉXITO DE REGISTRO
         if "mensaje_exito_registro" in st.session_state:
             st.success(st.session_state.mensaje_exito_registro)
             del st.session_state.mensaje_exito_registro
@@ -477,8 +496,7 @@ if not st.session_state.logueado:
                         "solvencia": "En revision", "saldo": 0.0, "invitaciones": 0, "mes_pagado": "", "cedula": r_cedula
                     }
                     guardar_bd(BASE_DATOS_SOCIOS)
-                    # REDIRECCIÓN PERFECTA
-                    st.session_state.mensaje_exito_registro = "✅ ¡Solicitud enviada! Hemos enviado un mensaje a tus contactos. Tu cuenta está siendo validada por la administración."
+                    st.session_state.mensaje_exito_registro = "✅ ¡Solicitud enviada! Hemos enviado un mensaje de confirmación para verificar tu cuenta. Por favor, espera la aprobación administrativa."
                     st.session_state.pantalla_auth = "login"
                     st.rerun()
 
@@ -502,7 +520,7 @@ else:
             mes_pagado_accion = str(m.get('mes_pagado', '')) 
             break
 
-    # --- HEADER ---
+    # --- HEADER CON CENTRO DE NOTIFICACIONES ---
     col_logo, col_campana = st.columns([5, 1])
     with col_logo:
         st.markdown(f"""
@@ -560,7 +578,7 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Simular Apertura (Demo ESP32)", type="primary"): st.success("📡 Señal de apertura enviada a la garita.")
 
-    # --- MÓDULO VENTRY PAY ---
+    # --- MÓDULO VENTRY PAY (CONCESIONARIO) ---
     elif modulo_seleccionado == "Ventry Pay":
         st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff;'>Ventry Pay <span style='font-size:14px; color:#A0A0A0;'>(Punto de Venta)</span></h3>", unsafe_allow_html=True)
         st.write(f"Concesionario: **{socio_actual['nombre']}**")

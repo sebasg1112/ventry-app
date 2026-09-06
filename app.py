@@ -89,6 +89,8 @@ st.markdown("""
     .btn-logout>div>button { background: transparent !important; border: none !important; color: #ff4d4d !important; justify-content: center !important; box-shadow: none !important; font-weight: 600 !important; padding: 5px !important; opacity: 0.8; }
     .btn-logout>div>button:hover { opacity: 1; color: #ff1a1a !important; text-decoration: underline; }
     
+    .btn-peligro>div>button { background: rgba(220, 53, 69, 0.1) !important; border: 1px solid rgba(220, 53, 69, 0.5) !important; color: #ff6b6b !important; justify-content: center !important; box-shadow: none !important; }
+    
     /* BOTTOM NAVIGATION BAR */
     .block-container { padding-bottom: 120px !important; }
     div.stRadio { position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100% !important; background-color: rgba(13, 13, 13, 0.95) !important; backdrop-filter: blur(20px) !important; border-top: 1px solid rgba(255, 255, 255, 0.05) !important; padding: 15px 0px 25px 0px !important; z-index: 99999 !important; }
@@ -539,7 +541,7 @@ else:
                     st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha}
                     st.rerun()
 
-    # --- MÓDULO 4: PAGOS (BILLETERA & RECIBOS DIGITALES) ---
+    # --- MÓDULO 4: PAGOS ---
     elif modulo_seleccionado == "Pagos":
         
         if "sub_pagos" not in st.session_state: st.session_state.sub_pagos = "menu"
@@ -549,7 +551,6 @@ else:
         saldo_actual = float(socio_actual.get('saldo', 0.0))
         deuda = 104.00 if solvencia == "Moroso" else 0.00
         
-        # 4.1 MENÚ PRINCIPAL
         if st.session_state.sub_pagos == "menu":
             st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Billetera Ventry</h3>", unsafe_allow_html=True)
             col1, col2 = st.columns(2)
@@ -563,7 +564,6 @@ else:
             st.write("")
             if st.button("Historial de Transacciones", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
 
-        # 4.2 RECARGAR
         elif st.session_state.sub_pagos == "recargar":
             st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Recargar Billetera</h3>", unsafe_allow_html=True)
             with st.form("form_recarga"):
@@ -584,7 +584,6 @@ else:
             if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # 4.3 PAGAR CUOTA
         elif st.session_state.sub_pagos == "pagar":
             st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Pago de Mantenimiento</h3>", unsafe_allow_html=True)
             if deuda > 0:
@@ -623,11 +622,10 @@ else:
             if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # 4.4 HISTORIAL DE TRANSACCIONES
         elif st.session_state.sub_pagos == "historial":
             st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Historial de Transacciones</h3>", unsafe_allow_html=True)
             mis_pagos = {k: v for k, v in BASE_DATOS_PAGOS.items() if str(v["accion"]) == str(socio_actual["accion"])}
-            mis_pagos_lista = list(mis_pagos.items())[::-1] # Invertir para mostrar los más nuevos primero
+            mis_pagos_lista = list(mis_pagos.items())[::-1]
             
             if mis_pagos_lista:
                 for p_id, p_info in mis_pagos_lista:
@@ -650,20 +648,17 @@ else:
                             st.session_state.sub_pagos = "recibo"
                             st.rerun()
                         st.markdown("</div>", unsafe_allow_html=True)
-            else:
-                st.info("Aún no has reportado pagos ni recargas.")
+            else: st.info("Aún no has reportado pagos ni recargas.")
                 
             st.write("")
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
             if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # 4.5 VISOR DEL RECIBO DIGITAL
         elif st.session_state.sub_pagos == "recibo":
             r_id = st.session_state.recibo_id
             if r_id in BASE_DATOS_PAGOS:
                 r_info = BASE_DATOS_PAGOS[r_id]
-                
                 st.markdown(f"""
                 <div class="receipt-card">
                     <div class="receipt-header">
@@ -688,9 +683,7 @@ else:
             
             st.write("")
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            if st.button("← Volver al Historial", type="primary"): 
-                st.session_state.sub_pagos = "historial"
-                st.rerun()
+            if st.button("← Volver al Historial", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
     # --- MÓDULO GARITA ---
@@ -715,7 +708,13 @@ else:
                 id_pase = data_qr.split("|")[1]
                 if id_pase in BASE_DATOS_INVITACIONES:
                     pase = BASE_DATOS_INVITACIONES[id_pase]
-                    if pase["estatus"] == "Activo":
+                    
+                    # CÓDIGO NUEVO: VERIFICACIÓN ESTRICTA DE FECHA DE VISITA
+                    fecha_hoy = datetime.now().strftime("%d/%m/%Y")
+                    
+                    if pase["fecha_visita"] != fecha_hoy:
+                        st.error(f"❌ ACCESO DENEGADO\\n\\nEste pase está programado para el **{pase['fecha_visita']}** y hoy es **{fecha_hoy}**.")
+                    elif pase["estatus"] == "Activo":
                         st.success(f"✅ ACCESO PERMITIDO\\n\\n**Invitado:** {pase['nombre_invitado']}\\n**Acción:** {pase['accion']}")
                         BASE_DATOS_INVITACIONES[id_pase]["estatus"] = "Adentro"
                         guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
@@ -842,7 +841,7 @@ else:
             st.session_state.db_socios = cargar_bd(); st.session_state.db_invitaciones = cargar_invitaciones(); st.session_state.db_pagos = cargar_pagos(); st.session_state.db_directorio = cargar_directorio(); st.session_state.db_historial = cargar_historial()
             st.success("Base de datos sincronizada.")
 
-    # --- MÓDULO 6: AJUSTES ---
+    # --- MÓDULO 6: AJUSTES (NAVEGACIÓN "DRILL-DOWN" SEGURA Y LIMPIA) ---
     elif modulo_seleccionado == "Ajustes":
         
         if "sub_ajustes" not in st.session_state: st.session_state.sub_ajustes = "menu"
@@ -851,6 +850,8 @@ else:
             st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Ajustes</h3>", unsafe_allow_html=True)
             
             if st.button("Perfil y Seguridad", type="primary"): st.session_state.sub_ajustes = "perfil"; st.rerun()
+            st.write("")
+            if st.button("Mis Contactos (Directorio)", type="primary"): st.session_state.sub_ajustes = "directorio"; st.rerun()
             st.write("")
             if st.button("Grupo Familiar", type="primary"): st.session_state.sub_ajustes = "familia"; st.rerun()
             st.write("")
@@ -889,6 +890,32 @@ else:
                 st.session_state.sub_ajustes = "menu"
                 st.session_state.sub_pagos = "menu"
                 st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        elif st.session_state.sub_ajustes == "directorio":
+            st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Mis Contactos</h3>", unsafe_allow_html=True)
+            mis_contactos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
+            
+            if mis_contactos:
+                for ced_contacto, info_contacto in mis_contactos.items():
+                    st.markdown(f"""
+                    <div class="historial-card">
+                        <b style="font-size: 16px; color:#fff;">{info_contacto['nombre']}</b><br>
+                        <span style="color:#aaa; font-size:12px;">C.I: {ced_contacto}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.markdown("<div class='btn-peligro' style='margin-bottom:15px;'>", unsafe_allow_html=True)
+                    if st.button(f"Eliminar contacto", key=f"del_{ced_contacto}"):
+                        del BASE_DATOS_DIRECTORIO[socio_actual["accion"]][ced_contacto]
+                        guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
+                        st.rerun()
+                    st.markdown("</div>", unsafe_allow_html=True)
+            else:
+                st.info("No tienes invitados guardados en tu directorio frecuente.")
+                
+            st.write("")
+            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+            if st.button("← Volver a Ajustes", type="primary"): st.session_state.sub_ajustes = "menu"; st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
         elif st.session_state.sub_ajustes == "familia":

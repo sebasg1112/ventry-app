@@ -1,5 +1,5 @@
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, timedelta
 import qrcode
 from io import BytesIO
 import cv2
@@ -63,32 +63,19 @@ st.markdown("""
     .stApp { background-color: #0d0d0d; color: #f5f5f5; }
     h1, h2, h3, h4, h5, h6, p, span, label, div { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     
-    /* ETIQUETAS (LABELS VISIBLES) */
     label, label p, label div, div[data-testid="stWidgetLabel"] p, .stTextInput p, .stSelectbox p, .stDateInput p, .stNumberInput p { color: #ffffff !important; font-weight: 600 !important; letter-spacing: 0.5px; }
     
-    /* BLINDAJE NUCLEAR DE FORMULARIOS Y ELEMENTOS FLOTANTES */
     [data-testid="stForm"] { background-color: #0d0d0d !important; border: 1px solid #333 !important; border-radius: 15px !important; padding: 20px !important; }
     .stTextInput input, .stNumberInput input, .stDateInput input, textarea { background-color: #1a1a1a !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
     div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, div[data-baseweb="base-input"] { background-color: #1a1a1a !important; border-radius: 10px !important; border: 1px solid #333 !important; color: #ffffff !important; }
     div[data-baseweb="select"] span { color: #ffffff !important; }
-    
-    /* MODIFICACIÓN PARA POPOVERS (NOTIFICACIONES) Y LISTAS */
-    div[data-baseweb="popover"] > div, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * { 
-        background-color: #1a1a1a !important; color: #ffffff !important; 
-    }
-    div[data-testid="stPopoverBody"] {
-        background-color: #1a1a1a !important; border: 1px solid #333 !important; border-radius: 15px !important; padding: 15px !important;
-    }
-    
+    div[data-baseweb="popover"] > div, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * { background-color: #1a1a1a !important; color: #ffffff !important; }
+    div[data-testid="stPopoverBody"] { background-color: #1a1a1a !important; border: 1px solid #333 !important; border-radius: 15px !important; padding: 15px !important; }
     li[role="option"]:hover *, li[role="option"][aria-selected="true"] * { background-color: #FF6600 !important; color: #ffffff !important; }
     div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { border-color: #FF6600 !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important; }
 
-    /* BOTONES (NATIVOS Y ACCIÓN) */
-    .stButton>button[kind="primary"], .stFormSubmitButton>button { 
-        width: 100%; border-radius: 20px !important; background: #FF6600 !important; color: #ffffff !important; 
-        font-weight: 700 !important; letter-spacing: 0.5px; border: none !important; padding: 12px !important; 
-        box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3) !important; transition: all 0.2s ease-in-out; justify-content: center !important;
-    }
+    /* BOTONES */
+    .stButton>button[kind="primary"], .stFormSubmitButton>button { width: 100%; border-radius: 20px !important; background: #FF6600 !important; color: #ffffff !important; font-weight: 700 !important; letter-spacing: 0.5px; border: none !important; padding: 12px !important; box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3) !important; transition: all 0.2s ease-in-out; justify-content: center !important; }
     .stButton>button[kind="primary"]:active, .stFormSubmitButton>button:active { background: #e65c00 !important; transform: scale(0.98); }
     .btn-secundario>div>button { background: transparent !important; border: 1px solid #555 !important; color: #aaa !important; justify-content: center !important; box-shadow: none !important; }
     .btn-secundario>div>button:hover { border-color: #FF6600 !important; color: #FF6600 !important; }
@@ -96,12 +83,9 @@ st.markdown("""
     .btn-logout>div>button:hover { opacity: 1; color: #ff1a1a !important; text-decoration: underline; }
     .btn-peligro>div>button { background: rgba(220, 53, 69, 0.1) !important; border: 1px solid rgba(220, 53, 69, 0.5) !important; color: #ff6b6b !important; justify-content: center !important; box-shadow: none !important; }
     
-    /* BOTÓN INVISIBLE DE LA CAMPANA */
-    div[data-testid="stPopover"] > button {
-        background: transparent !important; border: none !important; color: #ffffff !important; font-size: 20px !important; padding: 0 !important; box-shadow: none !important; display: inline-block !important; margin-top: -5px;
-    }
+    div[data-testid="stPopover"] > button { background: transparent !important; border: none !important; color: #ffffff !important; font-size: 20px !important; padding: 0 !important; box-shadow: none !important; display: inline-block !important; margin-top: -5px; }
     
-    /* BOTTOM NAVIGATION BAR */
+    /* NAV BAR */
     .block-container { padding-bottom: 120px !important; }
     div.stRadio { position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100% !important; background-color: rgba(13, 13, 13, 0.95) !important; backdrop-filter: blur(20px) !important; border-top: 1px solid rgba(255, 255, 255, 0.05) !important; padding: 15px 0px 25px 0px !important; z-index: 99999 !important; }
     div.stRadio > div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-evenly !important; align-items: center !important; gap: 0 !important; }
@@ -110,17 +94,16 @@ st.markdown("""
     div.stRadio > div[role="radiogroup"] > label div { color: #777777 !important; font-size: 11px !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: 1px; }
     div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div { color: #FF6600 !important; font-weight: 800 !important; }
 
-    /* CARDS GLOBALES */
+    /* CARDS */
     .wallet-card { background: linear-gradient(145deg, #1a1a1a, #0d0d0d); border: 1px solid #333; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
     .wallet-title { color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: bold; }
     .wallet-saldo { color: #4ade80 !important; font-size: 32px; font-weight: 800; margin: 0; }
-    .wallet-deuda { color: #ff6b6b !important; font-size: 24px; font-weight: 700; margin: 0; }
+    .wallet-invites { color: #00a8ff !important; font-size: 32px; font-weight: 800; margin: 0; }
     .historial-card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 3px solid #FF6600; }
     .monitor-card { background: #111; padding: 12px 20px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #222; border-left: 4px solid #4ade80;}
     .monitor-card-invitado { border-left: 4px solid #00a8ff; }
-    .admin-card-moroso { border-left: 4px solid #ff6b6b !important; }
 
-    /* RECIBO DIGITAL */
+    /* RECIBO */
     .receipt-card { background: #1a1a1a; border: 1px solid #333; border-top: 5px solid #4ade80; border-radius: 10px; padding: 30px; width: 100%; max-width: 350px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     .receipt-header { text-align: center; border-bottom: 1px dashed #444; padding-bottom: 15px; margin-bottom: 15px; }
     .receipt-amount { font-size: 36px; color: #4ade80; font-weight: 900; margin: 10px 0; }
@@ -128,13 +111,11 @@ st.markdown("""
     .receipt-label { color: #888; }
     .receipt-value { color: #fff; font-weight: bold; text-align: right; }
 
-    /* BOTÓN ABRIR PUERTA */
     .open-button-container { display: flex; justify-content: center; margin-top: 40px; margin-bottom: 20px;}
     .open-button-glow { border-radius: 50%; padding: 8px; background: radial-gradient(circle, rgba(255,102,0,0.4) 0%, rgba(0,0,0,0) 70%); box-shadow: 0 0 60px rgba(255,102,0,0.3); }
     .open-button { background: linear-gradient(145deg, #222222, #0a0a0a); border: 2px solid #FF6600; border-radius: 50%; width: 200px; height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; cursor: pointer; box-shadow: inset 0 0 25px rgba(0,0,0,0.9); transition: transform 0.1s ease; }
     .open-button:active { background: #FF6600; transform: scale(0.96); }
     
-    /* CARNET */
     .dark-wrapper { background-color: transparent; padding: 20px 0px; display: flex; justify-content: center; margin-bottom: 30px; }
     .glass-card { background: rgba(0, 25, 51, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 20px; padding: 40px 30px; width: 100%; max-width: 360px; box-shadow: 0 15px 35px rgba(0,0,0,0.8); position: relative; overflow: hidden; }
     .magnum-logo { text-align: center; margin-bottom: 35px; }
@@ -173,49 +154,23 @@ except Exception as e:
     st.stop()
 
 # --- FUNCIONES ---
-def enviar_correo_invitacion(correo_dest, nombre_inv, fecha_inv, link_qr):
-    if "smtp_user" in st.secrets and "smtp_pass" in st.secrets:
-        try:
-            msg = MIMEMultipart()
-            msg['From'] = "Ventry Access Control"
-            msg['To'] = correo_dest
-            msg['Subject'] = "Tu Pase Digital - Magnum City Club"
-            cuerpo = f"Hola {nombre_inv},\n\nTienes un pase de invitado autorizado para el {fecha_inv}.\n\nPor favor, abre el siguiente enlace para mostrar tu código QR al llegar a la garita:\n{link_qr}\n\n¡Te esperamos!"
-            msg.attach(MIMEText(cuerpo, 'plain'))
-            server = smtplib.SMTP('smtp.gmail.com', 587)
-            server.starttls()
-            server.login(st.secrets["smtp_user"], st.secrets["smtp_pass"])
-            server.send_message(msg)
-            server.quit()
-            return True
-        except Exception as e:
-            return False
-    else: return True
-
 def calcular_edad(fecha_nac_str):
     if not fecha_nac_str: return 0
     try:
         fecha_nac = datetime.strptime(fecha_nac_str, "%d/%m/%Y").date()
         hoy = datetime.today().date()
-        edad = hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day))
-        return edad
-    except:
-        return 0
+        return hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day))
+    except: return 0
 
-def cargar_historial():
-    try:
-        vals = hoja_historial.get_all_values()
-        if len(vals) > 1:
-            return [{"fecha": r[0], "accion": r[1], "nombre": r[2], "via": r[3], "movimiento": r[4]} for r in vals[1:][::-1]]
-        return []
-    except:
-        return []
+# --- NUEVO: FUNCIONES DE TIEMPO Y FACTURACIÓN ---
+def mes_actual_str():
+    return datetime.now().strftime("%m/%Y")
 
-def registrar_acceso(nombre, accion, via, movimiento):
-    hora_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    hoja_historial.append_row([hora_actual, str(accion), nombre, via, movimiento])
-    if "db_historial" not in st.session_state: st.session_state.db_historial = []
-    st.session_state.db_historial.insert(0, {"fecha": hora_actual, "accion": str(accion), "nombre": nombre, "via": via, "movimiento": movimiento})
+def proximo_mes_str():
+    hoy = datetime.now()
+    next_m = hoy.month + 1 if hoy.month < 12 else 1
+    next_y = hoy.year if hoy.month < 12 else hoy.year + 1
+    return f"{next_m:02d}/{next_y}"
 
 def cargar_bd():
     registros = hoja_bd.get_all_records()
@@ -227,15 +182,17 @@ def cargar_bd():
                 "nombre": str(fila.get("nombre", "")), "clave": str(fila.get("clave", "")), 
                 "accion": str(fila.get("accion", "")), "rol": str(fila.get("rol", "")), 
                 "parentesco": str(fila.get("parentesco", "N/A")), "fecha_nacimiento": str(fila.get("fecha_nacimiento", "")), 
-                "solvencia": str(fila.get("solvencia", "Pendiente")), "saldo": float(fila.get("saldo", 0.0)), "cedula": ced
+                "solvencia": str(fila.get("solvencia", "Pendiente")), "saldo": float(fila.get("saldo", 0.0)),
+                "invitaciones": int(fila.get("invitaciones", 0)), "mes_pagado": str(fila.get("mes_pagado", "08/2026")),
+                "cedula": ced
             }
     return datos
 
 def guardar_bd(datos):
     lista_socios = list(datos.values())
     lista_socios.sort(key=lambda x: (x.get("accion", ""), x.get("rol", "")), reverse=True) 
-    filas_a_subir = [["cedula", "nombre", "clave", "accion", "rol", "parentesco", "fecha_nacimiento", "solvencia", "saldo"]]
-    for socio in lista_socios: filas_a_subir.append([socio["cedula"], socio["nombre"], socio["clave"], socio["accion"], socio["rol"], socio["parentesco"], socio.get("fecha_nacimiento", ""), socio.get("solvencia", "Pendiente"), float(socio.get("saldo", 0.0))])
+    filas_a_subir = [["cedula", "nombre", "clave", "accion", "rol", "parentesco", "fecha_nacimiento", "solvencia", "saldo", "invitaciones", "mes_pagado"]]
+    for socio in lista_socios: filas_a_subir.append([socio["cedula"], socio["nombre"], socio["clave"], socio["accion"], socio["rol"], socio["parentesco"], socio.get("fecha_nacimiento", ""), socio.get("solvencia", "Pendiente"), float(socio.get("saldo", 0.0)), int(socio.get("invitaciones", 0)), socio.get("mes_pagado", "")])
     hoja_bd.clear()
     hoja_bd.update(values=filas_a_subir, range_name="A1")
     st.session_state.db_socios = datos
@@ -267,6 +224,19 @@ def guardar_bd_pagos(datos):
     hoja_pagos.clear()
     hoja_pagos.update(values=filas, range_name="A1")
     st.session_state.db_pagos = datos
+
+def cargar_historial():
+    try:
+        vals = hoja_historial.get_all_values()
+        if len(vals) > 1: return [{"fecha": r[0], "accion": r[1], "nombre": r[2], "via": r[3], "movimiento": r[4]} for r in vals[1:][::-1]]
+        return []
+    except: return []
+
+def registrar_acceso(nombre, accion, via, movimiento):
+    hora_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    hoja_historial.append_row([hora_actual, str(accion), nombre, via, movimiento])
+    if "db_historial" not in st.session_state: st.session_state.db_historial = []
+    st.session_state.db_historial.insert(0, {"fecha": hora_actual, "accion": str(accion), "nombre": nombre, "via": via, "movimiento": movimiento})
 
 def cargar_directorio():
     try:
@@ -346,7 +316,6 @@ if "pase" in params:
     else: st.error("❌ Enlace de pase inválido o vencido.")
     st.stop()
 
-
 # ==========================================
 # PANTALLA INICIAL: LOGIN Y REGISTRO
 # ==========================================
@@ -390,10 +359,8 @@ if not st.session_state.logueado:
                         st.warning("⏳ Su cuenta fue creada y está en revisión. Debe esperar aprobación administrativa.")
                     else:
                         st.session_state.logueado = True; st.session_state.usuario_actual = socio; st.rerun()
-                else: 
-                    st.error("❌ Contraseña incorrecta.")
-            else: 
-                st.error("⚠️ Usuario no registrado.")
+                else: st.error("❌ Contraseña incorrecta.")
+            else: st.error("⚠️ Usuario no registrado.")
 
     elif st.session_state.pantalla_auth == "registro":
         with st.form("registro_form"):
@@ -422,23 +389,19 @@ if not st.session_state.logueado:
         st.markdown("</div>", unsafe_allow_html=True)
             
         if btn_registrar:
-            if not r_cedula or not r_nombre or not r_accion or not r_clave: 
-                st.error("⚠️ Todos los campos son obligatorios.")
-            elif r_clave != r_clave_conf: 
-                st.error("❌ Las contraseñas no coinciden.")
-            elif r_cedula in BASE_DATOS_SOCIOS: 
-                st.error("⚠️ Esta cédula ya se encuentra registrada.")
+            if not r_cedula or not r_nombre or not r_accion or not r_clave: st.error("⚠️ Todos los campos son obligatorios.")
+            elif r_clave != r_clave_conf: st.error("❌ Las contraseñas no coinciden.")
+            elif r_cedula in BASE_DATOS_SOCIOS: st.error("⚠️ Esta cédula ya se encuentra registrada.")
             else:
                 r_acc_norm = r_accion.strip().lstrip('0') or "0"
                 titular_existente = any(info["accion"] == r_acc_norm and info["rol"] == "Titular" for info in BASE_DATOS_SOCIOS.values()) if r_rol == "Titular" else False
                 
-                if titular_existente: 
-                    st.error(f"⚠️ Operación Denegada: La Acción {r_acc_norm} ya tiene un Titular registrado.")
+                if titular_existente: st.error(f"⚠️ Operación Denegada: La Acción {r_acc_norm} ya tiene un Titular registrado.")
                 else:
                     BASE_DATOS_SOCIOS[r_cedula] = {
                         "nombre": r_nombre, "clave": r_clave, "accion": r_acc_norm, "rol": r_rol, 
                         "parentesco": r_parentesco, "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"), 
-                        "solvencia": "En revision", "saldo": 0.0, "cedula": r_cedula
+                        "solvencia": "En revision", "saldo": 0.0, "invitaciones": 0, "mes_pagado": "", "cedula": r_cedula
                     }
                     guardar_bd(BASE_DATOS_SOCIOS)
                     st.success("✅ Su cuenta fue creada, esta en revision, debe esperar aprobacion.")
@@ -453,6 +416,17 @@ else:
         
     socio_actual = st.session_state.usuario_actual
     rol_actual = socio_actual["rol"]
+
+    # 🔴 EXTRACCIÓN DE DATOS FAMILIARES GLOBALES
+    saldo_accion = 0.0
+    invitaciones_accion = 0
+    mes_pagado_accion = ""
+    for m in BASE_DATOS_SOCIOS.values():
+        if str(m["accion"]) == str(socio_actual["accion"]) and m["rol"] == "Titular":
+            saldo_accion = float(m.get('saldo', 0.0))
+            invitaciones_accion = int(m.get('invitaciones', 0))
+            mes_pagado_accion = str(m.get('mes_pagado', '08/2026')) # Asumimos mes anterior si es nuevo
+            break
 
     # --- HEADER CON CENTRO DE NOTIFICACIONES ---
     col_logo, col_campana = st.columns([5, 1])
@@ -469,6 +443,7 @@ else:
         for p in mis_pagos[-3:]:
             if p["estatus"] == "Aprobado" and p["tipo"] == "Abono a Billetera": notificaciones.append(f"💰 Tu Abono de **${float(p['monto']):.2f}** fue Aprobado.")
             elif p["estatus"] == "Aprobado" and p["tipo"] == "Cargo Mensual": notificaciones.append(f"🧾 Cargo mensual de **${float(p['monto']):.2f}** procesado.")
+            elif p["estatus"] == "Rechazado": notificaciones.append(f"❌ Tu Abono de **${float(p['monto']):.2f}** fue Rechazado.")
                 
         mis_accesos = [h for h in st.session_state.db_historial if h["accion"] == str(socio_actual["accion"]) and h["movimiento"] == "Entrada"]
         for h in mis_accesos[:3]:
@@ -477,10 +452,8 @@ else:
         with st.popover("🔔"):
             st.markdown("<h4 style='color:#FF6600; font-size:14px; margin-bottom:10px;'>Centro de Notificaciones</h4>", unsafe_allow_html=True)
             if notificaciones:
-                for n in notificaciones[:5]:
-                    st.markdown(f"<div style='background:#0d0d0d; padding:10px; border-radius:8px; margin-bottom:5px; font-size:12px; border-left:2px solid #FF6600;'>{n}</div>", unsafe_allow_html=True)
-            else:
-                st.write("No tienes notificaciones nuevas.")
+                for n in notificaciones[:5]: st.markdown(f"<div style='background:#0d0d0d; padding:10px; border-radius:8px; margin-bottom:5px; font-size:12px; border-left:2px solid #FF6600;'>{n}</div>", unsafe_allow_html=True)
+            else: st.write("No tienes notificaciones nuevas.")
 
     # --- DEFINICIÓN DE MENÚ INFERIOR ---
     if rol_actual in ["Titular", "Familiar"]: opciones_menu = ["Inicio", "Invitados", "Carnet", "Pagos", "Ajustes"]
@@ -546,7 +519,7 @@ else:
         st.info("⏱️ Este código de seguridad es dinámico. Válido por 60 segundos para evitar clonaciones.")
         if st.button("🔄 Actualizar Código QR", type="primary"): st.rerun()
 
-    # --- MÓDULO 3: INVITADOS ---
+    # --- MÓDULO 3: INVITADOS (CON LÓGICA DE NEGOCIOS: 10 PASES) ---
     elif modulo_seleccionado == "Invitados":
         if "ultimo_pase_generado" not in st.session_state: st.session_state.ultimo_pase_generado = None
 
@@ -556,14 +529,9 @@ else:
             link_pase_digital = f"{url_base}/?pase={pase_temp['id']}"
             
             st.success(f"✅ Pase de {pase_temp['nombre']} emitido correctamente.")
-            
             mensaje_ws = f"¡Hola {pase_temp['nombre']}! Aquí tienes tu pase para el *Magnum City Club*.\nFecha: {pase_temp['fecha']}\n👉 Abre tu código QR aquí:\n{link_pase_digital}"
             link_ws = f"https://wa.me/?text={urllib.parse.quote(mensaje_ws)}"
             st.markdown(f'<a href="{link_ws}" target="_blank" style="display:block; text-align:center; background:#25D366; color:white; padding:15px; border-radius:20px; text-decoration:none; font-weight:800; letter-spacing:1px; margin-top:20px; margin-bottom:20px; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);">ENVIAR POR WHATSAPP</a>', unsafe_allow_html=True)
-            
-            if pase_temp.get('correo'):
-                enviado = enviar_correo_invitacion(pase_temp['correo'], pase_temp['nombre'], pase_temp['fecha'], link_pase_digital)
-                if enviado: st.info(f"📧 Copia del pase enviada exitosamente a: {pase_temp['correo']}")
             
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
             if st.button("← Volver a crear otra invitación", type="primary"):
@@ -575,9 +543,17 @@ else:
             st.markdown("<h3 style='font-size:18px; font-weight:700; color:#fff;'>Pases y Accesos</h3>", unsafe_allow_html=True)
             solvencia = socio_actual.get('solvencia', 'Desconocido')
             
-            if solvencia != "Al dia":
-                st.error("❌ Operación Denegada. Tu grupo familiar debe estar al día con la administración para invitar.")
+            # Verificamos si la familia está solvente el mes actual
+            if mes_pagado_accion != mes_actual_str():
+                st.error("❌ Operación Denegada. Debes estar al día con el pago del mes actual para invitar.")
             else:
+                col1, col2 = st.columns(2)
+                with col1: st.markdown(f'<div class="wallet-card" style="padding:10px;"><p class="wallet-title" style="font-size:10px;">Pases Libres</p><h3 class="wallet-invites">{invitaciones_accion}</h3></div>', unsafe_allow_html=True)
+                with col2: st.markdown(f'<div class="wallet-card" style="padding:10px;"><p class="wallet-title" style="font-size:10px;">Saldo Ventry</p><h3 class="wallet-saldo" style="font-size:20px;">${saldo_accion:.2f}</h3></div>', unsafe_allow_html=True)
+                
+                if invitaciones_accion > 0: st.info(f"✨ Tienes {invitaciones_accion} invitaciones de cortesía disponibles. El pase será gratuito.")
+                else: st.warning("⚠️ Has agotado tus invitaciones gratuitas del mes. Se debitarán **$10.00** de tu Saldo Ventry por este pase.")
+                
                 invitados_previos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
                 modo_ingreso = st.selectbox("Método de registro:", ["📝 Ingresar Nuevo Invitado", "⭐ Seleccionar de Favoritos"])
                 n_cedula_def, n_nombre_def, n_correo_def, n_nacimiento_def = "", "", "", datetime.today()
@@ -601,76 +577,95 @@ else:
                     btn_generar = st.form_submit_button("GENERAR PASE DIGITAL")
                     
                 if btn_generar and n_cedula_inv and n_nombre_inv:
-                    if guardar_contacto:
-                        if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
-                        if n_cedula_inv in BASE_DATOS_DIRECTORIO[socio_actual["accion"]]: st.toast("ℹ️ Este invitado ya estaba en tu directorio. Sus datos han sido actualizados.")
-                        else: st.toast("✅ Contacto nuevo guardado en tu directorio frecuente.")
+                    # LÓGICA DE COBRO DE INVITACIONES
+                    puede_invitar = True
+                    
+                    if invitaciones_accion > 0:
+                        # Descontamos 1 invitación gratis
+                        for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
+                            if str(info_fam["accion"]) == str(socio_actual["accion"]) and info_fam["rol"] == "Titular":
+                                BASE_DATOS_SOCIOS[ced_fam]["invitaciones"] = invitaciones_accion - 1
+                                break
+                    else:
+                        # Si no hay libres, cobramos $10
+                        if saldo_accion >= 10.0:
+                            for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
+                                if str(info_fam["accion"]) == str(socio_actual["accion"]) and info_fam["rol"] == "Titular":
+                                    BASE_DATOS_SOCIOS[ced_fam]["saldo"] = saldo_accion - 10.0
+                                    break
+                            # Generar recibo de cobro
+                            id_cargo = f"P-INV-{str(uuid.uuid4())[:6].upper()}"
+                            BASE_DATOS_PAGOS[id_cargo] = {"accion": socio_actual["accion"], "metodo": "Saldo Ventry", "referencia": "PASE-EXTRA", "monto": 10.0, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "Aprobado", "tipo": "Cargo Pase Extra"}
+                            guardar_bd_pagos(BASE_DATOS_PAGOS)
+                        else:
+                            puede_invitar = False
+                            st.error("❌ Saldo insuficiente. Necesitas al menos $10.00 en tu Billetera Ventry para generar pases adicionales.")
+                    
+                    if puede_invitar:
+                        guardar_bd(BASE_DATOS_SOCIOS)
+                        if guardar_contacto:
+                            if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
+                            BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {"nombre": n_nombre_inv, "correo": n_correo_inv, "fecha_nacimiento": n_nacimiento_def.strftime("%d/%m/%Y")}
+                            guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
                             
-                        BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {"nombre": n_nombre_inv, "correo": n_correo_inv, "fecha_nacimiento": n_nacimiento_def.strftime("%d/%m/%Y")}
-                        guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
-                        
-                    str_fecha = fecha_visita.strftime("%d/%m/%Y")
-                    id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
-                    BASE_DATOS_INVITACIONES[id_unico] = {
-                        "accion": socio_actual["accion"], "fecha_visita": str_fecha, "cedula_invitado": n_cedula_inv, "nombre_invitado": n_nombre_inv, "fecha_nacimiento": "", "correo": n_correo_inv, "estatus": "Activo"
-                    }
-                    guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
-                    st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha, "correo": n_correo_inv}
-                    st.rerun()
+                        str_fecha = fecha_visita.strftime("%d/%m/%Y")
+                        id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
+                        BASE_DATOS_INVITACIONES[id_unico] = {"accion": socio_actual["accion"], "fecha_visita": str_fecha, "cedula_invitado": n_cedula_inv, "nombre_invitado": n_nombre_inv, "fecha_nacimiento": "", "correo": n_correo_inv, "estatus": "Activo"}
+                        guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
+                        st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha, "correo": n_correo_inv}
+                        st.rerun()
 
-    # --- MÓDULO 4: PAGOS (RBAC POR EDAD Y ROL) ---
+    # --- MÓDULO 4: PAGOS (BILLETERA FAMILIAR & LÓGICA DE NEGOCIOS) ---
     elif modulo_seleccionado == "Pagos":
         
-        # 🔴 LÓGICA DE CONTROL DE ACCESO (MENORES DE EDAD)
         edad_usuario = calcular_edad(socio_actual.get("fecha_nacimiento", ""))
-        
         if edad_usuario < 18 and edad_usuario > 0:
             st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Billetera Ventry</h3>", unsafe_allow_html=True)
-            st.error("🔒 Acceso Restringido: El módulo financiero es exclusivo para los administradores del grupo familiar (Mayores de edad).")
+            st.error("🔒 Acceso Restringido: El módulo financiero es exclusivo para los usuarios mayores de edad.")
             
         else:
             if "sub_pagos" not in st.session_state: st.session_state.sub_pagos = "menu"
             if "recibo_id" not in st.session_state: st.session_state.recibo_id = None
 
-            # Buscar saldo del Titular de la Acción
-            saldo_accion = 0.0
-            for m in BASE_DATOS_SOCIOS.values():
-                if str(m["accion"]) == str(socio_actual["accion"]) and m["rol"] == "Titular":
-                    saldo_accion = float(m.get('saldo', 0.0))
-                    break
-
             saldo_favor = saldo_accion if saldo_accion > 0 else 0.0
-            deuda = abs(saldo_accion) if saldo_accion < 0 else 0.0
             
             if st.session_state.sub_pagos == "menu":
                 st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Billetera Ventry</h3>", unsafe_allow_html=True)
-                col1, col2 = st.columns(2)
-                with col1: st.markdown(f'<div class="wallet-card"><p class="wallet-title">Saldo a Favor</p><h3 class="wallet-saldo">${saldo_favor:.2f}</h3></div>', unsafe_allow_html=True)
-                with col2: st.markdown(f'<div class="wallet-card"><p class="wallet-title">Deuda Actual</p><h3 class="wallet-deuda">${deuda:.2f}</h3></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="wallet-card"><p class="wallet-title">Fondo Familiar Disponible</p><h3 class="wallet-saldo" style="font-size:40px;">${saldo_favor:.2f}</h3></div>', unsafe_allow_html=True)
 
                 st.write("")
                 
-                # 🔴 RBAC: SOLO EL TITULAR PUEDE PAGAR LA CUOTA
+                # 🔴 LÓGICA DE NEGOCIO DEL CLUB: EL PAGO DEL MES
                 if rol_actual == "Titular":
-                    if st.button("Pagar Cuota Mantenimiento", type="primary"): st.session_state.sub_pagos = "pagar"; st.rerun()
+                    mes_actual = mes_actual_str()
+                    dia_actual = datetime.now().day
+                    
+                    if mes_pagado_accion == mes_actual:
+                        st.success("🎉 Tu Acción está solvente este mes.")
+                        if st.button(f"Adelantar Cuota de {proximo_mes_str()}", type="primary"): st.session_state.sub_pagos = "pagar"; st.rerun()
+                    else:
+                        if dia_actual <= 10:
+                            st.info(f"🌟 Beneficio de Pronto Pago (Días 1-10). Cuota: **$104**. Incluye **10 Pases Gratis**.")
+                        else:
+                            st.warning(f"⚠️ Fecha de corte superada. Cuota: **$120**. No incluye pases gratis.")
+                        
+                        if st.button("Pagar Cuota de Mantenimiento", type="primary"): st.session_state.sub_pagos = "pagar"; st.rerun()
                     st.write("")
                 else:
-                    st.info("ℹ️ El pago de la cuota de mantenimiento es gestionado exclusivamente por el Titular de la acción.")
+                    st.info("ℹ️ El pago de la cuota de mantenimiento es gestionado por el Titular de la acción.")
                 
                 if st.button("📥 Reportar Abono / Depósito", type="primary"): st.session_state.sub_pagos = "recargar"; st.rerun()
                 st.write("")
-                if st.button("🕒 Movimientos de Billetera", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
+                if st.button("🕒 Libro de Transacciones", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
 
             elif st.session_state.sub_pagos == "recargar":
                 st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Reportar Abono</h3>", unsafe_allow_html=True)
-                if deuda > 0:
-                    st.warning(f"⚠️ Tu familia tiene una deuda de **${deuda:.2f}**. Cualquier depósito cubrirá primero este monto.")
+                st.write("Recarga saldo a favor en la billetera de tu familia.")
                 
                 with st.form("form_recarga"):
                     metodo_r = st.selectbox("Método de Pago", ["Pago Móvil (Ej. Mercantil, Banesco, etc.)", "Transferencia Nacional", "Zelle", "Efectivo en Taquilla"])
                     ref_r = st.text_input("Nº de Referencia (Deje en blanco si es efectivo)")
-                    monto_sugerido = deuda if deuda > 0 else 1.0
-                    monto_r = st.number_input("Monto depositado ($)", min_value=1.0, value=float(monto_sugerido))
+                    monto_r = st.number_input("Monto depositado ($)", min_value=1.0)
                     st.markdown("<br>", unsafe_allow_html=True)
                     btn_recarga = st.form_submit_button("ENVIAR REPORTE")
                     
@@ -690,27 +685,52 @@ else:
                 st.markdown("</div>", unsafe_allow_html=True)
 
             elif st.session_state.sub_pagos == "pagar":
-                st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Pago de Mantenimiento</h3>", unsafe_allow_html=True)
-                if deuda > 0:
-                    st.warning(f"Tu Grupo Familiar tiene una deuda actual de **${deuda:.2f}**.")
-                    st.write("Reportar un pago externo:")
-                    with st.form("form_pago_cuota"):
-                        metodo_p = st.selectbox("Vía de pago", ["Zelle", "Pago Móvil (Ej. Mercantil, Banesco, etc.)", "Transferencia Nacional", "Efectivo en Taquilla"])
-                        ref_p = st.text_input("Nº de Referencia (Deje en blanco si es efectivo)")
-                        monto_p = st.number_input("Monto reportado ($)", min_value=1.0, value=float(deuda))
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        btn_pago = st.form_submit_button("REPORTAR PAGO DE CUOTA")
+                mes_actual = mes_actual_str()
+                dia_actual = datetime.now().day
+                
+                es_adelanto = (mes_pagado_accion == mes_actual)
+                mes_a_cobrar = proximo_mes_str() if es_adelanto else mes_actual
+                
+                if dia_actual <= 10 or es_adelanto:
+                    monto_cobro = 104.0
+                    invites_premio = 10
+                    tipo_cobro = "Cargo Mensual (Pronto Pago)"
+                else:
+                    monto_cobro = 120.0
+                    invites_premio = 0
+                    tipo_cobro = "Cargo Mensual (Tardío)"
+                
+                st.markdown(f"<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Pago de Mantenimiento ({mes_a_cobrar})</h3>", unsafe_allow_html=True)
+                
+                if saldo_accion >= monto_cobro:
+                    st.info(f"💡 Tienes suficiente Saldo Ventry. Se debitarán **${monto_cobro:.2f}** de tu Billetera Familiar.")
+                    if st.button("Pagar Cuota Automáticamente", type="primary"):
+                        # Descontamos el dinero, actualizamos el mes y damos el premio de invitaciones
+                        nuevo_saldo = saldo_accion - monto_cobro
+                        for ced, info in BASE_DATOS_SOCIOS.items():
+                            if str(info["accion"]) == str(socio_actual["accion"]) and info["rol"] == "Titular":
+                                BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
+                                BASE_DATOS_SOCIOS[ced]["mes_pagado"] = mes_a_cobrar
+                                # Solo sumamos las nuevas si pagó a tiempo
+                                BASE_DATOS_SOCIOS[ced]["invitaciones"] = int(info.get('invitaciones',0)) + invites_premio
+                                break
                         
-                    if btn_pago:
-                        if "Efectivo" not in metodo_p and not ref_p:
-                            st.error("⚠️ Ingrese el número de referencia.")
-                        else:
-                            ref_final = ref_p if ref_p else "EFECTIVO-TAQ"
-                            id_pago = f"PAG-{str(uuid.uuid4())[:6].upper()}"
-                            BASE_DATOS_PAGOS[id_pago] = {"accion": socio_actual["accion"], "metodo": metodo_p, "referencia": ref_final, "monto": monto_p, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "En Revisión", "tipo": "Pago de Cuota"}
-                            guardar_bd_pagos(BASE_DATOS_PAGOS)
-                            st.success("✅ Recibo enviado a administración.")
-                else: st.success("🎉 ¡Estás al día! No tienes deudas pendientes de mantenimiento.")
+                        # Actualizar solvencia de toda la familia
+                        for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
+                            if str(info_fam["accion"]) == str(socio_actual["accion"]):
+                                BASE_DATOS_SOCIOS[ced_fam]["solvencia"] = "Al dia"
+                        
+                        guardar_bd(BASE_DATOS_SOCIOS)
+                        
+                        # Generamos el recibo de Cargo
+                        id_cargo = f"CRG-{str(uuid.uuid4())[:6].upper()}"
+                        BASE_DATOS_PAGOS[id_cargo] = {"accion": socio_actual["accion"], "metodo": "Sistema Ventry", "referencia": f"CUOTA-{mes_a_cobrar.replace('/','-')}", "monto": monto_cobro, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "Aprobado", "tipo": tipo_cobro}
+                        guardar_bd_pagos(BASE_DATOS_PAGOS)
+                        
+                        st.success(f"✅ Cuota pagada exitosamente. Se te han habilitado {invites_premio} invitaciones de cortesía.")
+                        st.rerun()
+                else:
+                    st.error(f"❌ Saldo Insuficiente. Necesitas **${monto_cobro:.2f}** para pagar este mes. Regresa y reporta un Abono a tu billetera primero.")
                 
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
@@ -724,7 +744,8 @@ else:
                 
                 if mis_pagos_lista:
                     for p_id, p_info in mis_pagos_lista:
-                        es_cargo = p_info.get('tipo', '') == "Cargo Mensual"
+                        es_cargo = "Cargo" in p_info.get('tipo', '')
+                        
                         if es_cargo: color_status = "#ff6b6b"
                         elif p_info['estatus'] == "Aprobado": color_status = "#4ade80"
                         elif p_info['estatus'] == "En Revisión": color_status = "#FF6600"
@@ -878,7 +899,7 @@ else:
                 pagos_pendientes = {k: v for k, v in BASE_DATOS_PAGOS.items() if v["estatus"] == "En Revisión"}
                 if pagos_pendientes:
                     for p_id, p_info in pagos_pendientes.items():
-                        tipo_trans = p_info.get("tipo", "Pago de Cuota")
+                        tipo_trans = p_info.get("tipo", "Abono a Billetera")
                         with st.expander(f"Acción: {p_info['accion']} | ${p_info['monto']} ({p_info['metodo']}) - {tipo_trans}"):
                             st.write(f"**Ref:** {p_info['referencia']} | **Fecha:** {p_info['fecha_reporte']}")
                             btn_col1, btn_col2 = st.columns(2)
@@ -967,33 +988,39 @@ else:
             else: st.info("No hay registros de acceso en la base de datos.")
 
         with tab_facturacion:
-            st.markdown("<h4 style='color:#FF6600;'>Ejecución de Cobro Mensual</h4>", unsafe_allow_html=True)
-            st.write("Al presionar este botón, el sistema debitará el monto de mantenimiento de la Billetera Ventry de todas las Familias (Acciones) y generará un recibo en su historial.")
+            st.markdown("<h4 style='color:#FF6600;'>Auditoría y Cobro de Morosos (Post-Día 10)</h4>", unsafe_allow_html=True)
+            st.write("Este botón debe ser accionado por el Administrador **después del día 10** de cada mes. Cobrará la cuota de **$120** (Sin premio de pases gratis) a todas las familias que no hayan pagado su cuota.")
             
-            monto_cuota = st.number_input("Monto de la Cuota a cobrar ($):", min_value=1.0, value=104.0, step=1.0)
-            st.warning("⚠️ **ATENCIÓN:** Esta acción modificará los saldos de toda la base de datos de socios. Ejecutar solo el día correspondiente al corte mensual.")
-            
-            if st.button("🚨 EJECUTAR COBRO MASIVO", type="primary"):
+            if st.button("🚨 EJECUTAR COBRO DE MOROSOS", type="primary"):
                 fecha_cobro = datetime.now().strftime("%d/%m/%Y")
+                mes_actual = mes_actual_str()
+                familias_cobradas = 0
+                
                 for ced, info in BASE_DATOS_SOCIOS.items():
                     if info["rol"] == "Titular":
-                        nuevo_saldo = float(info.get("saldo", 0)) - monto_cuota
-                        BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
-                        
-                        id_cargo = f"CRG-{str(uuid.uuid4())[:6].upper()}"
-                        BASE_DATOS_PAGOS[id_cargo] = {
-                            "accion": info["accion"], "metodo": "Sistema Ventry", "referencia": "FACTURACIÓN", 
-                            "monto": monto_cuota, "fecha_reporte": fecha_cobro, "estatus": "Aprobado", "tipo": "Cargo Mensual"
-                        }
-                        
-                        nueva_solvencia = "Al dia" if nuevo_saldo >= 0 else "Moroso"
-                        for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
-                            if str(info_fam["accion"]) == str(info["accion"]):
-                                BASE_DATOS_SOCIOS[ced_fam]["solvencia"] = nueva_solvencia
-                                
+                        # Solo cobra a los que NO están solventes este mes
+                        if info.get("mes_pagado", "") != mes_actual:
+                            monto_tardio = 120.0
+                            nuevo_saldo = float(info.get("saldo", 0)) - monto_tardio
+                            BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
+                            BASE_DATOS_SOCIOS[ced]["mes_pagado"] = mes_actual
+                            BASE_DATOS_SOCIOS[ced]["invitaciones"] = 0 # Castigo por pagar tarde
+                            familias_cobradas += 1
+                            
+                            id_cargo = f"CRG-{str(uuid.uuid4())[:6].upper()}"
+                            BASE_DATOS_PAGOS[id_cargo] = {
+                                "accion": info["accion"], "metodo": "Sistema Ventry", "referencia": "MORA", 
+                                "monto": monto_tardio, "fecha_reporte": fecha_cobro, "estatus": "Aprobado", "tipo": "Cargo Mensual (Tardío)"
+                            }
+                            
+                            nueva_solvencia = "Al dia" if nuevo_saldo >= 0 else "Moroso"
+                            for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
+                                if str(info_fam["accion"]) == str(info["accion"]):
+                                    BASE_DATOS_SOCIOS[ced_fam]["solvencia"] = nueva_solvencia
+                                    
                 guardar_bd(BASE_DATOS_SOCIOS)
                 guardar_bd_pagos(BASE_DATOS_PAGOS)
-                st.success(f"✅ ¡FACTURACIÓN EXITOSA! Se han debitado ${monto_cuota} de todas las acciones y se han generado los recibos de cargo.")
+                st.success(f"✅ ¡FACTURACIÓN DE MOROSOS EXITOSA! Se han cargado $120 a {familias_cobradas} acciones rezagadas.")
                 st.rerun()
 
         st.write("---")

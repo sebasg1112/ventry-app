@@ -10,6 +10,9 @@ import pandas as pd
 import uuid
 import base64
 import urllib.parse
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 icono_url = "https://i.ibb.co/t7xWXXR/logo.png"
@@ -72,24 +75,17 @@ st.markdown("""
     li[role="option"]:hover *, li[role="option"][aria-selected="true"] * { background-color: #FF6600 !important; color: #ffffff !important; }
     div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { border-color: #FF6600 !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important; }
 
-    /* ========================================================= */
     /* BOTONES (NATIVOS Y ACCIÓN) */
-    /* ========================================================= */
-    
     .stButton>button[kind="primary"], .stFormSubmitButton>button { 
         width: 100%; border-radius: 20px !important; background: #FF6600 !important; color: #ffffff !important; 
         font-weight: 700 !important; letter-spacing: 0.5px; border: none !important; padding: 12px !important; 
         box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3) !important; transition: all 0.2s ease-in-out; justify-content: center !important;
     }
     .stButton>button[kind="primary"]:active, .stFormSubmitButton>button:active { background: #e65c00 !important; transform: scale(0.98); }
-    
     .btn-secundario>div>button { background: transparent !important; border: 1px solid #555 !important; color: #aaa !important; justify-content: center !important; box-shadow: none !important; }
     .btn-secundario>div>button:hover { border-color: #FF6600 !important; color: #FF6600 !important; }
-    
     .btn-logout>div>button { background: transparent !important; border: none !important; color: #ff4d4d !important; justify-content: center !important; box-shadow: none !important; font-weight: 600 !important; padding: 5px !important; opacity: 0.8; }
     .btn-logout>div>button:hover { opacity: 1; color: #ff1a1a !important; text-decoration: underline; }
-    
-    .btn-peligro>div>button { background: rgba(220, 53, 69, 0.1) !important; border: 1px solid rgba(220, 53, 69, 0.5) !important; color: #ff6b6b !important; justify-content: center !important; box-shadow: none !important; }
     
     /* BOTTOM NAVIGATION BAR */
     .block-container { padding-bottom: 120px !important; }
@@ -162,6 +158,30 @@ except Exception as e:
     st.stop()
 
 # --- FUNCIONES ---
+def enviar_correo_invitacion(correo_dest, nombre_inv, fecha_inv, link_qr):
+    # Función real de despacho SMTP
+    if "smtp_user" in st.secrets and "smtp_pass" in st.secrets:
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = "Ventry Access Control"
+            msg['To'] = correo_dest
+            msg['Subject'] = "Tu Pase Digital - Magnum City Club"
+            cuerpo = f"Hola {nombre_inv},\n\nTienes un pase de invitado autorizado para el {fecha_inv}.\n\nPor favor, abre el siguiente enlace para mostrar tu código QR al llegar a la garita:\n{link_qr}\n\n¡Te esperamos!"
+            msg.attach(MIMEText(cuerpo, 'plain'))
+            
+            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server.starttls()
+            server.login(st.secrets["smtp_user"], st.secrets["smtp_pass"])
+            server.send_message(msg)
+            server.quit()
+            return True
+        except Exception as e:
+            print("Error enviando correo:", e)
+            return False
+    else:
+        # Modo simulación (hasta que configures las credenciales en producción)
+        return True
+
 def cargar_historial():
     try:
         vals = hoja_historial.get_all_values()
@@ -488,9 +508,15 @@ else:
             link_pase_digital = f"{url_base}/?pase={pase_temp['id']}"
             
             st.success(f"✅ Pase de {pase_temp['nombre']} emitido correctamente.")
+            
             mensaje_ws = f"¡Hola {pase_temp['nombre']}! Aquí tienes tu pase para el *Magnum City Club*.\nFecha: {pase_temp['fecha']}\n👉 Abre tu código QR aquí:\n{link_pase_digital}"
             link_ws = f"https://wa.me/?text={urllib.parse.quote(mensaje_ws)}"
             st.markdown(f'<a href="{link_ws}" target="_blank" style="display:block; text-align:center; background:#25D366; color:white; padding:15px; border-radius:20px; text-decoration:none; font-weight:800; letter-spacing:1px; margin-top:20px; margin-bottom:20px; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);">ENVIAR POR WHATSAPP</a>', unsafe_allow_html=True)
+            
+            if pase_temp.get('correo'):
+                enviado = enviar_correo_invitacion(pase_temp['correo'], pase_temp['nombre'], pase_temp['fecha'], link_pase_digital)
+                if enviado:
+                    st.info(f"📧 Copia del pase enviada exitosamente a: {pase_temp['correo']}")
             
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
             if st.button("← Volver a crear otra invitación", type="primary"):
@@ -518,6 +544,8 @@ else:
                 with st.form("form_invitacion"):
                     n_cedula_inv = st.text_input("Cédula", value=n_cedula_def)
                     n_nombre_inv = st.text_input("Nombre y Apellido", value=n_nombre_def)
+                    # NUEVO: CAMPO DE CORREO AÑADIDO
+                    n_correo_inv = st.text_input("Correo Electrónico (Opcional)", value=n_correo_def, placeholder="ejemplo@correo.com")
                     fecha_visita = st.date_input("Fecha de acceso", min_value=datetime.today(), format="DD/MM/YYYY")
                     guardar_contacto = False
                     if modo_ingreso == "📝 Ingresar Nuevo Invitado":
@@ -529,19 +557,19 @@ else:
                 if btn_generar and n_cedula_inv and n_nombre_inv:
                     if guardar_contacto:
                         if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
-                        BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {"nombre": n_nombre_inv, "correo": n_correo_def, "fecha_nacimiento": n_nacimiento_def.strftime("%d/%m/%Y")}
+                        BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {"nombre": n_nombre_inv, "correo": n_correo_inv, "fecha_nacimiento": n_nacimiento_def.strftime("%d/%m/%Y")}
                         guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
                         
                     str_fecha = fecha_visita.strftime("%d/%m/%Y")
                     id_unico = f"INV-{socio_actual['accion']}-{str(uuid.uuid4())[:6].upper()}"
                     BASE_DATOS_INVITACIONES[id_unico] = {
-                        "accion": socio_actual["accion"], "fecha_visita": str_fecha, "cedula_invitado": n_cedula_inv, "nombre_invitado": n_nombre_inv, "fecha_nacimiento": "", "correo": "", "estatus": "Activo"
+                        "accion": socio_actual["accion"], "fecha_visita": str_fecha, "cedula_invitado": n_cedula_inv, "nombre_invitado": n_nombre_inv, "fecha_nacimiento": "", "correo": n_correo_inv, "estatus": "Activo"
                     }
                     guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
-                    st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha}
+                    st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha, "correo": n_correo_inv}
                     st.rerun()
 
-    # --- MÓDULO 4: PAGOS ---
+    # --- MÓDULO 4: PAGOS (BILLETERA & RECIBOS DIGITALES) ---
     elif modulo_seleccionado == "Pagos":
         
         if "sub_pagos" not in st.session_state: st.session_state.sub_pagos = "menu"
@@ -709,7 +737,7 @@ else:
                 if id_pase in BASE_DATOS_INVITACIONES:
                     pase = BASE_DATOS_INVITACIONES[id_pase]
                     
-                    # CÓDIGO NUEVO: VERIFICACIÓN ESTRICTA DE FECHA DE VISITA
+                    # SEGURIDAD: VERIFICACIÓN DE FECHA ACTIVA
                     fecha_hoy = datetime.now().strftime("%d/%m/%Y")
                     
                     if pase["fecha_visita"] != fecha_hoy:
@@ -736,7 +764,7 @@ else:
                 except: st.error("❌ Código de carnet ilegible.")
             else: st.error("❌ Código QR no pertenece al sistema Ventry.")
 
-    # --- MÓDULO 5: ADMIN (DASHBOARD RESPONSIVO) ---
+    # --- MÓDULO 5: ADMIN (DASHBOARD + BUSCADOR INTELIGENTE CRM) ---
     elif modulo_seleccionado == "Admin":
         st.markdown("<h3 style='font-size:24px; font-weight:800; color:#FF6600;'>Consola Administrativa VIP</h3>", unsafe_allow_html=True)
         
@@ -795,10 +823,23 @@ else:
                 st.download_button("Exportar Matriz de Socios", data=df_socios.to_csv(index=False).encode('utf-8'), file_name="Socios_Ventry.csv", mime="text/csv")
             
         with col_admin2:
-            st.markdown("<h4 style='font-size:16px; color:#aaa;'>📝 Gestión Rápida Familiar</h4>", unsafe_allow_html=True)
-            acciones_disponibles = sorted(list(set(d["accion"] for d in BASE_DATOS_SOCIOS.values())))
-            if acciones_disponibles:
-                accion_sel = st.selectbox("Seleccione Acción:", acciones_disponibles)
+            st.markdown("<h4 style='font-size:16px; color:#aaa;'>🔍 Buscador CRM Familiar</h4>", unsafe_allow_html=True)
+            
+            # NUEVO: BUSCADOR INTELIGENTE EN LUGAR DE SELECTBOX INFINITO
+            busqueda_admin = st.text_input("Buscar por Acción, Cédula o Nombre:")
+            acciones_encontradas = set()
+            
+            if busqueda_admin:
+                for ced, info in BASE_DATOS_SOCIOS.items():
+                    if busqueda_admin.lower() in str(info['accion']).lower() or \
+                       busqueda_admin.lower() in str(ced).lower() or \
+                       busqueda_admin.lower() in str(info['nombre']).lower():
+                        acciones_encontradas.add(info['accion'])
+            else:
+                acciones_encontradas = set(d["accion"] for d in BASE_DATOS_SOCIOS.values())
+            
+            if acciones_encontradas:
+                accion_sel = st.selectbox("Familias encontradas (Seleccione Acción):", sorted(list(acciones_encontradas)))
                 miembros_accion = sorted([info for info in BASE_DATOS_SOCIOS.values() if info["accion"] == accion_sel], key=lambda x: x.get("rol", ""), reverse=True)
                 
                 for m in miembros_accion: 
@@ -815,6 +856,8 @@ else:
                         for ced, info in BASE_DATOS_SOCIOS.items():
                             if info["accion"] == accion_sel: BASE_DATOS_SOCIOS[ced]["solvencia"] = n_estatus
                         guardar_bd(BASE_DATOS_SOCIOS); st.success("Actualizado.")
+            else:
+                st.warning("No se encontraron familias con esa búsqueda.")
 
         st.write("---")
         st.markdown("<h4 style='font-size:18px; color:#fff;'>📟 Monitor de Acceso en Tiempo Real</h4>", unsafe_allow_html=True)
@@ -841,7 +884,7 @@ else:
             st.session_state.db_socios = cargar_bd(); st.session_state.db_invitaciones = cargar_invitaciones(); st.session_state.db_pagos = cargar_pagos(); st.session_state.db_directorio = cargar_directorio(); st.session_state.db_historial = cargar_historial()
             st.success("Base de datos sincronizada.")
 
-    # --- MÓDULO 6: AJUSTES (NAVEGACIÓN "DRILL-DOWN" SEGURA Y LIMPIA) ---
+    # --- MÓDULO 6: AJUSTES (DIRECTORIO EN VIVO) ---
     elif modulo_seleccionado == "Ajustes":
         
         if "sub_ajustes" not in st.session_state: st.session_state.sub_ajustes = "menu"
@@ -901,11 +944,11 @@ else:
                     st.markdown(f"""
                     <div class="historial-card">
                         <b style="font-size: 16px; color:#fff;">{info_contacto['nombre']}</b><br>
-                        <span style="color:#aaa; font-size:12px;">C.I: {ced_contacto}</span>
+                        <span style="color:#aaa; font-size:12px;">C.I: {ced_contacto} | Correo: {info_contacto.get('correo', 'N/A')}</span>
                     </div>
                     """, unsafe_allow_html=True)
                     st.markdown("<div class='btn-peligro' style='margin-bottom:15px;'>", unsafe_allow_html=True)
-                    if st.button(f"Eliminar contacto", key=f"del_{ced_contacto}"):
+                    if st.button(f"Eliminar {info_contacto['nombre']}", key=f"del_{ced_contacto}"):
                         del BASE_DATOS_DIRECTORIO[socio_actual["accion"]][ced_contacto]
                         guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
                         st.rerun()

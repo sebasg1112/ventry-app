@@ -52,122 +52,116 @@ st.markdown(f"""
     </head>
 """, unsafe_allow_html=True)
 
-# --- CSS AVANZADO: UI/UX PREMIUM (GLASSMORPHISM & MATERIAL DESIGN) ---
+# --- CSS AVANZADO: UI/UX PREMIUM (ANIMACIONES & GLASSMORPHISM) ---
 st.markdown("""
     <style>
-    /* Ocultar elementos por defecto de Streamlit */
+    /* Ocultar elementos base */
     #MainMenu {display: none;}
     footer {display: none;}
     [data-testid="collapsedControl"] {display: none;} 
     section[data-testid="stSidebar"] {display: none !important;} 
     
-    /* Fondo y Tipografía Global */
+    /* ANIMACIONES GLOBALES */
+    @keyframes smoothFadeIn {
+        0% { opacity: 0; transform: translateY(12px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    .block-container { 
+        padding-bottom: 110px !important; 
+        animation: smoothFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    
+    /* Fondo y Tipografía */
     .stApp { background-color: #050505; color: #E0E0E0; }
     h1, h2, h3, h4, h5, h6, p, span, label, div { 
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
     }
     
-    /* Etiquetas de texto (Labels) */
-    label, label p, label div, div[data-testid="stWidgetLabel"] p, .stTextInput p, .stSelectbox p, .stDateInput p, .stNumberInput p { 
-        color: #A0A0A0 !important; font-weight: 500 !important; letter-spacing: 0.3px; font-size: 13px !important; text-transform: uppercase;
+    /* Títulos con Gradiente (Efecto Oro/Naranja) */
+    .gradient-text {
+        background: linear-gradient(90deg, #FF7B00, #FFC300);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
     
-    /* Cajas de Formulario (Glassmorphism sutil) */
+    /* ALERTAS OVERRIDE (Errores, Info, Success) */
+    [data-testid="stAlert"] {
+        background: rgba(20, 20, 25, 0.7) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 12px !important;
+        color: #fff !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+    }
+    [data-testid="stAlert"] p { color: #fff !important; font-weight: 500 !important; font-size: 14px !important; }
+    div[data-baseweb="toast"] { background: rgba(15, 15, 18, 0.95) !important; border-left: 4px solid #FF6600 !important; }
+
+    /* Etiquetas de texto */
+    label, label p, label div, div[data-testid="stWidgetLabel"] p, .stTextInput p, .stSelectbox p, .stDateInput p, .stNumberInput p { 
+        color: #A0A0A0 !important; font-weight: 600 !important; letter-spacing: 0.8px; font-size: 11px !important; text-transform: uppercase;
+    }
+    
+    /* Cajas de Formulario */
     [data-testid="stForm"] { 
         background: rgba(20, 20, 25, 0.4) !important; 
         backdrop-filter: blur(12px) !important; 
-        -webkit-backdrop-filter: blur(12px) !important;
         border: 1px solid rgba(255, 255, 255, 0.05) !important; 
         border-radius: 20px !important; 
         padding: 25px !important; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
     }
-    
-    /* Inputs y Selectboxes (Diseño Táctil) */
-    .stTextInput input, .stNumberInput input, .stDateInput input, textarea { 
-        background-color: transparent !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-size: 16px !important; font-weight: 500 !important;
-    }
+    .stTextInput input, .stNumberInput input, .stDateInput input, textarea { background-color: transparent !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-size: 16px !important; font-weight: 500 !important;}
     div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, div[data-baseweb="base-input"] { 
-        background: rgba(30, 30, 35, 0.6) !important; 
-        border-radius: 12px !important; 
-        border: 1px solid rgba(255, 255, 255, 0.08) !important; 
-        color: #ffffff !important; 
-        transition: all 0.2s ease-in-out;
+        background: rgba(30, 30, 35, 0.6) !important; border-radius: 12px !important; border: 1px solid rgba(255, 255, 255, 0.08) !important; color: #ffffff !important; transition: all 0.3s ease;
     }
     div[data-baseweb="select"] span { color: #ffffff !important; font-weight: 500 !important; }
-    
-    /* Interacciones de foco (Focus Glow) */
     div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { 
-        border-color: #FF6600 !important; background: rgba(40, 30, 25, 0.8) !important; box-shadow: 0 0 12px rgba(255, 102, 0, 0.2) !important; 
+        border-color: #FF6600 !important; background: rgba(40, 30, 25, 0.8) !important; box-shadow: 0 0 15px rgba(255, 102, 0, 0.15) !important; 
     }
-    
-    /* Menús desplegables (Popovers) */
-    div[data-baseweb="popover"] > div, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * { 
-        background-color: #121212 !important; color: #ffffff !important; border-radius: 12px;
-    }
-    div[data-testid="stPopoverBody"] { 
-        background: rgba(15, 15, 18, 0.95) !important; backdrop-filter: blur(15px) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 20px !important; padding: 20px !important; box-shadow: 0 15px 40px rgba(0,0,0,0.8) !important;
-    }
+    div[data-baseweb="popover"] > div, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * { background-color: #121212 !important; color: #ffffff !important; border-radius: 12px; }
+    div[data-testid="stPopoverBody"] { background: rgba(15, 15, 18, 0.95) !important; backdrop-filter: blur(15px) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 20px !important; padding: 20px !important; box-shadow: 0 15px 40px rgba(0,0,0,0.8) !important; }
     li[role="option"]:hover *, li[role="option"][aria-selected="true"] * { background-color: #FF6600 !important; color: #ffffff !important; }
 
-    /* ========================================================= */
-    /* BOTONES PREMIUM (MICRO-INTERACCIONES) */
-    /* ========================================================= */
-    
-    /* Botón Primario (Naranja Brillante) */
+    /* BOTONES */
     .stButton>button[kind="primary"], .stFormSubmitButton>button { 
         width: 100%; border-radius: 16px !important; 
         background: linear-gradient(135deg, #FF7B00 0%, #E65C00 100%) !important; 
         color: #ffffff !important; font-weight: 700 !important; letter-spacing: 0.8px; font-size: 15px !important;
         border: none !important; padding: 14px !important; 
         box-shadow: 0 6px 20px rgba(230, 92, 0, 0.4) !important; 
-        transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); 
+        transition: transform 0.15s ease, box-shadow 0.15s ease; 
         justify-content: center !important; text-transform: uppercase;
     }
-    .stButton>button[kind="primary"]:active, .stFormSubmitButton>button:active { 
-        transform: scale(0.95) !important; box-shadow: 0 2px 10px rgba(230, 92, 0, 0.3) !important; 
-    }
-    
-    /* Botón Secundario (Outline / Ghost) */
-    .btn-secundario>div>button { 
-        background: rgba(255, 255, 255, 0.03) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; 
-        color: #A0A0A0 !important; justify-content: center !important; box-shadow: none !important; border-radius: 16px !important; transition: all 0.2s;
-    }
+    .stButton>button[kind="primary"]:active, .stFormSubmitButton>button:active { transform: scale(0.95) !important; box-shadow: 0 2px 10px rgba(230, 92, 0, 0.3) !important; }
+    .btn-secundario>div>button { background: rgba(255, 255, 255, 0.03) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; color: #A0A0A0 !important; justify-content: center !important; box-shadow: none !important; border-radius: 16px !important; transition: all 0.2s; }
     .btn-secundario>div>button:hover { background: rgba(255, 102, 0, 0.05) !important; border-color: #FF6600 !important; color: #FF6600 !important; }
     .btn-secundario>div>button:active { transform: scale(0.96) !important; }
-    
-    /* Botón Peligro (Rojo) */
-    .btn-peligro>div>button { 
-        background: rgba(220, 53, 69, 0.05) !important; border: 1px solid rgba(220, 53, 69, 0.3) !important; 
-        color: #ff6b6b !important; justify-content: center !important; box-shadow: none !important; border-radius: 12px !important;
-    }
-    .btn-peligro>div>button:active { transform: scale(0.96) !important; background: rgba(220, 53, 69, 0.2) !important; }
-
-    /* Botón Invisible de la Campana */
+    .btn-logout>div>button { background: transparent !important; border: none !important; color: #ff4d4d !important; justify-content: center !important; box-shadow: none !important; font-weight: 600 !important; padding: 5px !important; opacity: 0.8; }
+    .btn-peligro>div>button { background: rgba(220, 53, 69, 0.05) !important; border: 1px solid rgba(220, 53, 69, 0.3) !important; color: #ff6b6b !important; justify-content: center !important; box-shadow: none !important; border-radius: 12px !important; }
     div[data-testid="stPopover"] > button { background: transparent !important; border: none !important; color: #ffffff !important; font-size: 22px !important; padding: 0 !important; box-shadow: none !important; display: inline-block !important; margin-top: -5px; transition: transform 0.2s; }
     div[data-testid="stPopover"] > button:active { transform: scale(0.8); }
     
-    /* ========================================================= */
-    /* NAVEGACIÓN INFERIOR (APPLE NATIVE BLUR) */
-    /* ========================================================= */
-    .block-container { padding-bottom: 110px !important; }
+    /* NAV BAR INFERIOR CON INDICADOR ACTIVO */
     div.stRadio { 
         position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100% !important; 
-        background: rgba(10, 10, 12, 0.75) !important; 
+        background: rgba(10, 10, 12, 0.85) !important; 
         backdrop-filter: saturate(180%) blur(20px) !important; 
         -webkit-backdrop-filter: saturate(180%) blur(20px) !important; 
-        border-top: 1px solid rgba(255, 255, 255, 0.08) !important; 
+        border-top: 1px solid rgba(255, 255, 255, 0.05) !important; 
         padding: 12px 0px 25px 0px !important; z-index: 99999 !important; 
     }
     div.stRadio > div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-evenly !important; align-items: center !important; gap: 0 !important; }
-    div.stRadio > div[role="radiogroup"] > label { background: transparent !important; border: none !important; padding: 5px 10px !important; margin: 0 !important; cursor: pointer; }
+    div.stRadio > div[role="radiogroup"] > label { background: transparent !important; border: none !important; padding: 5px 10px !important; margin: 0 !important; cursor: pointer; position: relative;}
     div.stRadio > div[role="radiogroup"] > label > div:first-child, div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"], div.stRadio > div[role="radiogroup"] > label div[data-baseweb="radio"] { display: none !important; }
-    div.stRadio > div[role="radiogroup"] > label div { color: #666666 !important; font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase; letter-spacing: 1.5px; transition: color 0.2s; }
-    div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div { color: #FF6600 !important; text-shadow: 0 0 10px rgba(255,102,0,0.4); }
+    div.stRadio > div[role="radiogroup"] > label div { color: #666666 !important; font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase; letter-spacing: 1.5px; transition: color 0.3s ease; }
+    div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div { color: #ffffff !important; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+    
+    /* El puntito naranja indicador del menú */
+    div.stRadio > div[role="radiogroup"] > label[data-checked="true"]::before {
+        content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: #FF6600; border-radius: 50%; box-shadow: 0 0 8px #FF6600;
+    }
 
-    /* ========================================================= */
-    /* TARJETAS (CARDS GLASSMORPHISM) */
-    /* ========================================================= */
+    /* CARDS GLOBALES */
     .wallet-card { 
         background: linear-gradient(160deg, rgba(30, 30, 35, 0.8) 0%, rgba(15, 15, 18, 0.9) 100%); 
         border: 1px solid rgba(255, 255, 255, 0.06); 
@@ -179,53 +173,16 @@ st.markdown("""
     .wallet-saldo { color: #4ade80 !important; font-size: 34px; font-weight: 800; margin: 0; text-shadow: 0 0 20px rgba(74, 222, 128, 0.2); }
     .wallet-invites { color: #38bdf8 !important; font-size: 34px; font-weight: 800; margin: 0; text-shadow: 0 0 20px rgba(56, 189, 248, 0.2); }
     
-    .historial-card { 
-        background: rgba(20, 20, 25, 0.6); padding: 18px; border-radius: 16px; margin-bottom: 12px; 
-        border: 1px solid rgba(255,255,255,0.03); border-left: 4px solid #FF6600;
-        backdrop-filter: blur(8px);
-    }
-    .monitor-card { 
-        background: rgba(15, 15, 18, 0.7); padding: 15px 20px; border-radius: 12px; margin-bottom: 10px; 
-        display: flex; justify-content: space-between; align-items: center; 
-        border: 1px solid rgba(255,255,255,0.04); border-left: 4px solid #4ade80;
-    }
-    .monitor-card-invitado { border-left: 4px solid #38bdf8; }
-
-    /* ========================================================= */
-    /* BOTÓN DE GARITA (3D EFFECT) */
-    /* ========================================================= */
+    /* BOTÓN DE GARITA */
     .open-button-container { display: flex; justify-content: center; margin-top: 50px; margin-bottom: 30px;}
-    .open-button-glow { 
-        border-radius: 50%; padding: 10px; 
-        background: radial-gradient(circle, rgba(255,102,0,0.2) 0%, rgba(0,0,0,0) 70%); 
-        box-shadow: 0 0 80px rgba(255,102,0,0.15); 
-    }
-    .open-button { 
-        background: linear-gradient(145deg, #1f1f22, #0d0d0f); 
-        border: 2px solid rgba(255, 102, 0, 0.5); 
-        border-radius: 50%; width: 220px; height: 220px; 
-        display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; cursor: pointer; 
-        box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.6); 
-        transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1); 
-    }
+    .open-button-glow { border-radius: 50%; padding: 10px; background: radial-gradient(circle, rgba(255,102,0,0.2) 0%, rgba(0,0,0,0) 70%); box-shadow: 0 0 80px rgba(255,102,0,0.15); }
+    .open-button { background: linear-gradient(145deg, #1f1f22, #0d0d0f); border: 2px solid rgba(255, 102, 0, 0.5); border-radius: 50%; width: 220px; height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; cursor: pointer; box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.6); transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1); }
     .open-button:active { background: linear-gradient(145deg, #FF7B00, #E65C00); border-color: #FF6600; transform: scale(0.94); box-shadow: inset 0 0 20px rgba(0,0,0,0.3); }
 
-    /* ========================================================= */
-    /* CARNET DIGITAL (TARJETA TIPO APPLE WALLET) */
-    /* ========================================================= */
+    /* CARNET DIGITAL */
     .dark-wrapper { background-color: transparent; padding: 10px 0px 30px 0px; display: flex; justify-content: center; }
-    .glass-card { 
-        background: linear-gradient(135deg, rgba(15, 30, 50, 0.8) 0%, rgba(5, 10, 15, 0.95) 100%); 
-        backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); 
-        border: 1px solid rgba(212, 175, 55, 0.25); border-radius: 24px; padding: 40px 30px; 
-        width: 100%; max-width: 360px; box-shadow: 0 20px 50px rgba(0,0,0,0.9); position: relative; overflow: hidden; 
-    }
-    /* Reflejo superior del carnet */
-    .glass-card::before {
-        content: ''; position: absolute; top: 0; left: -50%; width: 200%; height: 100px;
-        background: linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 100%);
-        transform: rotate(-15deg); pointer-events: none;
-    }
+    .glass-card { background: linear-gradient(135deg, rgba(15, 30, 50, 0.8) 0%, rgba(5, 10, 15, 0.95) 100%); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: 24px; padding: 40px 30px; width: 100%; max-width: 360px; box-shadow: 0 20px 50px rgba(0,0,0,0.9); position: relative; overflow: hidden; }
+    .glass-card::before { content: ''; position: absolute; top: 0; left: -50%; width: 200%; height: 100px; background: linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 100%); transform: rotate(-15deg); pointer-events: none; }
     .magnum-logo { text-align: center; margin-bottom: 30px; position: relative; z-index: 2; }
     .logo-m { font-size: 55px; font-weight: 200; margin: 0; line-height: 1; color: #ffffff !important; }
     .logo-magnum { font-size: 15px; font-weight: 700; letter-spacing: 6px; margin: 5px 0 0 0; color: #ffffff !important; }
@@ -426,7 +383,6 @@ if "pantalla_auth" not in st.session_state: st.session_state.pantalla_auth = "lo
 # ==========================================
 params = st.query_params
 
-# 1. API INVISIBLE PARA EL ESP32 (HARDWARE)
 if "api" in params and params["api"] == "scan" and "qr" in params:
     data_qr = params["qr"]
     
@@ -461,7 +417,7 @@ if "api" in params and params["api"] == "scan" and "qr" in params:
             elif cedula_qr in BASE_DATOS_SOCIOS:
                 socio_qr = BASE_DATOS_SOCIOS[cedula_qr]
                 if socio_qr.get("solvencia", "") == "Al dia":
-                    registrar_acceso(socio_qr["nombre"], socio_qr["accion"], "QR Socio (ESP32)", "Entrada")
+                    registrar_acceso(socio_qr["nombre"], socio_qr["accion"], "QR Dinámico Socio", "Entrada")
                     st.json({"status": "success", "open_door": True, "message": f"Bienvenido Socio {socio_qr['nombre']}"})
                 else:
                     st.json({"status": "error", "open_door": False, "message": "Socio Moroso - Acceso Denegado"})
@@ -475,7 +431,6 @@ if "api" in params and params["api"] == "scan" and "qr" in params:
         
     st.stop() 
 
-# 2. INTERCEPTOR VISUAL DE PASES PARA INVITADOS HUMANOS
 elif "pase" in params:
     id_pase_url = params["pase"]
     if id_pase_url in BASE_DATOS_INVITACIONES:
@@ -519,9 +474,9 @@ elif "pase" in params:
 # ==========================================
 if not st.session_state.logueado:
     st.markdown("""
-        <div style='text-align: center; margin-top: 40px; margin-bottom: 20px;'>
-            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="90" style="margin-bottom: 15px;">
-            <h1 style='font-weight: 800; font-size: 34px; margin-bottom: 0px; letter-spacing: 1px; color: #ffffff;'>VENTRY</h1>
+        <div style='text-align: center; margin-top: 50px; margin-bottom: 25px;'>
+            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="90" style="margin-bottom: 15px; border-radius:20px; box-shadow: 0 10px 30px rgba(255,102,0,0.3);">
+            <h1 style='font-weight: 900; font-size: 38px; margin-bottom: 0px; letter-spacing: 2px;' class='gradient-text'>VENTRY</h1>
             <p style='color: #888; font-size: 11px; letter-spacing: 4px; text-transform: uppercase; font-weight:600;'>Access Control</p>
         </div>
     """, unsafe_allow_html=True)
@@ -543,7 +498,7 @@ if not st.session_state.logueado:
         with col2:
             st.markdown("""
                 <div style="text-align: center;">
-                    <span style="border: 1px solid rgba(255,255,255,0.1); padding: 11px 0px; border-radius: 16px; color: #888; font-size: 13px; font-weight: 600; cursor: pointer; display:block; margin-top: 1px;" onclick="alert('FaceID/TouchID se activará en la Fase 3 de compilación nativa.')">
+                    <span style="border: 1px solid rgba(255,255,255,0.1); padding: 11px 0px; border-radius: 16px; color: #A0A0A0; font-size: 13px; font-weight: 600; cursor: pointer; display:block; margin-top: 1px; transition:all 0.2s;" onmouseover="this.style.borderColor='#FF6600'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'" onclick="alert('FaceID/TouchID se activará en la Fase 3 de compilación nativa.')">
                         🔒 FaceID
                     </span>
                 </div>
@@ -624,13 +579,13 @@ else:
             mes_pagado_accion = str(m.get('mes_pagado', '')) 
             break
 
-    # --- HEADER CON CENTRO DE NOTIFICACIONES ---
+    # --- HEADER ---
     col_logo, col_campana = st.columns([5, 1])
     with col_logo:
         st.markdown(f"""
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 20px;">
-            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="28" style="border-radius:6px; box-shadow: 0 4px 10px rgba(255,102,0,0.3);">
-            <span style="font-size:18px; font-weight:800; letter-spacing: 1.5px; color:#ffffff;">VENTRY</span>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom: 25px;">
+            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="30" style="border-radius:8px; box-shadow: 0 4px 15px rgba(255,102,0,0.4);">
+            <span style="font-size:20px; font-weight:900; letter-spacing: 2px;" class="gradient-text">VENTRY</span>
         </div>
         """, unsafe_allow_html=True)
     with col_campana:
@@ -651,7 +606,7 @@ else:
                 for n in notificaciones[:5]: st.markdown(f"<div style='background:rgba(255,255,255,0.03); padding:12px; border-radius:10px; margin-bottom:8px; font-size:13px; border-left:3px solid #FF6600;'>{n}</div>", unsafe_allow_html=True)
             else: st.write("No tienes notificaciones nuevas.")
 
-    # --- DEFINICIÓN DE MENÚ INFERIOR ---
+    # --- MENÚ INFERIOR ---
     if rol_actual in ["Titular", "Familiar"]: opciones_menu = ["Inicio", "Invitados", "Carnet", "Pagos", "Ajustes"]
     elif rol_actual == "Vigilante": opciones_menu = ["Garita", "Ajustes"]
     elif rol_actual == "Administrador": opciones_menu = ["Inicio", "Invitados", "Garita", "Admin", "Ajustes"]
@@ -665,21 +620,21 @@ else:
     if modulo_seleccionado == "Inicio":
         st.markdown("""
 <div style="text-align: center; margin-top: 0px;">
-<h2 style="margin-bottom: 5px; font-size:24px; font-weight:800; color:#ffffff;">Magnum City Club</h2>
-<p style="color: #888; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-weight:600;">Puerta Principal</p>
+<h2 style="margin-bottom: 5px; font-size:26px; font-weight:900; color:#ffffff; letter-spacing:0.5px;">Magnum City Club</h2>
+<p style="color: #A0A0A0; font-size:12px; text-transform:uppercase; letter-spacing:3px; font-weight:600;">Puerta Principal</p>
 <div class="open-button-container">
 <div class="open-button-glow">
 <div class="open-button">
-<span style="font-size: 45px; margin-bottom:12px;">🔒</span>
-<span style="font-size: 13px; font-weight:700; letter-spacing: 1.5px;">TOCA PARA ABRIR</span>
+<span style="font-size: 50px; margin-bottom:12px; text-shadow: 0 4px 15px rgba(0,0,0,0.5);">🔒</span>
+<span style="font-size: 13px; font-weight:800; letter-spacing: 1.5px;">TOCA PARA ABRIR</span>
 </div>
 </div>
 </div>
-<p style="color: #666; margin-top: 35px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Estatus: <span style="color:#FF6600; font-weight:800;">Cerrado</span></p>
+<p style="color: #888; margin-top: 35px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Estatus: <span style="color:#FF6600; font-weight:800; text-shadow: 0 0 10px rgba(255,102,0,0.3);">Cerrado</span></p>
 </div>
 """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Simular Apertura (Demo ESP32)", type="primary"): st.success("📡 Señal enviada a garita.")
+        if st.button("Simular Apertura (Demo ESP32)", type="primary"): st.success("📡 Señal de apertura enviada a la garita.")
 
     # --- MÓDULO 2: CARNET DIGITAL ---
     elif modulo_seleccionado == "Carnet":
@@ -731,7 +686,7 @@ else:
             
             if pase_temp.get('correo'):
                 enviado = enviar_correo_invitacion(pase_temp['correo'], pase_temp['nombre'], pase_temp['fecha'], link_pase_digital)
-                if enviado: st.info(f"📧 Copia del pase enviada exitosamente a: {pase_temp['correo']}")
+                if enviado: st.info(f"📧 Copia del pase enviada a: {pase_temp['correo']}")
             
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
             if st.button("← Volver a crear otra invitación", type="primary"):
@@ -741,7 +696,6 @@ else:
                 
         else:
             st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Pases y Accesos</h3>", unsafe_allow_html=True)
-            solvencia = socio_actual.get('solvencia', 'Desconocido')
             
             if mes_pagado_accion != mes_actual_str():
                 st.error("❌ Operación Denegada. Debes estar al día con el pago del mes actual para invitar.")
@@ -793,14 +747,14 @@ else:
                             guardar_bd_pagos(BASE_DATOS_PAGOS)
                         else:
                             puede_invitar = False
-                            st.error("❌ Fondo insuficiente. Necesitas al menos $10.00 en tu Billetera para pases adicionales.")
+                            st.error("❌ Fondo insuficiente. Necesitas al menos $10.00 en tu Billetera para generar pases adicionales.")
                     
                     if puede_invitar:
                         guardar_bd(BASE_DATOS_SOCIOS)
                         if guardar_contacto:
                             if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
-                            if n_cedula_inv in BASE_DATOS_DIRECTORIO[socio_actual["accion"]]: st.toast("ℹ️ Este invitado ya estaba en tu directorio. Sus datos han sido actualizados.")
-                            else: st.toast("✅ Contacto guardado en tu directorio frecuente.")
+                            if n_cedula_inv in BASE_DATOS_DIRECTORIO[socio_actual["accion"]]: st.toast("ℹ️ Contacto actualizado.")
+                            else: st.toast("✅ Contacto guardado.")
                             BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {"nombre": n_nombre_inv, "correo": n_correo_inv, "fecha_nacimiento": n_nacimiento_def.strftime("%d/%m/%Y")}
                             guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
                             
@@ -811,12 +765,12 @@ else:
                         st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha, "correo": n_correo_inv}
                         st.rerun()
 
-    # --- MÓDULO 4: PAGOS (UI MEJORADA) ---
+    # --- MÓDULO 4: FINANZAS ---
     elif modulo_seleccionado == "Pagos":
         
         edad_usuario = calcular_edad(socio_actual.get("fecha_nacimiento", ""))
         if edad_usuario < 18 and edad_usuario > 0:
-            st.markdown("<h3 style='font-size:24px; font-weight:800; color:#ffffff;'>Billetera Ventry</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size:24px; font-weight:800; color:#ffffff;'>Finanzas</h3>", unsafe_allow_html=True)
             st.error("🔒 Acceso Restringido: El módulo financiero es exclusivo para los usuarios mayores de edad.")
             
         else:
@@ -842,7 +796,7 @@ else:
                 if rol_actual == "Titular":
                     if mes_pagado_accion == mes_actual:
                         st.success(f"🎉 **Cuota de {nombre_mes_actual} pagada.** Tu acción está solvente.")
-                        st.caption("ℹ️ *Por políticas del club, la próxima cuota se habilita el 1° del mes entrante.*")
+                        st.caption("ℹ️ *Por políticas del club, la próxima cuota se habilitará el 1° del mes entrante.*")
                     else:
                         if dia_actual <= 10: st.info(f"🌟 Beneficio de Pronto Pago vigente (Días 1-10). Cuota de **{nombre_mes_actual}**: $104 + 10 Pases Gratis.")
                         else: st.warning(f"⚠️ Fecha de corte superada. Cuota de **{nombre_mes_actual}**: $120. No incluye pases gratis.")
@@ -908,7 +862,7 @@ else:
                 if saldo_accion >= monto_cobro:
                     st.info(f"💡 Se debitarán **${monto_cobro:.2f}** de tu Fondo Familiar.")
                     
-                    if st.button(f"Pagar {nombre_mes_actual} (${monto_cobro:.2f})", key="btn_pagar_mes_corriente", type="primary"):
+                    if st.button(f"Confirmar Pago de {nombre_mes_actual} (${monto_cobro:.2f})", key="btn_pagar_mes_corriente", type="primary"):
                         nuevo_saldo = saldo_accion - monto_cobro
                         for ced, info in BASE_DATOS_SOCIOS.items():
                             if str(info["accion"]) == str(socio_actual["accion"]) and info["rol"] == "Titular":
@@ -957,7 +911,7 @@ else:
                         monto_str = f"{signo}${float(p_info['monto']):.2f}"
                         
                         st.markdown(f"""
-                        <div class='historial-card' style='border-left-color: {color_status};'>
+                        <div class='historial-card' style='border-left-color: {color_status}; background:rgba(20,20,25,0.6);'>
                             <div style='display:flex; justify-content:space-between; margin-bottom:5px;'>
                                 <b style='color:#ffffff; font-size:14px;'>{p_info.get('tipo', 'Abono a Billetera')}</b>
                                 <b style='color:{color_status}; font-size:16px;'>{monto_str}</b>
@@ -978,7 +932,7 @@ else:
                     
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-                if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
+                if st.button("← Volver a Finanzas", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
 
             elif st.session_state.sub_pagos == "recibo":

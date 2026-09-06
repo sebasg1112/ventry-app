@@ -23,8 +23,8 @@ manifest_json = f"""
 {{
   "name": "Ventry System",
   "short_name": "Ventry",
-  "theme_color": "#0a0a0a",
-  "background_color": "#0a0a0a",
+  "theme_color": "#050505",
+  "background_color": "#050505",
   "display": "standalone",
   "orientation": "portrait",
   "scope": "/",
@@ -44,7 +44,7 @@ manifest_b64 = base64.b64encode(manifest_json.encode('utf-8')).decode('utf-8')
 st.markdown(f"""
     <head>
         <link rel="manifest" href="data:application/json;base64,{manifest_b64}">
-        <meta name="theme-color" content="#0a0a0a">
+        <meta name="theme-color" content="#050505">
         <link rel="apple-touch-icon" href="{icono_url}">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -52,88 +52,195 @@ st.markdown(f"""
     </head>
 """, unsafe_allow_html=True)
 
-# --- CSS AVANZADO: BLINDAJE NUCLEAR Y DISEÑO PREMIUM ---
+# --- CSS AVANZADO: UI/UX PREMIUM (GLASSMORPHISM & MATERIAL DESIGN) ---
 st.markdown("""
     <style>
+    /* Ocultar elementos por defecto de Streamlit */
     #MainMenu {display: none;}
     footer {display: none;}
     [data-testid="collapsedControl"] {display: none;} 
     section[data-testid="stSidebar"] {display: none !important;} 
     
-    .stApp { background-color: #0d0d0d; color: #f5f5f5; }
-    h1, h2, h3, h4, h5, h6, p, span, label, div { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    /* Fondo y Tipografía Global */
+    .stApp { background-color: #050505; color: #E0E0E0; }
+    h1, h2, h3, h4, h5, h6, p, span, label, div { 
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+    }
     
-    label, label p, label div, div[data-testid="stWidgetLabel"] p, .stTextInput p, .stSelectbox p, .stDateInput p, .stNumberInput p { color: #ffffff !important; font-weight: 600 !important; letter-spacing: 0.5px; }
+    /* Etiquetas de texto (Labels) */
+    label, label p, label div, div[data-testid="stWidgetLabel"] p, .stTextInput p, .stSelectbox p, .stDateInput p, .stNumberInput p { 
+        color: #A0A0A0 !important; font-weight: 500 !important; letter-spacing: 0.3px; font-size: 13px !important; text-transform: uppercase;
+    }
     
-    [data-testid="stForm"] { background-color: #0d0d0d !important; border: 1px solid #333 !important; border-radius: 15px !important; padding: 20px !important; }
-    .stTextInput input, .stNumberInput input, .stDateInput input, textarea { background-color: #1a1a1a !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
-    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, div[data-baseweb="base-input"] { background-color: #1a1a1a !important; border-radius: 10px !important; border: 1px solid #333 !important; color: #ffffff !important; }
-    div[data-baseweb="select"] span { color: #ffffff !important; }
-    div[data-baseweb="popover"] > div, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * { background-color: #1a1a1a !important; color: #ffffff !important; }
-    div[data-testid="stPopoverBody"] { background-color: #1a1a1a !important; border: 1px solid #333 !important; border-radius: 15px !important; padding: 15px !important; }
+    /* Cajas de Formulario (Glassmorphism sutil) */
+    [data-testid="stForm"] { 
+        background: rgba(20, 20, 25, 0.4) !important; 
+        backdrop-filter: blur(12px) !important; 
+        -webkit-backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important; 
+        border-radius: 20px !important; 
+        padding: 25px !important; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+    }
+    
+    /* Inputs y Selectboxes (Diseño Táctil) */
+    .stTextInput input, .stNumberInput input, .stDateInput input, textarea { 
+        background-color: transparent !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-size: 16px !important; font-weight: 500 !important;
+    }
+    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, div[data-baseweb="base-input"] { 
+        background: rgba(30, 30, 35, 0.6) !important; 
+        border-radius: 12px !important; 
+        border: 1px solid rgba(255, 255, 255, 0.08) !important; 
+        color: #ffffff !important; 
+        transition: all 0.2s ease-in-out;
+    }
+    div[data-baseweb="select"] span { color: #ffffff !important; font-weight: 500 !important; }
+    
+    /* Interacciones de foco (Focus Glow) */
+    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { 
+        border-color: #FF6600 !important; background: rgba(40, 30, 25, 0.8) !important; box-shadow: 0 0 12px rgba(255, 102, 0, 0.2) !important; 
+    }
+    
+    /* Menús desplegables (Popovers) */
+    div[data-baseweb="popover"] > div, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * { 
+        background-color: #121212 !important; color: #ffffff !important; border-radius: 12px;
+    }
+    div[data-testid="stPopoverBody"] { 
+        background: rgba(15, 15, 18, 0.95) !important; backdrop-filter: blur(15px) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 20px !important; padding: 20px !important; box-shadow: 0 15px 40px rgba(0,0,0,0.8) !important;
+    }
     li[role="option"]:hover *, li[role="option"][aria-selected="true"] * { background-color: #FF6600 !important; color: #ffffff !important; }
-    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { border-color: #FF6600 !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important; }
 
-    /* BOTONES */
-    .stButton>button[kind="primary"], .stFormSubmitButton>button { width: 100%; border-radius: 20px !important; background: #FF6600 !important; color: #ffffff !important; font-weight: 700 !important; letter-spacing: 0.5px; border: none !important; padding: 12px !important; box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3) !important; transition: all 0.2s ease-in-out; justify-content: center !important; }
-    .stButton>button[kind="primary"]:active, .stFormSubmitButton>button:active { background: #e65c00 !important; transform: scale(0.98); }
-    .btn-secundario>div>button { background: transparent !important; border: 1px solid #555 !important; color: #aaa !important; justify-content: center !important; box-shadow: none !important; }
-    .btn-secundario>div>button:hover { border-color: #FF6600 !important; color: #FF6600 !important; }
-    .btn-logout>div>button { background: transparent !important; border: none !important; color: #ff4d4d !important; justify-content: center !important; box-shadow: none !important; font-weight: 600 !important; padding: 5px !important; opacity: 0.8; }
-    .btn-logout>div>button:hover { opacity: 1; color: #ff1a1a !important; text-decoration: underline; }
-    .btn-peligro>div>button { background: rgba(220, 53, 69, 0.1) !important; border: 1px solid rgba(220, 53, 69, 0.5) !important; color: #ff6b6b !important; justify-content: center !important; box-shadow: none !important; }
+    /* ========================================================= */
+    /* BOTONES PREMIUM (MICRO-INTERACCIONES) */
+    /* ========================================================= */
     
-    div[data-testid="stPopover"] > button { background: transparent !important; border: none !important; color: #ffffff !important; font-size: 20px !important; padding: 0 !important; box-shadow: none !important; display: inline-block !important; margin-top: -5px; }
+    /* Botón Primario (Naranja Brillante) */
+    .stButton>button[kind="primary"], .stFormSubmitButton>button { 
+        width: 100%; border-radius: 16px !important; 
+        background: linear-gradient(135deg, #FF7B00 0%, #E65C00 100%) !important; 
+        color: #ffffff !important; font-weight: 700 !important; letter-spacing: 0.8px; font-size: 15px !important;
+        border: none !important; padding: 14px !important; 
+        box-shadow: 0 6px 20px rgba(230, 92, 0, 0.4) !important; 
+        transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); 
+        justify-content: center !important; text-transform: uppercase;
+    }
+    .stButton>button[kind="primary"]:active, .stFormSubmitButton>button:active { 
+        transform: scale(0.95) !important; box-shadow: 0 2px 10px rgba(230, 92, 0, 0.3) !important; 
+    }
     
-    /* NAV BAR */
-    .block-container { padding-bottom: 120px !important; }
-    div.stRadio { position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100% !important; background-color: rgba(13, 13, 13, 0.95) !important; backdrop-filter: blur(20px) !important; border-top: 1px solid rgba(255, 255, 255, 0.05) !important; padding: 15px 0px 25px 0px !important; z-index: 99999 !important; }
+    /* Botón Secundario (Outline / Ghost) */
+    .btn-secundario>div>button { 
+        background: rgba(255, 255, 255, 0.03) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; 
+        color: #A0A0A0 !important; justify-content: center !important; box-shadow: none !important; border-radius: 16px !important; transition: all 0.2s;
+    }
+    .btn-secundario>div>button:hover { background: rgba(255, 102, 0, 0.05) !important; border-color: #FF6600 !important; color: #FF6600 !important; }
+    .btn-secundario>div>button:active { transform: scale(0.96) !important; }
+    
+    /* Botón Peligro (Rojo) */
+    .btn-peligro>div>button { 
+        background: rgba(220, 53, 69, 0.05) !important; border: 1px solid rgba(220, 53, 69, 0.3) !important; 
+        color: #ff6b6b !important; justify-content: center !important; box-shadow: none !important; border-radius: 12px !important;
+    }
+    .btn-peligro>div>button:active { transform: scale(0.96) !important; background: rgba(220, 53, 69, 0.2) !important; }
+
+    /* Botón Invisible de la Campana */
+    div[data-testid="stPopover"] > button { background: transparent !important; border: none !important; color: #ffffff !important; font-size: 22px !important; padding: 0 !important; box-shadow: none !important; display: inline-block !important; margin-top: -5px; transition: transform 0.2s; }
+    div[data-testid="stPopover"] > button:active { transform: scale(0.8); }
+    
+    /* ========================================================= */
+    /* NAVEGACIÓN INFERIOR (APPLE NATIVE BLUR) */
+    /* ========================================================= */
+    .block-container { padding-bottom: 110px !important; }
+    div.stRadio { 
+        position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100% !important; 
+        background: rgba(10, 10, 12, 0.75) !important; 
+        backdrop-filter: saturate(180%) blur(20px) !important; 
+        -webkit-backdrop-filter: saturate(180%) blur(20px) !important; 
+        border-top: 1px solid rgba(255, 255, 255, 0.08) !important; 
+        padding: 12px 0px 25px 0px !important; z-index: 99999 !important; 
+    }
     div.stRadio > div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-evenly !important; align-items: center !important; gap: 0 !important; }
     div.stRadio > div[role="radiogroup"] > label { background: transparent !important; border: none !important; padding: 5px 10px !important; margin: 0 !important; cursor: pointer; }
     div.stRadio > div[role="radiogroup"] > label > div:first-child, div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"], div.stRadio > div[role="radiogroup"] > label div[data-baseweb="radio"] { display: none !important; }
-    div.stRadio > div[role="radiogroup"] > label div { color: #777777 !important; font-size: 11px !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: 1px; }
-    div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div { color: #FF6600 !important; font-weight: 800 !important; }
+    div.stRadio > div[role="radiogroup"] > label div { color: #666666 !important; font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase; letter-spacing: 1.5px; transition: color 0.2s; }
+    div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div { color: #FF6600 !important; text-shadow: 0 0 10px rgba(255,102,0,0.4); }
 
-    /* CARDS */
-    .wallet-card { background: linear-gradient(145deg, #1a1a1a, #0d0d0d); border: 1px solid #333; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
-    .wallet-title { color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: bold; }
-    .wallet-saldo { color: #4ade80 !important; font-size: 32px; font-weight: 800; margin: 0; }
-    .wallet-invites { color: #00a8ff !important; font-size: 32px; font-weight: 800; margin: 0; }
-    .historial-card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 3px solid #FF6600; }
-    .monitor-card { background: #111; padding: 12px 20px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #222; border-left: 4px solid #4ade80;}
-    .monitor-card-invitado { border-left: 4px solid #00a8ff; }
-    .admin-card-moroso { border-left: 4px solid #ff6b6b !important; }
-
-    /* RECIBO */
-    .receipt-card { background: #1a1a1a; border: 1px solid #333; border-top: 5px solid #4ade80; border-radius: 10px; padding: 30px; width: 100%; max-width: 350px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    .receipt-header { text-align: center; border-bottom: 1px dashed #444; padding-bottom: 15px; margin-bottom: 15px; }
-    .receipt-amount { font-size: 36px; color: #4ade80; font-weight: 900; margin: 10px 0; }
-    .receipt-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
-    .receipt-label { color: #888; }
-    .receipt-value { color: #fff; font-weight: bold; text-align: right; }
-
-    .open-button-container { display: flex; justify-content: center; margin-top: 40px; margin-bottom: 20px;}
-    .open-button-glow { border-radius: 50%; padding: 8px; background: radial-gradient(circle, rgba(255,102,0,0.4) 0%, rgba(0,0,0,0) 70%); box-shadow: 0 0 60px rgba(255,102,0,0.3); }
-    .open-button { background: linear-gradient(145deg, #222222, #0a0a0a); border: 2px solid #FF6600; border-radius: 50%; width: 200px; height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; cursor: pointer; box-shadow: inset 0 0 25px rgba(0,0,0,0.9); transition: transform 0.1s ease; }
-    .open-button:active { background: #FF6600; transform: scale(0.96); }
+    /* ========================================================= */
+    /* TARJETAS (CARDS GLASSMORPHISM) */
+    /* ========================================================= */
+    .wallet-card { 
+        background: linear-gradient(160deg, rgba(30, 30, 35, 0.8) 0%, rgba(15, 15, 18, 0.9) 100%); 
+        border: 1px solid rgba(255, 255, 255, 0.06); 
+        padding: 25px; border-radius: 20px; text-align: center; margin-bottom: 15px; 
+        box-shadow: 0 8px 30px rgba(0,0,0,0.6); 
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    .wallet-title { color: #A0A0A0; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; font-weight: 600; }
+    .wallet-saldo { color: #4ade80 !important; font-size: 34px; font-weight: 800; margin: 0; text-shadow: 0 0 20px rgba(74, 222, 128, 0.2); }
+    .wallet-invites { color: #38bdf8 !important; font-size: 34px; font-weight: 800; margin: 0; text-shadow: 0 0 20px rgba(56, 189, 248, 0.2); }
     
-    .dark-wrapper { background-color: transparent; padding: 20px 0px; display: flex; justify-content: center; margin-bottom: 30px; }
-    .glass-card { background: rgba(0, 25, 51, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 20px; padding: 40px 30px; width: 100%; max-width: 360px; box-shadow: 0 15px 35px rgba(0,0,0,0.8); position: relative; overflow: hidden; }
-    .magnum-logo { text-align: center; margin-bottom: 35px; }
-    .logo-m { font-size: 50px; font-weight: 300; margin: 0; line-height: 1; color: #ffffff !important; }
-    .logo-magnum { font-size: 16px; font-weight: 600; letter-spacing: 5px; margin: 5px 0 0 0; color: #ffffff !important; }
-    .logo-city { font-size: 9px; letter-spacing: 2px; color: #d4af37 !important; margin: 0; text-transform: uppercase; } 
-    .logo-line { width: 30px; height: 1px; background-color: #d4af37; margin: 15px auto 0 auto; }
-    .info-group { margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
-    .info-label { font-size: 12px; color: #8892b0 !important; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;}
-    .info-value { font-size: 18px; font-weight: 500; color: #ffffff !important; }
-    .qr-container { text-align: center; margin-top: 30px; }
-    .qr-box { background: rgba(255,255,255,0.95); padding: 10px; border-radius: 12px; display: inline-block; margin-bottom: 15px; }
-    .qr-box img { width: 140px; display: block; }
-    .status-badge { display: inline-block; padding: 6px 18px; border-radius: 30px; font-size: 12px; font-weight: 700; color: #000 !important; letter-spacing: 1px;}
-    .badge-aldia { background: #4ade80 !important; }
-    .badge-moroso { background: #ff6b6b !important; color: white !important;}
-    .badge-pendiente { background: #ffc107 !important; }
+    .historial-card { 
+        background: rgba(20, 20, 25, 0.6); padding: 18px; border-radius: 16px; margin-bottom: 12px; 
+        border: 1px solid rgba(255,255,255,0.03); border-left: 4px solid #FF6600;
+        backdrop-filter: blur(8px);
+    }
+    .monitor-card { 
+        background: rgba(15, 15, 18, 0.7); padding: 15px 20px; border-radius: 12px; margin-bottom: 10px; 
+        display: flex; justify-content: space-between; align-items: center; 
+        border: 1px solid rgba(255,255,255,0.04); border-left: 4px solid #4ade80;
+    }
+    .monitor-card-invitado { border-left: 4px solid #38bdf8; }
+
+    /* ========================================================= */
+    /* BOTÓN DE GARITA (3D EFFECT) */
+    /* ========================================================= */
+    .open-button-container { display: flex; justify-content: center; margin-top: 50px; margin-bottom: 30px;}
+    .open-button-glow { 
+        border-radius: 50%; padding: 10px; 
+        background: radial-gradient(circle, rgba(255,102,0,0.2) 0%, rgba(0,0,0,0) 70%); 
+        box-shadow: 0 0 80px rgba(255,102,0,0.15); 
+    }
+    .open-button { 
+        background: linear-gradient(145deg, #1f1f22, #0d0d0f); 
+        border: 2px solid rgba(255, 102, 0, 0.5); 
+        border-radius: 50%; width: 220px; height: 220px; 
+        display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; cursor: pointer; 
+        box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.6); 
+        transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1); 
+    }
+    .open-button:active { background: linear-gradient(145deg, #FF7B00, #E65C00); border-color: #FF6600; transform: scale(0.94); box-shadow: inset 0 0 20px rgba(0,0,0,0.3); }
+
+    /* ========================================================= */
+    /* CARNET DIGITAL (TARJETA TIPO APPLE WALLET) */
+    /* ========================================================= */
+    .dark-wrapper { background-color: transparent; padding: 10px 0px 30px 0px; display: flex; justify-content: center; }
+    .glass-card { 
+        background: linear-gradient(135deg, rgba(15, 30, 50, 0.8) 0%, rgba(5, 10, 15, 0.95) 100%); 
+        backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); 
+        border: 1px solid rgba(212, 175, 55, 0.25); border-radius: 24px; padding: 40px 30px; 
+        width: 100%; max-width: 360px; box-shadow: 0 20px 50px rgba(0,0,0,0.9); position: relative; overflow: hidden; 
+    }
+    /* Reflejo superior del carnet */
+    .glass-card::before {
+        content: ''; position: absolute; top: 0; left: -50%; width: 200%; height: 100px;
+        background: linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 100%);
+        transform: rotate(-15deg); pointer-events: none;
+    }
+    .magnum-logo { text-align: center; margin-bottom: 30px; position: relative; z-index: 2; }
+    .logo-m { font-size: 55px; font-weight: 200; margin: 0; line-height: 1; color: #ffffff !important; }
+    .logo-magnum { font-size: 15px; font-weight: 700; letter-spacing: 6px; margin: 5px 0 0 0; color: #ffffff !important; }
+    .logo-city { font-size: 9px; font-weight: 600; letter-spacing: 3px; color: #d4af37 !important; margin: 0; text-transform: uppercase; } 
+    .logo-line { width: 40px; height: 2px; background-color: #d4af37; margin: 15px auto 0 auto; border-radius: 2px; }
+    .info-group { margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px; position: relative; z-index: 2; }
+    .info-label { font-size: 11px; color: #8892b0 !important; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;}
+    .info-value { font-size: 18px; font-weight: 600; color: #ffffff !important; letter-spacing: 0.5px; }
+    .qr-container { text-align: center; margin-top: 35px; position: relative; z-index: 2; }
+    .qr-box { background: #ffffff; padding: 12px; border-radius: 16px; display: inline-block; margin-bottom: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .qr-box img { width: 150px; display: block; }
+    .status-badge { display: inline-block; padding: 6px 20px; border-radius: 30px; font-size: 11px; font-weight: 800; color: #000 !important; letter-spacing: 1.5px; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.3);}
+    .badge-aldia { background: linear-gradient(135deg, #4ade80, #22c55e) !important; }
+    .badge-moroso { background: linear-gradient(135deg, #ff6b6b, #ef4444) !important; color: white !important;}
+    .badge-pendiente { background: linear-gradient(135deg, #facc15, #eab308) !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -154,7 +261,7 @@ except Exception as e:
     st.error(f"Error conectando a Google Sheets: {e}")
     st.stop()
 
-# --- FUNCIONES DE TIEMPO Y LENGUAJE ---
+# --- FUNCIONES MAESTRAS DE TIEMPO Y LENGUAJE ---
 def calcular_edad(fecha_nac_str):
     if not fecha_nac_str: return 0
     try:
@@ -323,7 +430,6 @@ params = st.query_params
 if "api" in params and params["api"] == "scan" and "qr" in params:
     data_qr = params["qr"]
     
-    # Simula la misma validación de la garita pero responde en JSON crudo para el microcontrolador
     if data_qr.startswith("INVITADO|"):
         id_pase = data_qr.split("|")[1]
         if id_pase in BASE_DATOS_INVITACIONES:
@@ -350,7 +456,6 @@ if "api" in params and params["api"] == "scan" and "qr" in params:
             timestamp_qr = int(partes[2])
             timestamp_ahora = int(datetime.now().timestamp())
             
-            # Verificación de Seguridad Anti-Clonación (60 segundos)
             if (timestamp_ahora - timestamp_qr) > 60:
                 st.json({"status": "error", "open_door": False, "message": "Codigo QR Expirado"})
             elif cedula_qr in BASE_DATOS_SOCIOS:
@@ -368,7 +473,7 @@ if "api" in params and params["api"] == "scan" and "qr" in params:
     else:
         st.json({"status": "error", "open_door": False, "message": "QR Desconocido"})
         
-    st.stop() # Mata la ejecución aquí para que el ESP32 solo vea el texto JSON
+    st.stop() 
 
 # 2. INTERCEPTOR VISUAL DE PASES PARA INVITADOS HUMANOS
 elif "pase" in params:
@@ -416,8 +521,8 @@ if not st.session_state.logueado:
     st.markdown("""
         <div style='text-align: center; margin-top: 40px; margin-bottom: 20px;'>
             <img src="https://i.ibb.co/t7xWXXR/logo.png" width="90" style="margin-bottom: 15px;">
-            <h1 style='font-weight: 800; font-size: 34px; margin-bottom: 0px; letter-spacing: 1px;'>VENTRY</h1>
-            <p style='color: #666; font-size: 12px; letter-spacing: 3px; text-transform: uppercase;'>Access Control</p>
+            <h1 style='font-weight: 800; font-size: 34px; margin-bottom: 0px; letter-spacing: 1px; color: #ffffff;'>VENTRY</h1>
+            <p style='color: #888; font-size: 11px; letter-spacing: 4px; text-transform: uppercase; font-weight:600;'>Access Control</p>
         </div>
     """, unsafe_allow_html=True)
     
@@ -438,7 +543,7 @@ if not st.session_state.logueado:
         with col2:
             st.markdown("""
                 <div style="text-align: center;">
-                    <span style="border: 1px solid #333; padding: 11px 0px; border-radius: 20px; color: #aaa; font-size: 13px; cursor: pointer; display:block; margin-top: 1px;" onclick="alert('FaceID/TouchID se activará en la Fase 3 de compilación nativa.')">
+                    <span style="border: 1px solid rgba(255,255,255,0.1); padding: 11px 0px; border-radius: 16px; color: #888; font-size: 13px; font-weight: 600; cursor: pointer; display:block; margin-top: 1px;" onclick="alert('FaceID/TouchID se activará en la Fase 3 de compilación nativa.')">
                         🔒 FaceID
                     </span>
                 </div>
@@ -449,7 +554,7 @@ if not st.session_state.logueado:
                 socio = BASE_DATOS_SOCIOS[cedula_ingresada]
                 if clave_ingresada == str(socio["clave"]):
                     if socio.get("solvencia", "") == "En revision":
-                        st.warning("⏳ Su cuenta fue creada y está en revisión. Debe esperar aprobación administrativa.")
+                        st.warning("⏳ Su cuenta fue creada y está en revisión administrativa.")
                     else:
                         st.session_state.logueado = True; st.session_state.usuario_actual = socio; st.rerun()
                 else: st.error("❌ Contraseña incorrecta.")
@@ -509,7 +614,6 @@ else:
     socio_actual = st.session_state.usuario_actual
     rol_actual = socio_actual["rol"]
 
-    # EXTRACCIÓN DE DATOS FAMILIARES GLOBALES
     saldo_accion = 0.0
     invitaciones_accion = 0
     mes_pagado_accion = ""
@@ -525,8 +629,8 @@ else:
     with col_logo:
         st.markdown(f"""
         <div style="display:flex; align-items:center; gap:10px; margin-bottom: 20px;">
-            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="25">
-            <span style="font-size:16px; font-weight:700; letter-spacing: 1px;">VENTRY</span>
+            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="28" style="border-radius:6px; box-shadow: 0 4px 10px rgba(255,102,0,0.3);">
+            <span style="font-size:18px; font-weight:800; letter-spacing: 1.5px; color:#ffffff;">VENTRY</span>
         </div>
         """, unsafe_allow_html=True)
     with col_campana:
@@ -542,9 +646,9 @@ else:
             if "Invitado" in h["via"]: notificaciones.append(f"🎟️ Tu invitado **{h['nombre']}** ingresó al club.")
 
         with st.popover("🔔"):
-            st.markdown("<h4 style='color:#FF6600; font-size:14px; margin-bottom:10px;'>Centro de Notificaciones</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='color:#FF6600; font-size:14px; margin-bottom:12px; font-weight:700;'>Centro de Notificaciones</h4>", unsafe_allow_html=True)
             if notificaciones:
-                for n in notificaciones[:5]: st.markdown(f"<div style='background:#0d0d0d; padding:10px; border-radius:8px; margin-bottom:5px; font-size:12px; border-left:2px solid #FF6600;'>{n}</div>", unsafe_allow_html=True)
+                for n in notificaciones[:5]: st.markdown(f"<div style='background:rgba(255,255,255,0.03); padding:12px; border-radius:10px; margin-bottom:8px; font-size:13px; border-left:3px solid #FF6600;'>{n}</div>", unsafe_allow_html=True)
             else: st.write("No tienes notificaciones nuevas.")
 
     # --- DEFINICIÓN DE MENÚ INFERIOR ---
@@ -561,17 +665,17 @@ else:
     if modulo_seleccionado == "Inicio":
         st.markdown("""
 <div style="text-align: center; margin-top: 0px;">
-<h2 style="margin-bottom: 5px; font-size:22px; font-weight:800; color:#fff;">Magnum City Club</h2>
-<p style="color: #666; font-size:12px; text-transform:uppercase; letter-spacing:2px;">Puerta Principal</p>
+<h2 style="margin-bottom: 5px; font-size:24px; font-weight:800; color:#ffffff;">Magnum City Club</h2>
+<p style="color: #888; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-weight:600;">Puerta Principal</p>
 <div class="open-button-container">
 <div class="open-button-glow">
 <div class="open-button">
-<span style="font-size: 40px; margin-bottom:10px;">🔒</span>
-<span style="font-size: 14px; letter-spacing: 1px;">TOCA PARA ABRIR</span>
+<span style="font-size: 45px; margin-bottom:12px;">🔒</span>
+<span style="font-size: 13px; font-weight:700; letter-spacing: 1.5px;">TOCA PARA ABRIR</span>
 </div>
 </div>
 </div>
-<p style="color: #666; margin-top: 30px; font-size:12px; text-transform:uppercase;">Estatus: <span style="color:#FF6600; font-weight:bold;">Cerrado</span></p>
+<p style="color: #666; margin-top: 35px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Estatus: <span style="color:#FF6600; font-weight:800;">Cerrado</span></p>
 </div>
 """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -602,13 +706,13 @@ else:
 <p class="logo-city">CITY CLUB</p>
 <div class="logo-line"></div>
 </div>
-<div class="info-group"><p class="info-label">Nombre del Socio</p><p class="info-value">{socio_actual['nombre']}</p></div>
-<div class="info-group"><p class="info-label">ID (Cédula)</p><p class="info-value">{socio_actual['cedula']}</p></div>
-<div class="info-group"><p class="info-label">Acción</p><p class="info-value">{socio_actual['accion']} <span style="font-size:12px; color:#8892b0; font-weight:normal;">({socio_actual['rol']})</span></p></div>
+<div class="info-group"><p class="info-label">Socio</p><p class="info-value">{socio_actual['nombre']}</p></div>
+<div class="info-group"><p class="info-label">Cédula</p><p class="info-value">{socio_actual['cedula']}</p></div>
+<div class="info-group"><p class="info-label">Acción</p><p class="info-value">{socio_actual['accion']} <span style="font-size:13px; color:#8892b0; font-weight:500;">({socio_actual['rol']})</span></p></div>
 <div class="qr-container"><div class="qr-box"><img src="data:image/png;base64,{img_str}"></div><br><span class="status-badge {clase_badge}">{texto_badge}</span></div>
 </div></div>
 """, unsafe_allow_html=True)
-        st.info("⏱️ Este código de seguridad es dinámico. Válido por 60 segundos para evitar clonaciones.")
+        st.info("⏱️ Código de seguridad dinámico. Se regenera para evitar clonaciones.")
         if st.button("🔄 Actualizar Código QR", type="primary"): st.rerun()
 
     # --- MÓDULO 3: INVITADOS ---
@@ -623,7 +727,7 @@ else:
             st.success(f"✅ Pase de {pase_temp['nombre']} emitido correctamente.")
             mensaje_ws = f"¡Hola {pase_temp['nombre']}! Aquí tienes tu pase para el *Magnum City Club*.\nFecha: {pase_temp['fecha']}\n👉 Abre tu código QR aquí:\n{link_pase_digital}"
             link_ws = f"https://wa.me/?text={urllib.parse.quote(mensaje_ws)}"
-            st.markdown(f'<a href="{link_ws}" target="_blank" style="display:block; text-align:center; background:#25D366; color:white; padding:15px; border-radius:20px; text-decoration:none; font-weight:800; letter-spacing:1px; margin-top:20px; margin-bottom:20px; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);">ENVIAR POR WHATSAPP</a>', unsafe_allow_html=True)
+            st.markdown(f'<a href="{link_ws}" target="_blank" style="display:flex; justify-content:center; align-items:center; background:linear-gradient(135deg, #25D366, #1da851); color:white; padding:16px; border-radius:16px; text-decoration:none; font-weight:800; letter-spacing:1px; margin-top:20px; margin-bottom:20px; box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4); font-size:15px; text-transform:uppercase;">ENVIAR POR WHATSAPP</a>', unsafe_allow_html=True)
             
             if pase_temp.get('correo'):
                 enviado = enviar_correo_invitacion(pase_temp['correo'], pase_temp['nombre'], pase_temp['fecha'], link_pase_digital)
@@ -636,18 +740,18 @@ else:
             st.markdown("</div>", unsafe_allow_html=True)
                 
         else:
-            st.markdown("<h3 style='font-size:18px; font-weight:700; color:#fff;'>Pases y Accesos</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Pases y Accesos</h3>", unsafe_allow_html=True)
             solvencia = socio_actual.get('solvencia', 'Desconocido')
             
             if mes_pagado_accion != mes_actual_str():
                 st.error("❌ Operación Denegada. Debes estar al día con el pago del mes actual para invitar.")
             else:
                 col1, col2 = st.columns(2)
-                with col1: st.markdown(f'<div class="wallet-card" style="padding:10px;"><p class="wallet-title" style="font-size:10px;">Pases Libres</p><h3 class="wallet-invites">{invitaciones_accion}</h3></div>', unsafe_allow_html=True)
-                with col2: st.markdown(f'<div class="wallet-card" style="padding:10px;"><p class="wallet-title" style="font-size:10px;">Saldo Ventry</p><h3 class="wallet-saldo" style="font-size:20px;">${saldo_accion:.2f}</h3></div>', unsafe_allow_html=True)
+                with col1: st.markdown(f'<div class="wallet-card" style="padding:15px;"><p class="wallet-title" style="font-size:10px;">Pases Libres</p><h3 class="wallet-invites">{invitaciones_accion}</h3></div>', unsafe_allow_html=True)
+                with col2: st.markdown(f'<div class="wallet-card" style="padding:15px;"><p class="wallet-title" style="font-size:10px;">Fondo Familiar</p><h3 class="wallet-saldo" style="font-size:26px;">${saldo_accion:.2f}</h3></div>', unsafe_allow_html=True)
                 
-                if invitaciones_accion > 0: st.info(f"✨ Tienes {invitaciones_accion} invitaciones de cortesía disponibles. El pase será gratuito.")
-                else: st.warning("⚠️ Has agotado tus invitaciones gratuitas del mes. Se debitarán **$10.00** de tu Saldo Ventry por este pase.")
+                if invitaciones_accion > 0: st.info(f"✨ Tienes {invitaciones_accion} pases de cortesía disponibles.")
+                else: st.warning("⚠️ Has agotado tus pases gratuitos. Se debitarán **$10.00** de tu Fondo Familiar por este pase.")
                 
                 invitados_previos = BASE_DATOS_DIRECTORIO.get(socio_actual["accion"], {})
                 modo_ingreso = st.selectbox("Método de registro:", ["📝 Ingresar Nuevo Invitado", "⭐ Seleccionar de Favoritos"])
@@ -685,18 +789,18 @@ else:
                                     BASE_DATOS_SOCIOS[ced_fam]["saldo"] = saldo_accion - 10.0
                                     break
                             id_cargo = f"P-INV-{str(uuid.uuid4())[:6].upper()}"
-                            BASE_DATOS_PAGOS[id_cargo] = {"accion": socio_actual["accion"], "metodo": "Saldo Ventry", "referencia": "PASE-EXTRA", "monto": 10.0, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "Aprobado", "tipo": "Cargo Pase Extra"}
+                            BASE_DATOS_PAGOS[id_cargo] = {"accion": socio_actual["accion"], "metodo": "Sistema Ventry", "referencia": "PASE-EXTRA", "monto": 10.0, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "Aprobado", "tipo": "Cargo Pase Extra"}
                             guardar_bd_pagos(BASE_DATOS_PAGOS)
                         else:
                             puede_invitar = False
-                            st.error("❌ Saldo insuficiente. Necesitas al menos $10.00 en tu Billetera Ventry para generar pases adicionales.")
+                            st.error("❌ Fondo insuficiente. Necesitas al menos $10.00 en tu Billetera para pases adicionales.")
                     
                     if puede_invitar:
                         guardar_bd(BASE_DATOS_SOCIOS)
                         if guardar_contacto:
                             if socio_actual["accion"] not in BASE_DATOS_DIRECTORIO: BASE_DATOS_DIRECTORIO[socio_actual["accion"]] = {}
                             if n_cedula_inv in BASE_DATOS_DIRECTORIO[socio_actual["accion"]]: st.toast("ℹ️ Este invitado ya estaba en tu directorio. Sus datos han sido actualizados.")
-                            else: st.toast("✅ Contacto nuevo guardado en tu directorio frecuente.")
+                            else: st.toast("✅ Contacto guardado en tu directorio frecuente.")
                             BASE_DATOS_DIRECTORIO[socio_actual["accion"]][n_cedula_inv] = {"nombre": n_nombre_inv, "correo": n_correo_inv, "fecha_nacimiento": n_nacimiento_def.strftime("%d/%m/%Y")}
                             guardar_bd_directorio(BASE_DATOS_DIRECTORIO)
                             
@@ -707,12 +811,12 @@ else:
                         st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha, "correo": n_correo_inv}
                         st.rerun()
 
-    # --- MÓDULO 4: PAGOS ---
+    # --- MÓDULO 4: PAGOS (UI MEJORADA) ---
     elif modulo_seleccionado == "Pagos":
         
         edad_usuario = calcular_edad(socio_actual.get("fecha_nacimiento", ""))
         if edad_usuario < 18 and edad_usuario > 0:
-            st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Billetera Ventry</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size:24px; font-weight:800; color:#ffffff;'>Billetera Ventry</h3>", unsafe_allow_html=True)
             st.error("🔒 Acceso Restringido: El módulo financiero es exclusivo para los usuarios mayores de edad.")
             
         else:
@@ -726,24 +830,22 @@ else:
             
             # --- VISTA 1: BILLETERA ---
             if st.session_state.sub_pagos == "menu":
-                st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Billetera Ventry</h3>", unsafe_allow_html=True)
+                st.markdown("<h3 style='font-size:24px; font-weight:800; color:#ffffff; margin-bottom: 20px;'>Finanzas</h3>", unsafe_allow_html=True)
                 
                 if "mensaje_pago_exitoso" in st.session_state:
                     st.success(st.session_state.mensaje_pago_exitoso)
                     del st.session_state.mensaje_pago_exitoso
                 
-                st.markdown(f'<div class="wallet-card"><p class="wallet-title">Fondo Familiar Disponible</p><h3 class="wallet-saldo" style="font-size:40px;">${saldo_favor:.2f}</h3></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="wallet-card"><p class="wallet-title">Fondo Familiar Disponible</p><h3 class="wallet-saldo" style="font-size:42px;">${saldo_favor:.2f}</h3></div>', unsafe_allow_html=True)
                 st.write("")
                 
                 if rol_actual == "Titular":
                     if mes_pagado_accion == mes_actual:
                         st.success(f"🎉 **Cuota de {nombre_mes_actual} pagada.** Tu acción está solvente.")
-                        st.caption("ℹ️ *Por políticas del club y resguardo tarifario, las cuotas mensuales solo se habilitan a partir del 1° de cada mes.*")
+                        st.caption("ℹ️ *Por políticas del club, la próxima cuota se habilita el 1° del mes entrante.*")
                     else:
-                        if dia_actual <= 10:
-                            st.info(f"🌟 Beneficio de Pronto Pago vigente (Días 1-10). Cuota de **{nombre_mes_actual}**: $104 + 10 Pases Gratis.")
-                        else:
-                            st.warning(f"⚠️ Fecha de corte superada. Cuota de **{nombre_mes_actual}**: $120. No incluye pases gratis.")
+                        if dia_actual <= 10: st.info(f"🌟 Beneficio de Pronto Pago vigente (Días 1-10). Cuota de **{nombre_mes_actual}**: $104 + 10 Pases Gratis.")
+                        else: st.warning(f"⚠️ Fecha de corte superada. Cuota de **{nombre_mes_actual}**: $120. No incluye pases gratis.")
                         
                         if st.button(f"Pagar Mensualidad de {nombre_mes_actual}", type="primary"): 
                             st.session_state.sub_pagos = "pagar"
@@ -753,14 +855,14 @@ else:
                 else:
                     st.info("ℹ️ El pago de la cuota de mantenimiento es gestionado por el Titular de la acción.")
                 
-                if st.button("📥 Reportar Abono / Depósito", type="primary"): st.session_state.sub_pagos = "recargar"; st.rerun()
+                if st.button("📥 Reportar Abono a Fondo", type="primary"): st.session_state.sub_pagos = "recargar"; st.rerun()
                 st.write("")
                 if st.button("🕒 Libro de Transacciones", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
 
             # --- VISTA 2: RECARGAR ---
             elif st.session_state.sub_pagos == "recargar":
                 st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Reportar Abono</h3>", unsafe_allow_html=True)
-                st.write("Abona dinero a tu Fondo Familiar. El saldo quedará guardado para pagos de cuotas y consumos del club.")
+                st.write("Abona dinero a tu Fondo Familiar. El saldo se utilizará para el mantenimiento y consumos internos.")
                 
                 with st.form("form_recarga"):
                     metodo_r = st.selectbox("Método de Pago", ["Pago Móvil (Ej. Mercantil, Banesco, etc.)", "Transferencia Nacional", "Zelle", "Efectivo en Taquilla"])
@@ -801,10 +903,10 @@ else:
                     invites_premio = 0
                     tipo_cobro = f"Mensualidad de {nombre_mes_actual} (Tardío)"
 
-                st.markdown(f"<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Confirmación de Pago ({nombre_mes_actual})</h3>", unsafe_allow_html=True)
+                st.markdown(f"<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Confirmación de Pago</h3>", unsafe_allow_html=True)
                 
                 if saldo_accion >= monto_cobro:
-                    st.info(f"💡 Se debitarán **${monto_cobro:.2f}** de tu Fondo Familiar Disponible.")
+                    st.info(f"💡 Se debitarán **${monto_cobro:.2f}** de tu Fondo Familiar.")
                     
                     if st.button(f"Pagar {nombre_mes_actual} (${monto_cobro:.2f})", key="btn_pagar_mes_corriente", type="primary"):
                         nuevo_saldo = saldo_accion - monto_cobro
@@ -825,11 +927,11 @@ else:
                         BASE_DATOS_PAGOS[id_cargo] = {"accion": socio_actual["accion"], "metodo": "Sistema Ventry", "referencia": f"CUOTA-{mes_actual.replace('/','-')}", "monto": monto_cobro, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "Aprobado", "tipo": tipo_cobro}
                         guardar_bd_pagos(BASE_DATOS_PAGOS)
                         
-                        st.session_state.mensaje_pago_exitoso = f"✅ Mensualidad de {nombre_mes_actual} cancelada con éxito. Recibiste {invites_premio} invitaciones de cortesía."
+                        st.session_state.mensaje_pago_exitoso = f"✅ Mensualidad cancelada con éxito. Recibiste {invites_premio} pases de cortesía."
                         st.session_state.sub_pagos = "menu"
                         st.rerun()
                 else:
-                    st.error(f"❌ Saldo Insuficiente. Necesitas **${monto_cobro:.2f}** para pagar {nombre_mes_actual}. Regresa y abona dinero a tu billetera.")
+                    st.error(f"❌ Fondo Insuficiente. Necesitas **${monto_cobro:.2f}** para pagar {nombre_mes_actual}. Regresa y abona dinero.")
                 
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
@@ -855,18 +957,18 @@ else:
                         monto_str = f"{signo}${float(p_info['monto']):.2f}"
                         
                         st.markdown(f"""
-                        <div style='background:#1a1a1a; padding:15px; border-radius:12px; margin-bottom:10px; border-left: 3px solid {color_status};'>
+                        <div class='historial-card' style='border-left-color: {color_status};'>
                             <div style='display:flex; justify-content:space-between; margin-bottom:5px;'>
-                                <b style='color:#fff;'>{p_info.get('tipo', 'Abono a Billetera')}</b>
-                                <b style='color:{color_status};'>{monto_str}</b>
+                                <b style='color:#ffffff; font-size:14px;'>{p_info.get('tipo', 'Abono a Billetera')}</b>
+                                <b style='color:{color_status}; font-size:16px;'>{monto_str}</b>
                             </div>
-                            <span style='color:#aaa; font-size:12px;'>Fecha: {p_info['fecha_reporte']} | Vía: {p_info['metodo']}</span><br>
-                            <span style='color:{color_status}; font-size:11px; font-weight:bold; text-transform:uppercase;'>Estatus: {p_info['estatus']}</span>
+                            <span style='color:#8892b0; font-size:12px;'>Fecha: {p_info['fecha_reporte']} | Vía: {p_info['metodo']}</span><br>
+                            <span style='color:{color_status}; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1px;'>{p_info['estatus']}</span>
                         </div>
                         """, unsafe_allow_html=True)
                         
                         if not es_cargo and p_info['estatus'] == "Aprobado":
-                            st.markdown("<div class='btn-secundario' style='margin-bottom: 15px;'>", unsafe_allow_html=True)
+                            st.markdown("<div class='btn-secundario' style='margin-bottom: 20px;'>", unsafe_allow_html=True)
                             if st.button(f"🧾 Ver Recibo {p_id}", key=f"btn_{p_id}"):
                                 st.session_state.recibo_id = p_id
                                 st.session_state.sub_pagos = "recibo"
@@ -886,15 +988,15 @@ else:
                     st.markdown(f"""
                     <div class="receipt-card">
                         <div class="receipt-header">
-                            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="40">
-                            <h4 style="color: #fff; margin: 10px 0 0 0; letter-spacing: 2px;">VENTRY</h4>
-                            <p style="color: #888; font-size: 10px; text-transform: uppercase; margin:0;">Recibo de Operación</p>
+                            <img src="https://i.ibb.co/t7xWXXR/logo.png" width="45" style="border-radius:8px;">
+                            <h4 style="color: #fff; margin: 15px 0 0 0; letter-spacing: 2.5px; font-weight:800;">VENTRY</h4>
+                            <p style="color: #8892b0; font-size: 11px; text-transform: uppercase; margin:0; font-weight:600; letter-spacing:1px;">Recibo de Operación</p>
                         </div>
                         <div style="text-align: center;">
                             <p class="receipt-amount">${float(r_info['monto']):.2f}</p>
-                            <span style="background: #4ade80; color: #000; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">TRANSACCIÓN APROBADA</span>
+                            <span style="background: linear-gradient(135deg, #4ade80, #22c55e); color: #000; padding: 6px 16px; border-radius: 30px; font-size: 11px; font-weight: 800; letter-spacing:1px;">TRANSACCIÓN APROBADA</span>
                         </div>
-                        <div style="margin-top: 30px;">
+                        <div style="margin-top: 35px;">
                             <div class="receipt-row"><span class="receipt-label">Recibo ID</span><span class="receipt-value">{r_id}</span></div>
                             <div class="receipt-row"><span class="receipt-label">Fecha</span><span class="receipt-value">{r_info['fecha_reporte']}</span></div>
                             <div class="receipt-row"><span class="receipt-label">Tipo</span><span class="receipt-value">{r_info.get('tipo', 'Abono a Billetera')}</span></div>
@@ -910,10 +1012,10 @@ else:
                 if st.button("← Volver al Historial", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
 
-    # --- MÓDULO GARITA (VISUAL HUMANO) ---
+    # --- MÓDULO GARITA ---
     elif modulo_seleccionado == "Garita":
-        st.markdown("<h3 style='font-size:18px; font-weight:700; color:#fff;'>Control de Acceso (Escáner)</h3>", unsafe_allow_html=True)
-        data_usb = st.text_input("🔫 Lector de Código Físico (Pistola USB):", placeholder="Haga clic aquí y dispare el escáner...")
+        st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff;'>Control de Acceso</h3>", unsafe_allow_html=True)
+        data_usb = st.text_input("🔫 Lector de Código Físico (Pistola USB):", placeholder="Dispara el escáner aquí...")
         st.write("📸 O utilizar cámara del dispositivo:")
         foto_qr = st.camera_input("Tomar foto del código QR")
 
@@ -999,7 +1101,7 @@ else:
             
             col_admin1, col_admin2 = st.columns([1, 1])
             with col_admin1:
-                st.markdown("<h4 style='font-size:16px; color:#aaa;'>💳 Conciliación Pendiente</h4>", unsafe_allow_html=True)
+                st.markdown("<h4 style='font-size:16px; color:#A0A0A0;'>💳 Conciliación Pendiente</h4>", unsafe_allow_html=True)
                 pagos_pendientes = {k: v for k, v in BASE_DATOS_PAGOS.items() if v["estatus"] == "En Revisión"}
                 if pagos_pendientes:
                     for p_id, p_info in pagos_pendientes.items():
@@ -1008,7 +1110,7 @@ else:
                             st.write(f"**Ref:** {p_info['referencia']} | **Fecha:** {p_info['fecha_reporte']}")
                             btn_col1, btn_col2 = st.columns(2)
                             with btn_col1:
-                                if st.button("✅ Aprobar", key=f"apr_{p_id}"):
+                                if st.button("✅ Aprobar", key=f"apr_{p_id}", type="primary"):
                                     BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"
                                     guardar_bd_pagos(BASE_DATOS_PAGOS)
                                     
@@ -1029,16 +1131,16 @@ else:
                                     st.rerun()
                             with btn_col2:
                                 if st.button("❌ Rechazar", key=f"rec_{p_id}"): BASE_DATOS_PAGOS[p_id]["estatus"] = "Rechazado"; guardar_bd_pagos(BASE_DATOS_PAGOS); st.rerun()
-                else: st.success("No hay pagos ni recargas pendientes de revisión.")
+                else: st.success("No hay pagos pendientes de revisión.")
 
                 st.write("")
-                st.markdown("<h4 style='font-size:16px; color:#aaa;'>📥 Descargar Data (CSV)</h4>", unsafe_allow_html=True)
+                st.markdown("<h4 style='font-size:16px; color:#A0A0A0;'>📥 Descargar Data (CSV)</h4>", unsafe_allow_html=True)
                 if len(BASE_DATOS_SOCIOS) > 0:
                     df_socios = pd.DataFrame(list(BASE_DATOS_SOCIOS.values()))
                     st.download_button("Exportar Matriz de Socios", data=df_socios.to_csv(index=False).encode('utf-8'), file_name="Socios_Ventry.csv", mime="text/csv")
                 
             with col_admin2:
-                st.markdown("<h4 style='font-size:16px; color:#aaa;'>🔍 Buscador CRM Familiar</h4>", unsafe_allow_html=True)
+                st.markdown("<h4 style='font-size:16px; color:#A0A0A0;'>🔍 Buscador CRM Familiar</h4>", unsafe_allow_html=True)
                 busqueda_admin = st.text_input("Buscar por Acción, Cédula o Nombre:")
                 acciones_encontradas = set()
                 
@@ -1059,9 +1161,9 @@ else:
                         icono = '👑' if m['rol'] == 'Titular' else '👤'
                         solvencia_m = m.get('solvencia', 'Desconocido')
                         saldo_m = float(m.get('saldo', 0.0)) if m['rol'] == 'Titular' else "N/A"
-                        color_fondo = "#FF6600" if solvencia_m == "En revision" else "#1a1a1a"
+                        color_fondo = "linear-gradient(135deg, rgba(255, 102, 0, 0.2), transparent)" if solvencia_m == "En revision" else "rgba(30, 30, 35, 0.5)"
                         saldo_txt = f" | Saldo: ${saldo_m:.2f}" if m['rol'] == 'Titular' else ""
-                        st.markdown(f"<div style='background:{color_fondo}; color:#ffffff; padding:10px; border-radius:8px; margin-bottom:5px; font-size:13px;'>{icono} <b>{m['nombre']}</b> - {solvencia_m}{saldo_txt}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='background:{color_fondo}; border:1px solid rgba(255,255,255,0.05); color:#ffffff; padding:12px; border-radius:12px; margin-bottom:8px; font-size:13px;'>{icono} <b style='letter-spacing:0.5px;'>{m['nombre']}</b> - {solvencia_m}{saldo_txt}</div>", unsafe_allow_html=True)
                     
                     with st.form("form_estatus_rapido"):
                         n_estatus = st.selectbox("Actualizar Estatus de Grupo:", ["Al dia", "Moroso", "Pendiente", "En revision"])
@@ -1081,12 +1183,12 @@ else:
                     st.markdown(f"""
                     <div class="monitor-card {clase_monitor}">
                         <div>
-                            <span style="color:#aaa; font-size:11px;">{h['fecha']}</span><br>
-                            <b style="color:#fff; font-size:14px;">{icono_persona} {h['nombre']}</b>
+                            <span style="color:#8892b0; font-size:11px;">{h['fecha']}</span><br>
+                            <b style="color:#ffffff; font-size:14px; letter-spacing:0.5px;">{icono_persona} {h['nombre']}</b>
                         </div>
                         <div style="text-align: right;">
-                            <span style="color:#FF6600; font-size:12px; font-weight:bold;">Acción {h['accion']}</span><br>
-                            <span style="color:#666; font-size:11px; text-transform:uppercase;">{h['via']}</span>
+                            <span style="color:#FF6600; font-size:12px; font-weight:800;">Acción {h['accion']}</span><br>
+                            <span style="color:#8892b0; font-size:10px; font-weight:700; text-transform:uppercase;">{h['via']}</span>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -1094,7 +1196,7 @@ else:
 
         with tab_facturacion:
             st.markdown("<h4 style='color:#FF6600;'>Auditoría y Cobro de Morosos (Post-Día 10)</h4>", unsafe_allow_html=True)
-            st.write("Este botón debe ser accionado por el Administrador **después del día 10** de cada mes. Cobrará la cuota de **$120** (Sin premio de pases gratis) a todas las familias que no hayan cancelado el mes actual.")
+            st.write("Este botón debe ser accionado por el Administrador **después del día 10** de cada mes. Cobrará la cuota de **$120** a todas las familias que no hayan cancelado el mes actual.")
             
             if st.button("🚨 EJECUTAR COBRO DE MOROSOS", type="primary"):
                 fecha_cobro = datetime.now().strftime("%d/%m/%Y")
@@ -1136,7 +1238,7 @@ else:
         if "sub_ajustes" not in st.session_state: st.session_state.sub_ajustes = "menu"
 
         if st.session_state.sub_ajustes == "menu":
-            st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Ajustes</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff; margin-bottom: 20px;'>Ajustes</h3>", unsafe_allow_html=True)
             
             if st.button("Perfil y Seguridad", type="primary"): st.session_state.sub_ajustes = "perfil"; st.rerun()
             st.write("")
@@ -1190,7 +1292,7 @@ else:
                     st.markdown(f"""
                     <div class="historial-card">
                         <b style="font-size: 16px; color:#fff;">{info_contacto['nombre']}</b><br>
-                        <span style="color:#aaa; font-size:12px;">C.I: {ced_contacto} | Correo: {info_contacto.get('correo', 'N/A')}</span>
+                        <span style="color:#8892b0; font-size:12px;">C.I: {ced_contacto} | Correo: {info_contacto.get('correo', 'N/A')}</span>
                     </div>
                     """, unsafe_allow_html=True)
                     st.markdown("<div class='btn-peligro' style='margin-bottom:15px;'>", unsafe_allow_html=True)
@@ -1216,8 +1318,8 @@ else:
                         st.markdown(f"""
                         <div class="historial-card">
                             <b style="font-size: 16px; color:#fff;">{m['nombre']}</b><br>
-                            <span style="color:#aaa; font-size:12px;">C.I: {m['cedula']} | Parentesco: {m['parentesco']}</span><br>
-                            <span style="color:#FF6600; font-size:12px; font-weight:bold;">Estatus: {m.get('solvencia', 'Desconocido')}</span>
+                            <span style="color:#8892b0; font-size:12px;">C.I: {m['cedula']} | Parentesco: {m['parentesco']}</span><br>
+                            <span style="color:#FF6600; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1px;">Estatus: {m.get('solvencia', 'Desconocido')}</span>
                         </div>
                         """, unsafe_allow_html=True)
                 else: st.info("No hay familiares registrados bajo tu acción en este momento.")
@@ -1234,10 +1336,10 @@ else:
             if historial_accion:
                 for h in historial_accion[:10]:
                     st.markdown(f"""
-                    <div style='background:#1a1a1a; padding:12px; border-radius:8px; margin-bottom:8px; border-left: 2px solid #FF6600;'>
-                        <span style='color:#FF6600; font-weight:bold; font-size:11px;'>{h['fecha']}</span><br>
-                        <b style='font-size:14px; color:#fff;'>{h['nombre']}</b><br>
-                        <span style='color:#aaa; font-size:12px;'>Método: {h['via']} - Tipo: {h['movimiento']}</span>
+                    <div style='background:rgba(20, 20, 25, 0.6); padding:15px; border-radius:12px; margin-bottom:10px; border-left: 3px solid #FF6600; border-top:1px solid rgba(255,255,255,0.05);'>
+                        <span style='color:#FF6600; font-weight:800; font-size:11px; letter-spacing:0.5px;'>{h['fecha']}</span><br>
+                        <b style='font-size:15px; color:#ffffff;'>{h['nombre']}</b><br>
+                        <span style='color:#8892b0; font-size:12px; font-weight:500;'>Método: {h['via']} - Tipo: {h['movimiento']}</span>
                     </div>
                     """, unsafe_allow_html=True)
             else: st.info("No hay registros de acceso recientes para tu acción.")

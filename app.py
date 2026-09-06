@@ -166,6 +166,15 @@ def calcular_edad(fecha_nac_str):
 def mes_actual_str():
     return datetime.now().strftime("%m/%Y")
 
+def sumar_un_mes(mes_str):
+    if not mes_str or "/" not in mes_str: return mes_actual_str()
+    m, y = map(int, mes_str.split("/"))
+    m += 1
+    if m > 12:
+        m = 1
+        y += 1
+    return f"{m:02d}/{y}"
+
 def comparar_meses(mes1, mes2):
     if not mes1 or not mes2: return -1
     m1, y1 = map(int, mes1.split("/"))
@@ -306,10 +315,63 @@ if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = N
 if "pantalla_auth" not in st.session_state: st.session_state.pantalla_auth = "login"
 
 # ==========================================
-# 🛑 INTERCEPTOR DE PASES DIGITALES
+# 🛑 INTERCEPTOR DE PASES DIGITALES & API ESP32
 # ==========================================
 params = st.query_params
-if "pase" in params:
+
+# 1. API INVISIBLE PARA EL ESP32 (HARDWARE)
+if "api" in params and params["api"] == "scan" and "qr" in params:
+    data_qr = params["qr"]
+    
+    # Simula la misma validación de la garita pero responde en JSON crudo para el microcontrolador
+    if data_qr.startswith("INVITADO|"):
+        id_pase = data_qr.split("|")[1]
+        if id_pase in BASE_DATOS_INVITACIONES:
+            pase = BASE_DATOS_INVITACIONES[id_pase]
+            fecha_hoy = datetime.now().strftime("%d/%m/%Y")
+            if pase["fecha_visita"] != fecha_hoy:
+                st.json({"status": "error", "open_door": False, "message": "Fecha Invalida"})
+            elif pase["estatus"] == "Activo":
+                BASE_DATOS_INVITACIONES[id_pase]["estatus"] = "Adentro"
+                guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
+                registrar_acceso(pase["nombre_invitado"], pase["accion"], "QR Invitado (ESP32)", "Entrada")
+                st.json({"status": "success", "open_door": True, "message": f"Bienvenido Invitado {pase['nombre_invitado']}"})
+            elif pase["estatus"] == "Adentro":
+                st.json({"status": "error", "open_door": False, "message": "Invitado ya registro entrada"})
+            else:
+                st.json({"status": "error", "open_door": False, "message": "Pase Invalido o Suspendido"})
+        else:
+            st.json({"status": "error", "open_door": False, "message": "Pase no encontrado"})
+            
+    elif data_qr.startswith("VENTRY_DYN|"):
+        try:
+            partes = data_qr.split("|")
+            cedula_qr = partes[1]
+            timestamp_qr = int(partes[2])
+            timestamp_ahora = int(datetime.now().timestamp())
+            
+            # Verificación de Seguridad Anti-Clonación (60 segundos)
+            if (timestamp_ahora - timestamp_qr) > 60:
+                st.json({"status": "error", "open_door": False, "message": "Codigo QR Expirado"})
+            elif cedula_qr in BASE_DATOS_SOCIOS:
+                socio_qr = BASE_DATOS_SOCIOS[cedula_qr]
+                if socio_qr.get("solvencia", "") == "Al dia":
+                    registrar_acceso(socio_qr["nombre"], socio_qr["accion"], "QR Socio (ESP32)", "Entrada")
+                    st.json({"status": "success", "open_door": True, "message": f"Bienvenido Socio {socio_qr['nombre']}"})
+                else:
+                    st.json({"status": "error", "open_door": False, "message": "Socio Moroso - Acceso Denegado"})
+            else:
+                st.json({"status": "error", "open_door": False, "message": "Socio no encontrado"})
+        except Exception:
+            st.json({"status": "error", "open_door": False, "message": "Codigo Ilegible"})
+            
+    else:
+        st.json({"status": "error", "open_door": False, "message": "QR Desconocido"})
+        
+    st.stop() # Mata la ejecución aquí para que el ESP32 solo vea el texto JSON
+
+# 2. INTERCEPTOR VISUAL DE PASES PARA INVITADOS HUMANOS
+elif "pase" in params:
     id_pase_url = params["pase"]
     if id_pase_url in BASE_DATOS_INVITACIONES:
         pase = BASE_DATOS_INVITACIONES[id_pase_url]
@@ -577,7 +639,7 @@ else:
             st.markdown("<h3 style='font-size:18px; font-weight:700; color:#fff;'>Pases y Accesos</h3>", unsafe_allow_html=True)
             solvencia = socio_actual.get('solvencia', 'Desconocido')
             
-            if comparar_meses(mes_pagado_accion, mes_actual_str()) < 0:
+            if mes_pagado_accion != mes_actual_str():
                 st.error("❌ Operación Denegada. Debes estar al día con el pago del mes actual para invitar.")
             else:
                 col1, col2 = st.columns(2)
@@ -645,7 +707,7 @@ else:
                         st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha, "correo": n_correo_inv}
                         st.rerun()
 
-    # --- MÓDULO 4: PAGOS (POLÍTICA: SOLO MES EN CURSO) ---
+    # --- MÓDULO 4: PAGOS ---
     elif modulo_seleccionado == "Pagos":
         
         edad_usuario = calcular_edad(socio_actual.get("fecha_nacimiento", ""))
@@ -674,7 +736,6 @@ else:
                 st.write("")
                 
                 if rol_actual == "Titular":
-                    # POLÍTICA CLUB: ¿YA PAGÓ EL MES CORRIENTE?
                     if mes_pagado_accion == mes_actual:
                         st.success(f"🎉 **Cuota de {nombre_mes_actual} pagada.** Tu acción está solvente.")
                         st.caption("ℹ️ *Por políticas del club y resguardo tarifario, las cuotas mensuales solo se habilitan a partir del 1° de cada mes.*")
@@ -725,7 +786,7 @@ else:
                 if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
 
-            # --- VISTA 3: PAGAR CUOTA (SOLO MES EN CURSO) ---
+            # --- VISTA 3: PAGAR CUOTA ---
             elif st.session_state.sub_pagos == "pagar":
                 if mes_pagado_accion == mes_actual:
                     st.session_state.sub_pagos = "menu"
@@ -849,7 +910,7 @@ else:
                 if st.button("← Volver al Historial", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
 
-    # --- MÓDULO GARITA ---
+    # --- MÓDULO GARITA (VISUAL HUMANO) ---
     elif modulo_seleccionado == "Garita":
         st.markdown("<h3 style='font-size:18px; font-weight:700; color:#fff;'>Control de Acceso (Escáner)</h3>", unsafe_allow_html=True)
         data_usb = st.text_input("🔫 Lector de Código Físico (Pistola USB):", placeholder="Haga clic aquí y dispare el escáner...")

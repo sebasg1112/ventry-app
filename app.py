@@ -83,10 +83,7 @@ st.markdown("""
     li[role="option"]:hover *, li[role="option"][aria-selected="true"] * { background-color: #FF6600 !important; color: #ffffff !important; }
     div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within { border-color: #FF6600 !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.4) !important; }
 
-    /* ========================================================= */
     /* BOTONES (NATIVOS Y ACCIÓN) */
-    /* ========================================================= */
-    
     .stButton>button[kind="primary"], .stFormSubmitButton>button { 
         width: 100%; border-radius: 20px !important; background: #FF6600 !important; color: #ffffff !important; 
         font-weight: 700 !important; letter-spacing: 0.5px; border: none !important; padding: 12px !important; 
@@ -299,7 +296,7 @@ if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = N
 if "pantalla_auth" not in st.session_state: st.session_state.pantalla_auth = "login"
 
 # ==========================================
-# 🛑 INTERCEPTOR DE PASES DIGITALES
+# 🛑 INTERCEPTOR DE PASES DIGITALES (VISTA INVITADO)
 # ==========================================
 params = st.query_params
 if "pase" in params:
@@ -339,7 +336,6 @@ if "pase" in params:
     else: st.error("❌ Enlace de pase inválido o vencido.")
     st.stop()
 
-
 # ==========================================
 # PANTALLA INICIAL: LOGIN Y REGISTRO
 # ==========================================
@@ -374,8 +370,6 @@ if not st.session_state.logueado:
                     </span>
                 </div>
             """, unsafe_allow_html=True)
-            
-        st.markdown("<p style='text-align:center; color:#888; font-size:12px; margin-top:25px; cursor:pointer;'>¿Olvidaste tu contraseña?</p>", unsafe_allow_html=True)
 
         if boton_entrar:
             if cedula_ingresada in BASE_DATOS_SOCIOS:
@@ -455,25 +449,20 @@ else:
         </div>
         """, unsafe_allow_html=True)
     with col_campana:
-        # Generación Inteligente de Notificaciones
         notificaciones = []
-        
-        # 1. Pagos Aprobados o Rechazados Recientes
         mis_pagos = [p for p in BASE_DATOS_PAGOS.values() if str(p["accion"]) == str(socio_actual["accion"])]
-        for p in mis_pagos[-3:]: # Tomamos los últimos 3
+        for p in mis_pagos[-3:]:
             if p["estatus"] == "Aprobado": notificaciones.append(f"💰 Tu {p.get('tipo','pago').lower()} de **${p['monto']}** fue Aprobado.")
             elif p["estatus"] == "Rechazado": notificaciones.append(f"❌ Tu {p.get('tipo','pago').lower()} de **${p['monto']}** fue Rechazado.")
                 
-        # 2. Invitados que acaban de entrar
         mis_accesos = [h for h in st.session_state.db_historial if h["accion"] == str(socio_actual["accion"]) and h["movimiento"] == "Entrada"]
-        for h in mis_accesos[:3]: # Tomamos las 3 entradas más recientes
+        for h in mis_accesos[:3]:
             if "Invitado" in h["via"]: notificaciones.append(f"🎟️ Tu invitado **{h['nombre']}** ingresó al club.")
 
-        # Popover Nativo (Campana)
         with st.popover("🔔"):
             st.markdown("<h4 style='color:#FF6600; font-size:14px; margin-bottom:10px;'>Centro de Notificaciones</h4>", unsafe_allow_html=True)
             if notificaciones:
-                for n in notificaciones[:5]: # Mostrar tope de 5
+                for n in notificaciones[:5]:
                     st.markdown(f"<div style='background:#0d0d0d; padding:10px; border-radius:8px; margin-bottom:5px; font-size:12px; border-left:2px solid #FF6600;'>{n}</div>", unsafe_allow_html=True)
             else:
                 st.write("No tienes notificaciones nuevas.")
@@ -508,7 +497,7 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Simular Apertura (Demo ESP32)", type="primary"): st.success("📡 Señal enviada a garita.")
 
-    # --- MÓDULO 2: CARNET DIGITAL ---
+    # --- MÓDULO 2: CARNET DIGITAL (AHORA DINÁMICO TOTP) ---
     elif modulo_seleccionado == "Carnet":
         solvencia = socio_actual.get('solvencia', 'Desconocido')
         if solvencia == "Moroso": st.error("⚠️ Tu grupo familiar presenta un saldo pendiente.")
@@ -516,7 +505,10 @@ else:
         elif solvencia == "Pendiente": clase_badge = "badge-pendiente"; texto_badge = "PENDIENTE"
         else: clase_badge = "badge-moroso"; texto_badge = "MOROSO"
 
-        datos_qr = f"CEDULA:{socio_actual['cedula']}|VENTRY|{socio_actual['nombre']}|{socio_actual['accion']}"
+        # CÓDIGO NUEVO: GENERACIÓN DE TIMESTAMP PARA QR DINÁMICO
+        timestamp_actual = int(datetime.now().timestamp())
+        datos_qr = f"VENTRY_DYN|{socio_actual['cedula']}|{timestamp_actual}"
+        
         img = qrcode.make(datos_qr)
         buffer = BytesIO()
         img.save(buffer, format="PNG")
@@ -537,6 +529,11 @@ else:
 <div class="qr-container"><div class="qr-box"><img src="data:image/png;base64,{img_str}"></div><br><span class="status-badge {clase_badge}">{texto_badge}</span></div>
 </div></div>
 """, unsafe_allow_html=True)
+        
+        # MENSAJE DE SEGURIDAD Y BOTÓN DE ACTUALIZACIÓN
+        st.info("⏱️ Este código de seguridad es dinámico. Válido por 60 segundos para evitar clonaciones.")
+        if st.button("🔄 Actualizar Código QR", type="primary"):
+            st.rerun()
 
     # --- MÓDULO 3: INVITADOS ---
     elif modulo_seleccionado == "Invitados":
@@ -755,7 +752,7 @@ else:
             if st.button("← Volver al Historial", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
-    # --- MÓDULO GARITA ---
+    # --- MÓDULO GARITA (CON DETECCIÓN DE CÓDIGOS DINÁMICOS) ---
     elif modulo_seleccionado == "Garita":
         st.markdown("<h3 style='font-size:18px; font-weight:700; color:#fff;'>Control de Acceso (Escáner)</h3>", unsafe_allow_html=True)
         data_usb = st.text_input("🔫 Lector de Código Físico (Pistola USB):", placeholder="Haga clic aquí y dispare el escáner...")
@@ -773,6 +770,7 @@ else:
 
         if data_qr:
             st.write("---")
+            # 1. FLUJO INVITADO (Mantenemos la validación estricta de la fecha)
             if data_qr.startswith("INVITADO|"):
                 id_pase = data_qr.split("|")[1]
                 if id_pase in BASE_DATOS_INVITACIONES:
@@ -788,19 +786,36 @@ else:
                     elif pase["estatus"] == "Adentro": st.warning("⚠️ ALERTA: El invitado ya registró entrada previamente.")
                     else: st.error(f"❌ ACCESO DENEGADO: Pase {pase['estatus']}")
                 else: st.error("❌ Pase no encontrado o falsificado.")
-            elif "VENTRY" in data_qr:
+            
+            # 2. NUEVO FLUJO SOCIO (CÓDIGO DINÁMICO TOTP)
+            elif data_qr.startswith("VENTRY_DYN|"):
                 try:
-                    cedula_qr = data_qr.split("|")[0].split(":")[1]
-                    if cedula_qr in BASE_DATOS_SOCIOS:
+                    partes = data_qr.split("|")
+                    cedula_qr = partes[1]
+                    timestamp_qr = int(partes[2])
+                    timestamp_ahora = int(datetime.now().timestamp())
+                    
+                    # Verificación de "Time-to-Live" (60 segundos máximo)
+                    if (timestamp_ahora - timestamp_qr) > 60:
+                        st.error("❌ ACCESO DENEGADO\\n\\nEl código QR ha **expirado** (Tiene más de 60 segundos). Por favor, actualiza el código en tu aplicación.\\n*(Posible intento de ingreso con captura de pantalla).*")
+                    elif cedula_qr in BASE_DATOS_SOCIOS:
                         socio_qr = BASE_DATOS_SOCIOS[cedula_qr]
                         solvencia_qr = socio_qr.get("solvencia", "")
                         if solvencia_qr == "Al dia":
                             st.success(f"✅ ACCESO PERMITIDO\\n\\n**Socio:** {socio_qr['nombre']}\\n**Acción:** {socio_qr['accion']}")
-                            registrar_acceso(socio_qr["nombre"], socio_qr["accion"], "QR Socio", "Entrada")
-                        else: st.error(f"❌ ACCESO DENEGADO\\n\\n**Socio:** {socio_qr['nombre']}\\n**Estatus:** {solvencia_qr.upper()}")
-                    else: st.error("❌ Cédula de socio no registrada.")
-                except: st.error("❌ Código de carnet ilegible.")
-            else: st.error("❌ Código QR no pertenece al sistema Ventry.")
+                            registrar_acceso(socio_qr["nombre"], socio_qr["accion"], "QR Dinámico Socio", "Entrada")
+                        else: 
+                            st.error(f"❌ ACCESO DENEGADO\\n\\n**Socio:** {socio_qr['nombre']}\\n**Estatus:** {solvencia_qr.upper()}")
+                    else: 
+                        st.error("❌ Cédula de socio no registrada.")
+                except Exception as e: 
+                    st.error("❌ Código de carnet ilegible o corrupto.")
+                    
+            # 3. INTERCEPTOR DE CARNETS VIEJOS (ESTÁTICOS)
+            elif "VENTRY" in data_qr:
+                st.error("❌ ACCESO DENEGADO\\n\\nEstás intentando usar un carnet estático obsoleto. Por favor, actualiza o refresca tu aplicación Ventry para generar tu nuevo Código Dinámico.")
+            else: 
+                st.error("❌ Código QR no pertenece al sistema Ventry.")
 
     # --- MÓDULO 5: ADMIN (DASHBOARD RESPONSIVO) ---
     elif modulo_seleccionado == "Admin":

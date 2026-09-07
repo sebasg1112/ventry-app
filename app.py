@@ -196,6 +196,37 @@ def formato_mes_espanol(mes_str):
         return f"{meses[m]} {y}"
     except: return mes_str
 
+def enviar_correo_invitacion(correo_dest, nombre_inv, fecha_inv, link_qr):
+    if "smtp_user" in st.secrets and "smtp_pass" in st.secrets:
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = "Ventry Access Control"
+            msg['To'] = correo_dest
+            msg['Subject'] = "Tu Pase Digital - Magnum City Club"
+            cuerpo = f"Hola {nombre_inv},\n\nTienes un pase de invitado autorizado para el {fecha_inv}.\n\nPor favor, abre el siguiente enlace para mostrar tu código QR al llegar a la garita:\n{link_qr}\n\n¡Te esperamos!"
+            msg.attach(MIMEText(cuerpo, 'plain'))
+            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server.starttls()
+            server.login(st.secrets["smtp_user"], st.secrets["smtp_pass"])
+            server.send_message(msg)
+            server.quit()
+            return True
+        except Exception: return False
+    else: return True
+
+def cargar_historial():
+    try:
+        vals = hoja_historial.get_all_values()
+        if len(vals) > 1: return [{"fecha": r[0], "accion": r[1], "nombre": r[2], "via": r[3], "movimiento": r[4]} for r in vals[1:][::-1]]
+        return []
+    except: return []
+
+def registrar_acceso(nombre, accion, via, movimiento):
+    hora_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    hoja_historial.append_row([hora_actual, str(accion), nombre, via, movimiento])
+    if "db_historial" not in st.session_state: st.session_state.db_historial = []
+    st.session_state.db_historial.insert(0, {"fecha": hora_actual, "accion": str(accion), "nombre": nombre, "via": via, "movimiento": movimiento})
+
 def cargar_bd():
     registros = hoja_bd.get_all_records()
     datos = {}
@@ -260,19 +291,6 @@ def guardar_bd_directorio(datos):
     hoja_directorio.update(values=filas, range_name="A1")
     st.session_state.db_directorio = datos
 
-def cargar_historial():
-    try:
-        vals = hoja_historial.get_all_values()
-        if len(vals) > 1: return [{"fecha": r[0], "accion": r[1], "nombre": r[2], "via": r[3], "movimiento": r[4]} for r in vals[1:][::-1]]
-        return []
-    except: return []
-
-def registrar_acceso(nombre, accion, via, movimiento):
-    hora_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    hoja_historial.append_row([hora_actual, str(accion), nombre, via, movimiento])
-    if "db_historial" not in st.session_state: st.session_state.db_historial = []
-    st.session_state.db_historial.insert(0, {"fecha": hora_actual, "accion": str(accion), "nombre": nombre, "via": via, "movimiento": movimiento})
-
 # --- BLINDAJE DE MEMORIA ---
 if "db_socios" not in st.session_state: st.session_state.db_socios = cargar_bd()
 if "db_invitaciones" not in st.session_state: st.session_state.db_invitaciones = cargar_invitaciones()
@@ -290,7 +308,7 @@ if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = N
 if "pantalla_auth" not in st.session_state: st.session_state.pantalla_auth = "login"
 
 # ==========================================
-# 🛑 INTERCEPTOR DE PASES DIGITALES & API ESP32
+# 🛑 INTERCEPTOR DE PASES DIGITALES Y API ESP32
 # ==========================================
 params = st.query_params
 
@@ -429,7 +447,7 @@ if not st.session_state.logueado:
             col1, col2 = st.columns(2)
             with col1:
                 r_accion = st.text_input("Número de Acción / ID Tienda")
-                r_rol = st.selectbox("Rol de la Cuenta", ["Titular", "Familiar", "Concesionario", "Vigilante"])
+                r_rol = st.selectbox("Rol de la Cuenta", ["Titular", "Familiar", "Concesionario", "Vigilante", "Administrador"])
             with col2:
                 r_parentesco = st.selectbox("Parentesco / Puesto", ["N/A (Titular)", "Esposo(a)", "Hijo(a)", "Gerente", "Mesero", "Otro"])
             
@@ -485,7 +503,7 @@ else:
             mes_pagado_accion = str(m.get('mes_pagado', '')) 
             break
 
-    # 🔴 CALLBACKS DE NAVEGACIÓN Y PAGOS (ANTI-FLICKER & ANTI-DOBLE CLIC)
+    # 🔴 CALLBACKS DE NAVEGACIÓN Y PAGOS 
     def cb_nav_pagos(destino):
         st.session_state.sub_pagos = destino
 
@@ -494,7 +512,6 @@ else:
         st.session_state.sub_pagos = "recibo"
 
     def cb_pagar_cuota(saldo, monto, mes, invites, tipo, nombre_mes, accion):
-        # 1. Bloqueo Anti-Doble Clic
         ya_pagado = False
         for m in st.session_state.db_socios.values():
             if str(m["accion"]) == str(accion) and m["rol"] == "Titular":
@@ -506,13 +523,13 @@ else:
             st.session_state.sub_pagos = "menu"
             return
             
-        # 2. Procesar el pago instantáneamente
         nuevo_saldo = saldo - monto
         for ced, info in st.session_state.db_socios.items():
             if str(info["accion"]) == str(accion) and info["rol"] == "Titular":
                 st.session_state.db_socios[ced]["saldo"] = nuevo_saldo
                 st.session_state.db_socios[ced]["mes_pagado"] = mes
-                st.session_state.db_socios[ced]["invitaciones"] = int(info.get('invitaciones', 0)) + invites
+                # 🔴 CORRECCIÓN AQUÍ: Reinicia estrictamente el contador, no lo acumula
+                st.session_state.db_socios[ced]["invitaciones"] = invites
                 break
         
         for ced_fam, info_fam in st.session_state.db_socios.items():
@@ -530,8 +547,7 @@ else:
         }
         guardar_bd_pagos(st.session_state.db_pagos)
         
-        # 3. Redirigir al menú enviando mensaje de éxito
-        st.session_state.mensaje_pago_exitoso = f"✅ Mensualidad de {nombre_mes} cancelada con éxito. Recibiste {invites} pases de cortesía."
+        st.session_state.mensaje_pago_exitoso = f"✅ Mensualidad de {nombre_mes} cancelada con éxito. Tu balance de invitaciones se ha renovado a {invites}."
         st.session_state.sub_pagos = "menu"
 
 
@@ -678,7 +694,7 @@ else:
                     
             st.write("")
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            if st.button("← Cancelar y Escanear", type="primary"):
+            if st.button("← Cancelar y Escanear a otro Cliente", type="primary"):
                 st.session_state.pos_cliente_cedula = None
                 st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
@@ -812,7 +828,7 @@ else:
                         st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha, "correo": n_correo_inv}
                         st.rerun()
 
-    # --- MÓDULO 4: FINANZAS (CALLBACKS ANTI-FLICKER APLICADOS) ---
+    # --- MÓDULO 4: FINANZAS ---
     elif modulo_seleccionado == "Pagos":
         
         edad_usuario = calcular_edad(socio_actual.get("fecha_nacimiento", ""))
@@ -908,7 +924,6 @@ else:
                 if saldo_accion >= monto_cobro:
                     st.info(f"💡 Se debitarán **${monto_cobro:.2f}** de tu Fondo Familiar.")
                     
-                    # 🔴 BOTÓN CON CALLBACK NATIVO (ELIMINA FLICKER Y DOBLE CLIC)
                     st.button(f"Confirmar Pago de {nombre_mes_actual} (${monto_cobro:.2f})", 
                               key="btn_pagar_mes_corriente", 
                               type="primary",
@@ -1055,7 +1070,7 @@ else:
             st.success(st.session_state.mensaje_admin_exitoso)
             del st.session_state.mensaje_admin_exitoso
         
-        tab_dashboard, tab_facturacion = st.tabs(["📊 Dashboard & Conciliación", "⚙️ Motor de Facturación"])
+        tab_dashboard, tab_facturacion = st.tabs(["📊 Dashboard & BI", "⚙️ Motor de Facturación"])
         
         with tab_dashboard:
             acciones_al_dia, acciones_morosas, acciones_pendientes = set(), set(), set()
@@ -1078,6 +1093,32 @@ else:
             with col_k1: st.markdown(f'<div class="kpi-card"><p class="kpi-title">Familias Activas</p><h3 class="kpi-value">{total_acciones}</h3></div>', unsafe_allow_html=True)
             with col_k2: st.markdown(f'<div class="kpi-card" style="border-left-color: {"#ff6b6b" if tasa_morosidad > 15 else "#FF6600"};"><p class="kpi-title">Tasa de Morosidad</p><h3 class="kpi-value">{tasa_morosidad:.1f}%</h3></div>', unsafe_allow_html=True)
             with col_k3: st.markdown(f'<div class="kpi-card" style="border-left-color: #4ade80;"><p class="kpi-title">Capital por Cobrar</p><h3 class="kpi-value">${capital_riesgo:,.2f}</h3></div>', unsafe_allow_html=True)
+            st.write("---")
+
+            # 🔴 INYECCIÓN DE BUSINESS INTELLIGENCE (NUEVO)
+            st.markdown("<h4 style='color:#A0A0A0; font-size:16px;'>📈 Inteligencia de Negocios (BI)</h4>", unsafe_allow_html=True)
+            col_chart1, col_chart2 = st.columns(2)
+            
+            with col_chart1:
+                st.markdown("<p style='font-size:12px; color:#888; text-transform:uppercase;'>Distribución de Solvencia</p>", unsafe_allow_html=True)
+                df_solvencia = pd.DataFrame({
+                    "Estatus": ["Al Día", "Morosos", "Pendiente"],
+                    "Total Familias": [len(acciones_al_dia), morosos_count, len(acciones_pendientes)]
+                }).set_index("Estatus")
+                st.bar_chart(df_solvencia, color="#FF6600")
+
+            with col_chart2:
+                st.markdown("<p style='font-size:12px; color:#888; text-transform:uppercase;'>Flujo de Accesos (Garita)</p>", unsafe_allow_html=True)
+                if st.session_state.db_historial:
+                    df_historial = pd.DataFrame(st.session_state.db_historial)
+                    # Contamos de dónde vienen los accesos (Socios vs Invitados)
+                    df_accesos = df_historial['via'].value_counts().reset_index()
+                    df_accesos.columns = ['Método de Ingreso', 'Cantidad']
+                    df_accesos.set_index('Método de Ingreso', inplace=True)
+                    st.bar_chart(df_accesos, color="#4ade80")
+                else:
+                    st.info("Aún no hay datos de acceso suficientes para graficar.")
+
             st.write("---")
             
             col_admin1, col_admin2 = st.columns([1, 1])
@@ -1192,6 +1233,7 @@ else:
                             nuevo_saldo = float(info.get("saldo", 0)) - monto_tardio
                             BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
                             BASE_DATOS_SOCIOS[ced]["mes_pagado"] = mes_actual
+                            # Lógica perfecta: Si le cobran moroso, las invitaciones bajan a 0
                             BASE_DATOS_SOCIOS[ced]["invitaciones"] = 0 
                             familias_cobradas += 1
                             

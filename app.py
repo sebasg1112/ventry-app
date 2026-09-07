@@ -142,6 +142,17 @@ st.markdown("""
     .badge-aldia { background: linear-gradient(135deg, #4ade80, #22c55e) !important; }
     .badge-moroso { background: linear-gradient(135deg, #ff6b6b, #ef4444) !important; color: white !important;}
     .badge-pendiente { background: linear-gradient(135deg, #facc15, #eab308) !important; }
+    
+    /* 🔴 NUEVO CSS: MODO GARITA DE ALTO CONTRASTE */
+    .garita-alert-success { background: linear-gradient(135deg, #166534, #15803d); border: 2px solid #22c55e; border-radius: 20px; padding: 40px 20px; text-align: center; color: white; box-shadow: 0 10px 40px rgba(21, 128, 61, 0.5); margin-top: 20px; animation: pulseSuccess 2s infinite; }
+    .garita-alert-error { background: linear-gradient(135deg, #991b1b, #b91c1c); border: 2px solid #ef4444; border-radius: 20px; padding: 40px 20px; text-align: center; color: white; box-shadow: 0 10px 40px rgba(185, 28, 28, 0.5); margin-top: 20px; animation: pulseError 2s infinite; }
+    .garita-icon { font-size: 80px; margin-bottom: 10px; display: block; }
+    .garita-title { font-size: 32px; font-weight: 900; letter-spacing: 1px; margin-bottom: 5px; text-transform: uppercase; }
+    .garita-detail { font-size: 18px; font-weight: 500; margin-top: 15px; color: #f8fafc; }
+    .garita-action { font-size: 24px; font-weight: 800; color: #fbbf24; margin-top: 5px; text-transform: uppercase; letter-spacing: 2px; }
+    
+    @keyframes pulseSuccess { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
+    @keyframes pulseError { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
     </style>
 """, unsafe_allow_html=True)
 
@@ -528,7 +539,7 @@ else:
             if str(info["accion"]) == str(accion) and info["rol"] == "Titular":
                 st.session_state.db_socios[ced]["saldo"] = nuevo_saldo
                 st.session_state.db_socios[ced]["mes_pagado"] = mes
-                # 🔴 CORRECCIÓN AQUÍ: Reinicia estrictamente el contador, no lo acumula
+                # RESETA EL CONTADOR (NO ACUMULATIVO)
                 st.session_state.db_socios[ced]["invitaciones"] = invites
                 break
         
@@ -550,6 +561,10 @@ else:
         st.session_state.mensaje_pago_exitoso = f"✅ Mensualidad de {nombre_mes} cancelada con éxito. Tu balance de invitaciones se ha renovado a {invites}."
         st.session_state.sub_pagos = "menu"
 
+    # --- CALLBACK DE GARITA ---
+    def cb_limpiar_garita():
+        if "garita_scan_result" in st.session_state:
+            del st.session_state.garita_scan_result
 
     # --- HEADER ---
     col_logo, col_campana = st.columns([5, 1])
@@ -845,7 +860,6 @@ else:
             dia_actual = datetime.now().day
             nombre_mes_actual = formato_mes_espanol(mes_actual)
             
-            # --- VISTA 1: BILLETERA ---
             if st.session_state.sub_pagos == "menu":
                 st.markdown("<h3 style='font-size:24px; font-weight:800; color:#ffffff; margin-bottom: 20px;'>Finanzas</h3>", unsafe_allow_html=True)
                 
@@ -875,7 +889,6 @@ else:
                 st.write("")
                 st.button("🕒 Libro de Transacciones", type="primary", on_click=cb_nav_pagos, args=("historial",))
 
-            # --- VISTA 2: RECARGAR ---
             elif st.session_state.sub_pagos == "recargar":
                 st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Reportar Abono</h3>", unsafe_allow_html=True)
                 st.write("Abona dinero a tu Fondo Familiar. El saldo se utilizará para el mantenimiento y consumos internos.")
@@ -904,7 +917,6 @@ else:
                 st.button("← Volver a Billetera", type="primary", on_click=cb_nav_pagos, args=("menu",))
                 st.markdown("</div>", unsafe_allow_html=True)
 
-            # --- VISTA 3: PAGAR CUOTA (PROTEGIDA POR CALLBACK) ---
             elif st.session_state.sub_pagos == "pagar":
                 if mes_pagado_accion == mes_actual:
                     st.session_state.sub_pagos = "menu"
@@ -937,7 +949,6 @@ else:
                 st.button("← Cancelar", type="primary", on_click=cb_nav_pagos, args=("menu",))
                 st.markdown("</div>", unsafe_allow_html=True)
 
-            # --- VISTA 4: HISTORIAL ---
             elif st.session_state.sub_pagos == "historial":
                 st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Libro de Transacciones</h3>", unsafe_allow_html=True)
                 mis_pagos = {k: v for k, v in BASE_DATOS_PAGOS.items() if str(v["accion"]) == str(socio_actual["accion"])}
@@ -1008,59 +1019,103 @@ else:
                 st.button("← Volver al Historial", type="primary", on_click=cb_nav_pagos, args=("historial",))
                 st.markdown("</div>", unsafe_allow_html=True)
 
-    # --- MÓDULO GARITA ---
+    # --- 🔴 MÓDULO GARITA DE ALTO CONTRASTE ---
     elif modulo_seleccionado == "Garita":
-        st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff;'>Control de Acceso</h3>", unsafe_allow_html=True)
-        data_usb = st.text_input("🔫 Lector de Código Físico (Pistola USB):", placeholder="Dispara el escáner aquí...")
-        st.write("📸 O utilizar cámara del dispositivo:")
-        foto_qr = st.camera_input("Tomar foto del código QR")
+        st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff;'>Modo Operativo: Garita</h3>", unsafe_allow_html=True)
+        
+        # Mantenemos el estado del escaneo en la sesión para mostrar el cartel
+        if "garita_scan_result" not in st.session_state:
+            st.session_state.garita_scan_result = None
 
-        data_qr = data_usb if data_usb else None
-        if foto_qr is not None and not data_qr:
-            bytes_data = foto_qr.getvalue()
-            cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
-            detector = cv2.QRCodeDetector()
-            data, bbox, _ = detector.detectAndDecode(cv2_img)
-            if data: data_qr = data
-            else: st.error("⚠️ No se detectó un código QR claro. Intenta acercar la imagen o mejorar la luz.")
+        if st.session_state.garita_scan_result is None:
+            st.write("Escanee el pase del socio o invitado:")
+            data_usb = st.text_input("🔫 Lector Físico (USB/Bluetooth):", placeholder="Dispare el escáner aquí...")
+            foto_qr = st.camera_input("📸 Escanear con cámara del dispositivo:")
 
-        if data_qr:
-            st.write("---")
-            if data_qr.startswith("INVITADO|"):
-                id_pase = data_qr.split("|")[1]
-                if id_pase in BASE_DATOS_INVITACIONES:
-                    pase = BASE_DATOS_INVITACIONES[id_pase]
-                    fecha_hoy = datetime.now().strftime("%d/%m/%Y")
-                    if pase["fecha_visita"] != fecha_hoy:
-                        st.error(f"❌ ACCESO DENEGADO\\n\\nEste pase está programado para el **{pase['fecha_visita']}** y hoy es **{fecha_hoy}**.")
-                    elif pase["estatus"] == "Activo":
-                        st.success(f"✅ ACCESO PERMITIDO\\n\\n**Invitado:** {pase['nombre_invitado']}\\n**Acción:** {pase['accion']}")
-                        BASE_DATOS_INVITACIONES[id_pase]["estatus"] = "Adentro"
-                        guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
-                        registrar_acceso(pase["nombre_invitado"], pase["accion"], "QR Invitado", "Entrada")
-                    elif pase["estatus"] == "Adentro": st.warning("⚠️ ALERTA: El invitado ya registró entrada previamente.")
-                    else: st.error(f"❌ ACCESO DENEGADO: Pase {pase['estatus']}")
-                else: st.error("❌ Pase no encontrado o falsificado.")
-            elif data_qr.startswith("VENTRY_DYN|"):
-                try:
-                    partes = data_qr.split("|")
-                    cedula_qr = partes[1]
-                    timestamp_qr = int(partes[2])
-                    timestamp_ahora = int(datetime.now().timestamp())
-                    if (timestamp_ahora - timestamp_qr) > 60:
-                        st.error("❌ ACCESO DENEGADO\\n\\nEl código QR ha **expirado** (Tiene más de 60 segundos). Por favor, actualiza el código en tu aplicación.\\n*(Posible intento de ingreso con captura de pantalla).*")
-                    elif cedula_qr in BASE_DATOS_SOCIOS:
-                        socio_qr = BASE_DATOS_SOCIOS[cedula_qr]
-                        solvencia_qr = socio_qr.get("solvencia", "")
-                        if solvencia_qr == "Al dia":
-                            st.success(f"✅ ACCESO PERMITIDO\\n\\n**Socio:** {socio_qr['nombre']}\\n**Acción:** {socio_qr['accion']}")
-                            registrar_acceso(socio_qr["nombre"], socio_qr["accion"], "QR Dinámico Socio", "Entrada")
-                        else: st.error(f"❌ ACCESO DENEGADO\\n\\n**Socio:** {socio_qr['nombre']}\\n**Estatus:** {solvencia_qr.upper()}")
-                    else: st.error("❌ Cédula de socio no registrada.")
-                except: st.error("❌ Código de carnet ilegible o corrupto.")
-            elif "VENTRY" in data_qr:
-                st.error("❌ ACCESO DENEGADO\\n\\nEstás intentando usar un carnet estático obsoleto. Por favor, actualiza o refresca tu aplicación Ventry para generar tu nuevo Código Dinámico.")
-            else: st.error("❌ Código QR no pertenece al sistema Ventry.")
+            data_qr = data_usb if data_usb else None
+            if foto_qr is not None and not data_qr:
+                bytes_data = foto_qr.getvalue()
+                cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
+                detector = cv2.QRCodeDetector()
+                data, bbox, _ = detector.detectAndDecode(cv2_img)
+                if data: data_qr = data
+                else: st.error("⚠️ No se detectó QR. Mejore la luz o acerque el código.")
+
+            if data_qr:
+                # LÓGICA DE VALIDACIÓN (Guarda el resultado en session_state en lugar de mostrar toasts)
+                if data_qr.startswith("INVITADO|"):
+                    id_pase = data_qr.split("|")[1]
+                    if id_pase in BASE_DATOS_INVITACIONES:
+                        pase = BASE_DATOS_INVITACIONES[id_pase]
+                        fecha_hoy = datetime.now().strftime("%d/%m/%Y")
+                        if pase["fecha_visita"] != fecha_hoy:
+                            st.session_state.garita_scan_result = {"status": "error", "title": "ACCESO DENEGADO", "detail": f"Pase para el {pase['fecha_visita']}. Hoy es {fecha_hoy}.", "action": pase['accion']}
+                        elif pase["estatus"] == "Activo":
+                            BASE_DATOS_INVITACIONES[id_pase]["estatus"] = "Adentro"
+                            guardar_bd_invitaciones(BASE_DATOS_INVITACIONES)
+                            registrar_acceso(pase["nombre_invitado"], pase["accion"], "QR Invitado", "Entrada")
+                            st.session_state.garita_scan_result = {"status": "success", "title": "ACCESO AUTORIZADO", "detail": f"Invitado: {pase['nombre_invitado']}", "action": f"Acción: {pase['accion']}"}
+                        elif pase["estatus"] == "Adentro": 
+                            st.session_state.garita_scan_result = {"status": "error", "title": "PASE USADO", "detail": f"El invitado {pase['nombre_invitado']} ya registró entrada.", "action": pase['accion']}
+                        else: 
+                            st.session_state.garita_scan_result = {"status": "error", "title": "ACCESO DENEGADO", "detail": f"Estatus del pase: {pase['estatus'].upper()}", "action": pase['accion']}
+                    else: 
+                        st.session_state.garita_scan_result = {"status": "error", "title": "QR INVÁLIDO", "detail": "Pase no encontrado o falsificado.", "action": "N/A"}
+                
+                elif data_qr.startswith("VENTRY_DYN|"):
+                    try:
+                        partes = data_qr.split("|")
+                        cedula_qr = partes[1]
+                        timestamp_qr = int(partes[2])
+                        timestamp_ahora = int(datetime.now().timestamp())
+                        
+                        if (timestamp_ahora - timestamp_qr) > 60:
+                            st.session_state.garita_scan_result = {"status": "error", "title": "CÓDIGO EXPIRADO", "detail": "El QR tiene más de 60 segundos. Pida al socio que actualice la app.", "action": "Seguridad Anti-Clonación"}
+                        elif cedula_qr in BASE_DATOS_SOCIOS:
+                            socio_qr = BASE_DATOS_SOCIOS[cedula_qr]
+                            solvencia_qr = socio_qr.get("solvencia", "")
+                            if solvencia_qr == "Al dia":
+                                registrar_acceso(socio_qr["nombre"], socio_qr["accion"], "QR Dinámico Socio", "Entrada")
+                                st.session_state.garita_scan_result = {"status": "success", "title": "ACCESO AUTORIZADO", "detail": f"Socio: {socio_qr['nombre']} ({socio_qr['rol']})", "action": f"Acción: {socio_qr['accion']}"}
+                            else: 
+                                st.session_state.garita_scan_result = {"status": "error", "title": "ACCESO DENEGADO", "detail": f"Socio: {socio_qr['nombre']}. Estatus: {solvencia_qr.upper()}", "action": f"Acción: {socio_qr['accion']}"}
+                        else: 
+                            st.session_state.garita_scan_result = {"status": "error", "title": "ERROR", "detail": "Cédula no registrada.", "action": "N/A"}
+                    except: 
+                        st.session_state.garita_scan_result = {"status": "error", "title": "CÓDIGO ILEGIBLE", "detail": "El QR está corrupto.", "action": "N/A"}
+                
+                elif "VENTRY" in data_qr:
+                    st.session_state.garita_scan_result = {"status": "error", "title": "CARNET OBSOLETO", "detail": "Está usando un QR estático viejo. Debe usar la app para el QR Dinámico.", "action": "Seguridad"}
+                else: 
+                    st.session_state.garita_scan_result = {"status": "error", "title": "QR DESCONOCIDO", "detail": "El código no pertenece a Ventry.", "action": "N/A"}
+                
+                st.rerun()
+
+        # PANTALLA GIGANTE DE RESULTADO
+        else:
+            res = st.session_state.garita_scan_result
+            if res["status"] == "success":
+                st.markdown(f"""
+                <div class='garita-alert-success'>
+                    <span class='garita-icon'>✅</span>
+                    <div class='garita-title'>{res['title']}</div>
+                    <div class='garita-detail'>{res['detail']}</div>
+                    <div class='garita-action'>{res['action']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class='garita-alert-error'>
+                    <span class='garita-icon'>❌</span>
+                    <div class='garita-title'>{res['title']}</div>
+                    <div class='garita-detail'>{res['detail']}</div>
+                    <div class='garita-action'>{res['action']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.write("")
+            st.write("")
+            st.button("Siguiente Escaneo ⏭️", type="primary", on_click=cb_limpiar_garita, use_container_width=True)
 
     # --- MÓDULO 5: ADMIN ---
     elif modulo_seleccionado == "Admin":
@@ -1095,7 +1150,6 @@ else:
             with col_k3: st.markdown(f'<div class="kpi-card" style="border-left-color: #4ade80;"><p class="kpi-title">Capital por Cobrar</p><h3 class="kpi-value">${capital_riesgo:,.2f}</h3></div>', unsafe_allow_html=True)
             st.write("---")
 
-            # 🔴 INYECCIÓN DE BUSINESS INTELLIGENCE (NUEVO)
             st.markdown("<h4 style='color:#A0A0A0; font-size:16px;'>📈 Inteligencia de Negocios (BI)</h4>", unsafe_allow_html=True)
             col_chart1, col_chart2 = st.columns(2)
             
@@ -1111,7 +1165,6 @@ else:
                 st.markdown("<p style='font-size:12px; color:#888; text-transform:uppercase;'>Flujo de Accesos (Garita)</p>", unsafe_allow_html=True)
                 if st.session_state.db_historial:
                     df_historial = pd.DataFrame(st.session_state.db_historial)
-                    # Contamos de dónde vienen los accesos (Socios vs Invitados)
                     df_accesos = df_historial['via'].value_counts().reset_index()
                     df_accesos.columns = ['Método de Ingreso', 'Cantidad']
                     df_accesos.set_index('Método de Ingreso', inplace=True)
@@ -1233,7 +1286,6 @@ else:
                             nuevo_saldo = float(info.get("saldo", 0)) - monto_tardio
                             BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
                             BASE_DATOS_SOCIOS[ced]["mes_pagado"] = mes_actual
-                            # Lógica perfecta: Si le cobran moroso, las invitaciones bajan a 0
                             BASE_DATOS_SOCIOS[ced]["invitaciones"] = 0 
                             familias_cobradas += 1
                             

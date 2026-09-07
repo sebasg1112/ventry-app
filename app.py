@@ -52,7 +52,7 @@ st.markdown(f"""
     </head>
 """, unsafe_allow_html=True)
 
-# --- CSS AVANZADO: UI/UX PREMIUM (CORRECCIÓN DE FORMULARIOS) ---
+# --- CSS AVANZADO: UI/UX PREMIUM ---
 st.markdown("""
     <style>
     #MainMenu {display: none;}
@@ -82,31 +82,14 @@ st.markdown("""
     
     [data-testid="stForm"] { background: rgba(20, 20, 25, 0.4) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(255, 255, 255, 0.05) !important; border-radius: 20px !important; padding: 25px !important; }
     
-    /* 🔴 BLINDAJE NUCLEAR DE FORMULARIOS: Forzar fondo oscuro en todos los inputs */
     input[type="text"], input[type="password"], input[type="number"], textarea, 
-    .stTextInput div[data-baseweb="base-input"], 
-    .stDateInput div[data-baseweb="base-input"], 
-    .stNumberInput div[data-baseweb="base-input"], 
-    .stSelectbox div[data-baseweb="select"] > div,
-    div[data-baseweb="input"] { 
-        background-color: #1E1E24 !important; 
-        color: #FFFFFF !important; 
-        -webkit-text-fill-color: #FFFFFF !important; 
-        border-radius: 12px !important;
-    }
+    .stTextInput div[data-baseweb="base-input"], .stDateInput div[data-baseweb="base-input"], 
+    .stNumberInput div[data-baseweb="base-input"], .stSelectbox div[data-baseweb="select"] > div,
+    div[data-baseweb="input"] { background-color: #1E1E24 !important; color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; border-radius: 12px !important; }
     
-    /* Eliminar bordes blancos nativos de Streamlit */
-    div[data-baseweb="base-input"], div[data-baseweb="select"] > div {
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    }
-    
+    div[data-baseweb="base-input"], div[data-baseweb="select"] > div { border: 1px solid rgba(255, 255, 255, 0.1) !important; }
     div[data-baseweb="select"] span { color: #ffffff !important; font-weight: 500 !important; }
-    
-    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within, div[data-baseweb="base-input"]:focus-within { 
-        border-color: #FF6600 !important; 
-        background-color: #2A2A35 !important; 
-        box-shadow: 0 0 15px rgba(255, 102, 0, 0.15) !important; 
-    }
+    div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within, div[data-baseweb="base-input"]:focus-within { border-color: #FF6600 !important; background-color: #2A2A35 !important; box-shadow: 0 0 15px rgba(255, 102, 0, 0.15) !important; }
     
     div[data-baseweb="popover"] > div, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * { background-color: #1E1E24 !important; color: #ffffff !important; border-radius: 12px; }
     div[data-testid="stPopoverBody"] { background: rgba(15, 15, 18, 0.95) !important; backdrop-filter: blur(15px) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 20px !important; padding: 20px !important; box-shadow: 0 15px 40px rgba(0,0,0,0.8) !important; }
@@ -213,37 +196,6 @@ def formato_mes_espanol(mes_str):
         return f"{meses[m]} {y}"
     except: return mes_str
 
-def enviar_correo_invitacion(correo_dest, nombre_inv, fecha_inv, link_qr):
-    if "smtp_user" in st.secrets and "smtp_pass" in st.secrets:
-        try:
-            msg = MIMEMultipart()
-            msg['From'] = "Ventry Access Control"
-            msg['To'] = correo_dest
-            msg['Subject'] = "Tu Pase Digital - Magnum City Club"
-            cuerpo = f"Hola {nombre_inv},\n\nTienes un pase de invitado autorizado para el {fecha_inv}.\n\nPor favor, abre el siguiente enlace para mostrar tu código QR al llegar a la garita:\n{link_qr}\n\n¡Te esperamos!"
-            msg.attach(MIMEText(cuerpo, 'plain'))
-            server = smtplib.SMTP('smtp.gmail.com', 587)
-            server.starttls()
-            server.login(st.secrets["smtp_user"], st.secrets["smtp_pass"])
-            server.send_message(msg)
-            server.quit()
-            return True
-        except Exception: return False
-    else: return True
-
-def cargar_historial():
-    try:
-        vals = hoja_historial.get_all_values()
-        if len(vals) > 1: return [{"fecha": r[0], "accion": r[1], "nombre": r[2], "via": r[3], "movimiento": r[4]} for r in vals[1:][::-1]]
-        return []
-    except: return []
-
-def registrar_acceso(nombre, accion, via, movimiento):
-    hora_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    hoja_historial.append_row([hora_actual, str(accion), nombre, via, movimiento])
-    if "db_historial" not in st.session_state: st.session_state.db_historial = []
-    st.session_state.db_historial.insert(0, {"fecha": hora_actual, "accion": str(accion), "nombre": nombre, "via": via, "movimiento": movimiento})
-
 def cargar_bd():
     registros = hoja_bd.get_all_records()
     datos = {}
@@ -308,6 +260,19 @@ def guardar_bd_directorio(datos):
     hoja_directorio.update(values=filas, range_name="A1")
     st.session_state.db_directorio = datos
 
+def cargar_historial():
+    try:
+        vals = hoja_historial.get_all_values()
+        if len(vals) > 1: return [{"fecha": r[0], "accion": r[1], "nombre": r[2], "via": r[3], "movimiento": r[4]} for r in vals[1:][::-1]]
+        return []
+    except: return []
+
+def registrar_acceso(nombre, accion, via, movimiento):
+    hora_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    hoja_historial.append_row([hora_actual, str(accion), nombre, via, movimiento])
+    if "db_historial" not in st.session_state: st.session_state.db_historial = []
+    st.session_state.db_historial.insert(0, {"fecha": hora_actual, "accion": str(accion), "nombre": nombre, "via": via, "movimiento": movimiento})
+
 # --- BLINDAJE DE MEMORIA ---
 if "db_socios" not in st.session_state: st.session_state.db_socios = cargar_bd()
 if "db_invitaciones" not in st.session_state: st.session_state.db_invitaciones = cargar_invitaciones()
@@ -325,7 +290,7 @@ if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = N
 if "pantalla_auth" not in st.session_state: st.session_state.pantalla_auth = "login"
 
 # ==========================================
-# 🛑 INTERCEPTOR DE PASES DIGITALES Y API ESP32
+# 🛑 INTERCEPTOR DE PASES DIGITALES & API ESP32
 # ==========================================
 params = st.query_params
 
@@ -520,7 +485,57 @@ else:
             mes_pagado_accion = str(m.get('mes_pagado', '')) 
             break
 
-    # --- HEADER CON CENTRO DE NOTIFICACIONES ---
+    # 🔴 CALLBACKS DE NAVEGACIÓN Y PAGOS (ANTI-FLICKER & ANTI-DOBLE CLIC)
+    def cb_nav_pagos(destino):
+        st.session_state.sub_pagos = destino
+
+    def cb_ver_recibo(r_id):
+        st.session_state.recibo_id = r_id
+        st.session_state.sub_pagos = "recibo"
+
+    def cb_pagar_cuota(saldo, monto, mes, invites, tipo, nombre_mes, accion):
+        # 1. Bloqueo Anti-Doble Clic
+        ya_pagado = False
+        for m in st.session_state.db_socios.values():
+            if str(m["accion"]) == str(accion) and m["rol"] == "Titular":
+                if m.get("mes_pagado", "") == mes: ya_pagado = True
+                break
+        
+        if ya_pagado:
+            st.session_state.mensaje_pago_exitoso = "⚠️ Transacción ignorada: El mes ya estaba pagado (Evitado cobro doble)."
+            st.session_state.sub_pagos = "menu"
+            return
+            
+        # 2. Procesar el pago instantáneamente
+        nuevo_saldo = saldo - monto
+        for ced, info in st.session_state.db_socios.items():
+            if str(info["accion"]) == str(accion) and info["rol"] == "Titular":
+                st.session_state.db_socios[ced]["saldo"] = nuevo_saldo
+                st.session_state.db_socios[ced]["mes_pagado"] = mes
+                st.session_state.db_socios[ced]["invitaciones"] = int(info.get('invitaciones', 0)) + invites
+                break
+        
+        for ced_fam, info_fam in st.session_state.db_socios.items():
+            if str(info_fam["accion"]) == str(accion):
+                st.session_state.db_socios[ced_fam]["solvencia"] = "Al dia"
+        
+        guardar_bd(st.session_state.db_socios)
+        
+        id_cargo = f"CRG-{str(uuid.uuid4())[:6].upper()}"
+        st.session_state.db_pagos[id_cargo] = {
+            "accion": accion, "metodo": "Sistema Ventry", 
+            "referencia": f"CUOTA-{mes.replace('/','-')}", 
+            "monto": monto, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), 
+            "estatus": "Aprobado", "tipo": tipo
+        }
+        guardar_bd_pagos(st.session_state.db_pagos)
+        
+        # 3. Redirigir al menú enviando mensaje de éxito
+        st.session_state.mensaje_pago_exitoso = f"✅ Mensualidad de {nombre_mes} cancelada con éxito. Recibiste {invites} pases de cortesía."
+        st.session_state.sub_pagos = "menu"
+
+
+    # --- HEADER ---
     col_logo, col_campana = st.columns([5, 1])
     with col_logo:
         st.markdown(f"""
@@ -578,7 +593,7 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Simular Apertura (Demo ESP32)", type="primary"): st.success("📡 Señal de apertura enviada a la garita.")
 
-    # --- MÓDULO VENTRY PAY (CONCESIONARIO) ---
+    # --- MÓDULO VENTRY PAY ---
     elif modulo_seleccionado == "Ventry Pay":
         st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff;'>Ventry Pay <span style='font-size:14px; color:#A0A0A0;'>(Punto de Venta)</span></h3>", unsafe_allow_html=True)
         st.write(f"Concesionario: **{socio_actual['nombre']}**")
@@ -608,8 +623,7 @@ else:
                         timestamp_qr = int(partes[2])
                         timestamp_ahora = int(datetime.now().timestamp())
                         
-                        if (timestamp_ahora - timestamp_qr) > 60:
-                            st.error("❌ Código QR Expirado. Pida al socio que actualice su carnet.")
+                        if (timestamp_ahora - timestamp_qr) > 60: st.error("❌ Código QR Expirado. Pida al socio que actualice su carnet.")
                         elif cedula_qr in BASE_DATOS_SOCIOS:
                             socio_qr = BASE_DATOS_SOCIOS[cedula_qr]
                             st.session_state.pos_cliente_cedula = cedula_qr
@@ -664,7 +678,7 @@ else:
                     
             st.write("")
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            if st.button("← Cancelar y Escanear a otro Cliente", type="primary"):
+            if st.button("← Cancelar y Escanear", type="primary"):
                 st.session_state.pos_cliente_cedula = None
                 st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
@@ -798,7 +812,7 @@ else:
                         st.session_state.ultimo_pase_generado = {"id": id_unico, "nombre": n_nombre_inv, "fecha": str_fecha, "correo": n_correo_inv}
                         st.rerun()
 
-    # --- MÓDULO 4: FINANZAS ---
+    # --- MÓDULO 4: FINANZAS (CALLBACKS ANTI-FLICKER APLICADOS) ---
     elif modulo_seleccionado == "Pagos":
         
         edad_usuario = calcular_edad(socio_actual.get("fecha_nacimiento", ""))
@@ -820,7 +834,8 @@ else:
                 st.markdown("<h3 style='font-size:24px; font-weight:800; color:#ffffff; margin-bottom: 20px;'>Finanzas</h3>", unsafe_allow_html=True)
                 
                 if "mensaje_pago_exitoso" in st.session_state:
-                    st.success(st.session_state.mensaje_pago_exitoso)
+                    if "⚠️" in st.session_state.mensaje_pago_exitoso: st.warning(st.session_state.mensaje_pago_exitoso)
+                    else: st.success(st.session_state.mensaje_pago_exitoso)
                     del st.session_state.mensaje_pago_exitoso
                 
                 st.markdown(f'<div class="wallet-card"><p class="wallet-title">Fondo Familiar Disponible</p><h3 class="wallet-saldo" style="font-size:42px;">${saldo_favor:.2f}</h3></div>', unsafe_allow_html=True)
@@ -834,17 +849,15 @@ else:
                         if dia_actual <= 10: st.info(f"🌟 Beneficio de Pronto Pago vigente (Días 1-10). Cuota de **{nombre_mes_actual}**: $104 + 10 Pases Gratis.")
                         else: st.warning(f"⚠️ Fecha de corte superada. Cuota de **{nombre_mes_actual}**: $120. No incluye pases gratis.")
                         
-                        if st.button(f"Pagar Mensualidad de {nombre_mes_actual}", type="primary"): 
-                            st.session_state.sub_pagos = "pagar"
-                            st.rerun()
+                        st.button(f"Pagar Mensualidad de {nombre_mes_actual}", type="primary", on_click=cb_nav_pagos, args=("pagar",))
                             
                     st.write("")
                 else:
                     st.info("ℹ️ El pago de la cuota de mantenimiento es gestionado por el Titular de la acción.")
                 
-                if st.button("📥 Reportar Abono a Fondo", type="primary"): st.session_state.sub_pagos = "recargar"; st.rerun()
+                st.button("📥 Reportar Abono a Fondo", type="primary", on_click=cb_nav_pagos, args=("recargar",))
                 st.write("")
-                if st.button("🕒 Libro de Transacciones", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
+                st.button("🕒 Libro de Transacciones", type="primary", on_click=cb_nav_pagos, args=("historial",))
 
             # --- VISTA 2: RECARGAR ---
             elif st.session_state.sub_pagos == "recargar":
@@ -872,10 +885,10 @@ else:
                 
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-                if st.button("← Volver a Billetera", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
+                st.button("← Volver a Billetera", type="primary", on_click=cb_nav_pagos, args=("menu",))
                 st.markdown("</div>", unsafe_allow_html=True)
 
-            # --- VISTA 3: PAGAR CUOTA ---
+            # --- VISTA 3: PAGAR CUOTA (PROTEGIDA POR CALLBACK) ---
             elif st.session_state.sub_pagos == "pagar":
                 if mes_pagado_accion == mes_actual:
                     st.session_state.sub_pagos = "menu"
@@ -895,34 +908,18 @@ else:
                 if saldo_accion >= monto_cobro:
                     st.info(f"💡 Se debitarán **${monto_cobro:.2f}** de tu Fondo Familiar.")
                     
-                    if st.button(f"Confirmar Pago de {nombre_mes_actual} (${monto_cobro:.2f})", key="btn_pagar_mes_corriente", type="primary"):
-                        nuevo_saldo = saldo_accion - monto_cobro
-                        for ced, info in BASE_DATOS_SOCIOS.items():
-                            if str(info["accion"]) == str(socio_actual["accion"]) and info["rol"] == "Titular":
-                                BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
-                                BASE_DATOS_SOCIOS[ced]["mes_pagado"] = mes_actual
-                                BASE_DATOS_SOCIOS[ced]["invitaciones"] = int(info.get('invitaciones', 0)) + invites_premio
-                                break
-                        
-                        for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
-                            if str(info_fam["accion"]) == str(socio_actual["accion"]):
-                                BASE_DATOS_SOCIOS[ced_fam]["solvencia"] = "Al dia"
-                        
-                        guardar_bd(BASE_DATOS_SOCIOS)
-                        
-                        id_cargo = f"CRG-{str(uuid.uuid4())[:6].upper()}"
-                        BASE_DATOS_PAGOS[id_cargo] = {"accion": socio_actual["accion"], "metodo": "Sistema Ventry", "referencia": f"CUOTA-{mes_actual.replace('/','-')}", "monto": monto_cobro, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "Aprobado", "tipo": tipo_cobro}
-                        guardar_bd_pagos(BASE_DATOS_PAGOS)
-                        
-                        st.session_state.mensaje_pago_exitoso = f"✅ Mensualidad cancelada con éxito. Recibiste {invites_premio} pases de cortesía."
-                        st.session_state.sub_pagos = "menu"
-                        st.rerun()
+                    # 🔴 BOTÓN CON CALLBACK NATIVO (ELIMINA FLICKER Y DOBLE CLIC)
+                    st.button(f"Confirmar Pago de {nombre_mes_actual} (${monto_cobro:.2f})", 
+                              key="btn_pagar_mes_corriente", 
+                              type="primary",
+                              on_click=cb_pagar_cuota,
+                              args=(saldo_accion, monto_cobro, mes_actual, invites_premio, tipo_cobro, nombre_mes_actual, socio_actual["accion"]))
                 else:
                     st.error(f"❌ Fondo Insuficiente. Necesitas **${monto_cobro:.2f}** para pagar {nombre_mes_actual}. Regresa y abona dinero.")
                 
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-                if st.button("← Cancelar", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
+                st.button("← Cancelar", type="primary", on_click=cb_nav_pagos, args=("menu",))
                 st.markdown("</div>", unsafe_allow_html=True)
 
             # --- VISTA 4: HISTORIAL ---
@@ -956,16 +953,13 @@ else:
                         
                         if not es_cargo and p_info['estatus'] == "Aprobado":
                             st.markdown("<div class='btn-secundario' style='margin-bottom: 20px;'>", unsafe_allow_html=True)
-                            if st.button(f"🧾 Ver Recibo {p_id}", key=f"btn_{p_id}"):
-                                st.session_state.recibo_id = p_id
-                                st.session_state.sub_pagos = "recibo"
-                                st.rerun()
+                            st.button(f"🧾 Ver Recibo {p_id}", key=f"btn_{p_id}", on_click=cb_ver_recibo, args=(p_id,))
                             st.markdown("</div>", unsafe_allow_html=True)
                 else: st.info("No hay movimientos financieros registrados.")
                     
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-                if st.button("← Volver a Finanzas", type="primary"): st.session_state.sub_pagos = "menu"; st.rerun()
+                st.button("← Volver a Finanzas", type="primary", on_click=cb_nav_pagos, args=("menu",))
                 st.markdown("</div>", unsafe_allow_html=True)
 
             elif st.session_state.sub_pagos == "recibo":
@@ -996,7 +990,7 @@ else:
                 
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-                if st.button("← Volver al Historial", type="primary"): st.session_state.sub_pagos = "historial"; st.rerun()
+                st.button("← Volver al Historial", type="primary", on_click=cb_nav_pagos, args=("historial",))
                 st.markdown("</div>", unsafe_allow_html=True)
 
     # --- MÓDULO GARITA ---
@@ -1227,13 +1221,13 @@ else:
         if st.session_state.sub_ajustes == "menu":
             st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff; margin-bottom: 20px;'>Ajustes</h3>", unsafe_allow_html=True)
             
-            if st.button("Perfil y Seguridad", type="primary"): st.session_state.sub_ajustes = "perfil"; st.rerun()
+            st.button("Perfil y Seguridad", type="primary", on_click=lambda: st.session_state.update(sub_ajustes="perfil"))
             st.write("")
-            if st.button("Mis Contactos (Directorio)", type="primary"): st.session_state.sub_ajustes = "directorio"; st.rerun()
+            st.button("Mis Contactos (Directorio)", type="primary", on_click=lambda: st.session_state.update(sub_ajustes="directorio"))
             st.write("")
-            if st.button("Grupo Familiar", type="primary"): st.session_state.sub_ajustes = "familia"; st.rerun()
+            st.button("Grupo Familiar", type="primary", on_click=lambda: st.session_state.update(sub_ajustes="familia"))
             st.write("")
-            if st.button("Historial de Accesos", type="primary"): st.session_state.sub_ajustes = "historial"; st.rerun()
+            st.button("Historial de Accesos", type="primary", on_click=lambda: st.session_state.update(sub_ajustes="historial"))
 
         elif st.session_state.sub_ajustes == "perfil":
             st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Perfil y Seguridad</h3>", unsafe_allow_html=True)
@@ -1256,7 +1250,7 @@ else:
             
             st.write("")
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            if st.button("← Volver a Ajustes", type="primary"): st.session_state.sub_ajustes = "menu"; st.rerun()
+            st.button("← Volver a Ajustes", type="primary", on_click=lambda: st.session_state.update(sub_ajustes="menu"))
             st.markdown("</div>", unsafe_allow_html=True)
             
             st.write("---")
@@ -1293,7 +1287,7 @@ else:
                 
             st.write("")
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            if st.button("← Volver a Ajustes", type="primary"): st.session_state.sub_ajustes = "menu"; st.rerun()
+            st.button("← Volver a Ajustes", type="primary", on_click=lambda: st.session_state.update(sub_ajustes="menu"))
             st.markdown("</div>", unsafe_allow_html=True)
 
         elif st.session_state.sub_ajustes == "familia":
@@ -1314,7 +1308,7 @@ else:
                 
             st.write("")
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            if st.button("← Volver a Ajustes", type="primary"): st.session_state.sub_ajustes = "menu"; st.rerun()
+            st.button("← Volver a Ajustes", type="primary", on_click=lambda: st.session_state.update(sub_ajustes="menu"))
             st.markdown("</div>", unsafe_allow_html=True)
 
         elif st.session_state.sub_ajustes == "historial":
@@ -1333,5 +1327,5 @@ else:
                 
             st.write("")
             st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            if st.button("← Volver a Ajustes", type="primary"): st.session_state.sub_ajustes = "menu"; st.rerun()
+            st.button("← Volver a Ajustes", type="primary", on_click=lambda: st.session_state.update(sub_ajustes="menu"))
             st.markdown("</div>", unsafe_allow_html=True)

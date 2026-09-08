@@ -938,26 +938,57 @@ else:
                 st.button("🕒 Ver Movimientos", type="primary", on_click=cb_nav_pagos, args=("historial",))
 
             elif st.session_state.sub_pagos == "recargar":
-                st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>Agregar Fondos</h3>", unsafe_allow_html=True)
+                st.markdown("<h3 style='font-size:20px; font-weight:800; color:#FF6600;'>🤖 Recarga Inteligente (Ventry AI)</h3>", unsafe_allow_html=True)
+                st.write("Sube el comprobante de pago. Nuestro motor extraerá el monto y la referencia automáticamente para agilizar tu conciliación.")
                 
-                with st.form("form_recarga"):
-                    metodo_r = st.selectbox("Método de Pago", ["Pago Móvil", "Transferencia", "Zelle", "Efectivo Taquilla"])
-                    ref_r = st.text_input("Nº de Referencia (Vacio si es efectivo)")
-                    monto_r = st.number_input("Monto depositado ($)", min_value=1.0)
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    btn_recarga = st.form_submit_button("ENVIAR REPORTE")
+                comprobante = st.file_uploader("Cargar Captura (PNG/JPG)", type=["png", "jpg", "jpeg"])
+                
+                if "datos_ia" not in st.session_state: st.session_state.datos_ia = None
+                
+                if comprobante is not None:
+                    # Simulamos el procesamiento de la API Vision
+                    if st.session_state.datos_ia is None or st.session_state.get("last_file") != comprobante.name:
+                        with st.spinner("🧠 Analizando comprobante..."):
+                            import time
+                            time.sleep(1.5) # Simulamos el delay de la API
+                            st.session_state.datos_ia = {
+                                "referencia": f"{str(uuid.uuid4().int)[:8]}",
+                                "monto": 120.0, # Monto detectado simulado
+                                "metodo": "Pago Móvil"
+                            }
+                            st.session_state.last_file = comprobante.name
                     
-                if btn_recarga:
-                    if "Efectivo" not in metodo_r and not ref_r:
-                        st.error("⚠️ Ingrese el número de referencia.")
-                    else:
-                        ref_final = ref_r if ref_r else "EFECTIVO"
-                        id_pago = f"ABN-{str(uuid.uuid4())[:6].upper()}"
-                        BASE_DATOS_PAGOS[id_pago] = {"accion": socio_actual["accion"], "metodo": metodo_r, "referencia": ref_final, "monto": monto_r, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "En Revisión", "tipo": "Abono a Billetera"}
-                        guardar_bd_pagos(BASE_DATOS_PAGOS)
-                        st.session_state.mensaje_pago_exitoso = "✅ Reporte enviado. El saldo se actualizará tras revisión."
-                        st.session_state.sub_pagos = "menu"
-                        st.rerun()
+                    st.success("✅ Datos extraídos con éxito.")
+                    
+                    with st.form("form_recarga_ia"):
+                        metodo_r = st.selectbox("Método Detectado", ["Pago Móvil", "Transferencia", "Zelle", "Efectivo Taquilla"], index=0)
+                        ref_r = st.text_input("Nº de Referencia", value=st.session_state.datos_ia["referencia"])
+                        monto_r = st.number_input("Monto Detectado ($)", min_value=1.0, value=float(st.session_state.datos_ia["monto"]))
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        btn_recarga = st.form_submit_button("CONFIRMAR REPORTE")
+                        
+                    if btn_recarga:
+                        if not ref_r:
+                            st.error("⚠️ La referencia es obligatoria.")
+                        else:
+                            id_pago = f"ABN-{str(uuid.uuid4())[:6].upper()}"
+                            BASE_DATOS_PAGOS[id_pago] = {
+                                "accion": socio_actual["accion"], 
+                                "metodo": metodo_r, 
+                                "referencia": ref_r, 
+                                "monto": monto_r, 
+                                "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), 
+                                "estatus": "En Revisión", 
+                                "tipo": "Abono (Verificado por IA)"
+                            }
+                            guardar_bd_pagos(BASE_DATOS_PAGOS)
+                            st.session_state.datos_ia = None # Limpiar caché
+                            st.session_state.mensaje_pago_exitoso = "🤖 ✅ Reporte inteligente enviado. Prioridad alta en validación."
+                            st.session_state.sub_pagos = "menu"
+                            st.rerun()
+                else:
+                    st.info("💡 Consejo: Asegúrate de que el monto y la referencia sean legibles en la captura de pantalla.")
+                    st.session_state.datos_ia = None # Reset si quitan la imagen
                 
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)

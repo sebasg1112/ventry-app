@@ -169,17 +169,24 @@ st.markdown("""
         display: flex !important; 
         flex-direction: row !important; 
         justify-content: space-between !important; 
-        align-items: center !important; 
+        align-items: stretch !important; 
         gap: 5px !important; 
         width: 100% !important;
     }
     
-    /* 🚫 FULMINADOR DE PUNTOS BLANCOS (RADIO CIRCLES) 🚫 */
-    div.stRadio [data-baseweb="radio"] { display: none !important; }
-    div.stRadio [role="radio"] { display: none !important; }
-    div.stRadio div[role="radiogroup"] > label > div:first-child { display: none !important; }
+    /* 🚫 FULMINADOR DE PUNTOS BLANCOS NATIVOS (RADIO CIRCLES) 🚫 */
+    div.stRadio div[role="radiogroup"] > label > input[type="radio"],
+    div.stRadio div[role="radiogroup"] > label > span,
+    div.stRadio div[role="radiogroup"] > label > div:first-child:not(:last-child) { 
+        display: none !important; 
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        position: absolute !important;
+        pointer-events: none !important;
+    }
 
-    /* Área clickeable expandida al 100% */
+    /* Área clickeable expandida al 100% y centrada */
     div.stRadio > div[role="radiogroup"] > label { 
         background: transparent !important; 
         border: none !important; 
@@ -188,15 +195,12 @@ st.markdown("""
         cursor: pointer; 
         position: relative; 
         flex: 1; 
-        display: flex; 
-        justify-content: center;
+        display: flex !important; 
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
         border-radius: 40px !important; 
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    }
-    div.stRadio div[role="radiogroup"] > label > div:last-child {
-        width: 100% !important;
-        display: flex !important;
-        justify-content: center !important;
     }
 
     /* ESTADO ACTIVO: Burbuja gris clara interior */
@@ -204,8 +208,14 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.12) !important; 
     }
 
-    /* Texto inferior de los botones */
-    div.stRadio > div[role="radiogroup"] > label div[data-testid="stMarkdownContainer"] p { 
+    /* Contenedor del Texto e Icono */
+    div.stRadio > div[role="radiogroup"] > label > div[data-testid="stMarkdownContainer"] {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+    }
+    
+    div.stRadio > div[role="radiogroup"] > label > div[data-testid="stMarkdownContainer"] p { 
         color: #A0A0A5 !important; 
         font-size: 11px !important; 
         font-weight: 500 !important; 
@@ -216,7 +226,6 @@ st.markdown("""
         justify-content: center;
         gap: 6px;
         margin: 0 !important;
-        width: 100%;
     }
     
     /* ESTADO ACTIVO: Color Naranja Ventry */
@@ -233,6 +242,7 @@ st.markdown("""
         height: 24px;
         background-color: currentColor; 
     }
+    
     /* SVG 1: Inicio (Casa) */
     div.stRadio > div[role="radiogroup"] > label:nth-child(1) div[data-testid="stMarkdownContainer"] p::before {
         -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3Cpolyline points='9 22 9 12 15 12 15 22'/%3E%3C/svg%3E") no-repeat center / contain;

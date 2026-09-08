@@ -1,7 +1,8 @@
 streamlit
-gspread
-opencv-python-headless
-pandas
 qrcode
-google-api-python-client
-google-auth
+opencv-python
+numpy
+gspread
+pandas
+google-generativeai
+pillow

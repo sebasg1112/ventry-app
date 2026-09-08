@@ -2,7 +2,6 @@ import streamlit as st
 from datetime import datetime, timedelta
 import qrcode
 from io import BytesIO
-import cv2
 import numpy as np
 import gspread
 import json

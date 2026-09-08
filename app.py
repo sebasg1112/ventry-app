@@ -52,7 +52,7 @@ st.markdown(f"""
     </head>
 """, unsafe_allow_html=True)
 
-# --- CSS AVANZADO: SOLID DARK MODE (RIAL CLONE) ---
+# --- CSS AVANZADO: SOLID DARK MODE (RIAL CLONE) + PÍLDORA FLOTANTE ---
 st.markdown("""
     <style>
     #MainMenu {display: none;}
@@ -107,17 +107,67 @@ st.markdown("""
     div[data-testid="stPopover"] > button { background-color: #1C1C1E !important; border: 1px solid rgba(255,255,255,0.05) !important; border-radius: 50% !important; color: #ffffff !important; font-size: 18px !important; padding: 8px !important; display: inline-block !important; margin-top: -5px; transition: transform 0.2s; }
     div[data-testid="stPopover"] > button:active { transform: scale(0.8); }
     
-    /* 🔴 BOTTOM NAV EDGE-TO-EDGE (COMO RIAL) */
+    /* BOTONES DEL MENÚ HUB (NATIVOS Y ESTILIZADOS COMO TARJETAS) */
+    .stButton>button[kind="tertiary"] {
+        background-color: #121212 !important; 
+        border: 1px solid #1C1C1E !important; 
+        padding: 18px 20px !important; 
+        border-radius: 16px !important; 
+        margin-bottom: 10px !important; 
+        color: #FFFFFF !important; 
+        font-weight: 600 !important; 
+        font-size: 15px !important; 
+        width: 100% !important;
+        display: flex !important;
+        justify-content: flex-start !important;
+        align-items: center !important;
+        box-shadow: none !important;
+        transition: all 0.2s ease;
+    }
+    .stButton>button[kind="tertiary"]:active {
+        background-color: #1C1C1E !important; 
+        transform: scale(0.98) !important;
+    }
+    .stButton>button[kind="tertiary"] div[data-testid="stMarkdownContainer"] { width: 100% !important; }
+    .stButton>button[kind="tertiary"] p {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+        margin: 0 !important;
+        font-size: 15px !important;
+    }
+    .stButton>button[kind="tertiary"] p::after {
+        content: '›';
+        color: #8E8E93;
+        font-size: 22px;
+        margin-left: auto;
+        font-weight: 400;
+        line-height: 1;
+    }
+
+    /* 💊 BOTTOM NAV - PÍLDORA FLOTANTE (ESTILO iOS) */
     div.stRadio { 
-        position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100% !important; 
-        background-color: #0A0A0A !important; border-top: 1px solid #1C1C1E !important; 
-        padding: 12px 0px 25px 0px !important; z-index: 99999 !important; 
+        position: fixed !important; 
+        bottom: 25px !important;
+        left: 50% !important; 
+        transform: translateX(-50%) !important; 
+        width: 90% !important; 
+        max-width: 400px !important; 
+        background-color: rgba(20, 20, 20, 0.75) !important; 
+        backdrop-filter: blur(15px) !important; 
+        -webkit-backdrop-filter: blur(15px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important; 
+        border-radius: 40px !important; 
+        padding: 8px 5px !important; 
+        z-index: 99999 !important; 
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
     }
     div.stRadio > div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-evenly !important; align-items: center !important; gap: 0 !important; width:100% !important;}
     div.stRadio > div[role="radiogroup"] > label { background: transparent !important; border: none !important; padding: 6px 2px !important; margin: 0 !important; cursor: pointer; position: relative; flex:1; display:flex; justify-content:center;}
     div.stRadio > div[role="radiogroup"] > label > div:first-child, div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"], div.stRadio > div[role="radiogroup"] > label div[data-baseweb="radio"] { display: none !important; }
     div.stRadio > div[role="radiogroup"] > label div { color: #8E8E93 !important; font-size: 10px !important; font-weight: 600 !important; transition: all 0.2s ease; display:flex; flex-direction:column; align-items:center; gap:4px;}
-    div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div { color: #FFFFFF !important; font-weight: 700 !important; }
+    div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div { color: #FF6600 !important; font-weight: 800 !important; }
 
     /* TARJETAS FINANCIERAS (CLON RIAL) SÓLIDAS */
     .rial-card { background-color: #121212 !important; border: 1px solid #1C1C1E !important; padding: 20px; border-radius: 20px; text-align: left; margin-bottom: 15px; }
@@ -125,11 +175,6 @@ st.markdown("""
     .rial-saldo { color: #FFFFFF !important; font-size: 32px !important; font-weight: 800 !important; margin: 0 !important; letter-spacing: -1px; }
     .rial-monto-verde { color: #32d74b !important; }
     .rial-monto-rojo { color: #ff453a !important; }
-    
-    /* Items del Menú Hub */
-    .menu-item { background-color: #121212 !important; border: 1px solid #1C1C1E !important; padding: 18px 20px; border-radius: 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; color: #FFFFFF !important; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.2s;}
-    .menu-item:active { background-color: #1C1C1E !important; transform: scale(0.98); }
-    .menu-icon { font-size: 20px; margin-right: 12px; }
     
     /* BOTÓN GARITA GIGANTE */
     .open-button-container { display: flex; justify-content: center; margin-top: 50px; margin-bottom: 30px;}
@@ -832,30 +877,20 @@ else:
             """, unsafe_allow_html=True)
 
             if rol_actual in ["Titular", "Familiar"]:
-                st.markdown("<div class='menu-item' onclick='document.getElementById(\"btn_invitados\").click()'><div style='display:flex; align-items:center;'><span class='menu-icon'>🎟️</span> Pases e Invitados</div> <span style='color:#8E8E93;'>›</span></div>", unsafe_allow_html=True)
-                st.button("btn_invitados", key="btn_invitados", on_click=cb_set_menu, args=("invitados",), help="Oculto", type="secondary", use_container_width=True)
-                st.markdown("""<style>button[key="btn_invitados"] {display:none !important;}</style>""", unsafe_allow_html=True)
+                st.button("🎟️ Pases e Invitados", on_click=cb_set_menu, args=("invitados",), type="tertiary", use_container_width=True)
 
             if rol_actual == "Concesionario" or rol_actual == "Administrador":
-                st.markdown("<div class='menu-item' onclick='document.getElementById(\"btn_pos\").click()'><div style='display:flex; align-items:center;'><span class='menu-icon'>🛒</span> Ventry Pay (Punto de Venta)</div> <span style='color:#8E8E93;'>›</span></div>", unsafe_allow_html=True)
-                st.button("btn_pos", key="btn_pos", on_click=cb_set_menu, args=("pos",), help="Oculto")
-                st.markdown("""<style>button[key="btn_pos"] {display:none !important;}</style>""", unsafe_allow_html=True)
+                st.button("🛒 Ventry Pay (Punto de Venta)", on_click=cb_set_menu, args=("pos",), type="tertiary", use_container_width=True)
 
             if rol_actual == "Vigilante" or rol_actual == "Administrador":
-                st.markdown("<div class='menu-item' onclick='document.getElementById(\"btn_garita\").click()'><div style='display:flex; align-items:center;'><span class='menu-icon'>🛡️</span> Control de Garita</div> <span style='color:#8E8E93;'>›</span></div>", unsafe_allow_html=True)
-                st.button("btn_garita", key="btn_garita", on_click=cb_set_menu, args=("garita",), help="Oculto")
-                st.markdown("""<style>button[key="btn_garita"] {display:none !important;}</style>""", unsafe_allow_html=True)
+                st.button("🛡️ Control de Garita", on_click=cb_set_menu, args=("garita",), type="tertiary", use_container_width=True)
 
             if rol_actual == "Administrador":
-                st.markdown("<div class='menu-item' onclick='document.getElementById(\"btn_admin\").click()'><div style='display:flex; align-items:center;'><span class='menu-icon'>📊</span> Consola Administrativa VIP</div> <span style='color:#8E8E93;'>›</span></div>", unsafe_allow_html=True)
-                st.button("btn_admin", key="btn_admin", on_click=cb_set_menu, args=("admin",), help="Oculto")
-                st.markdown("""<style>button[key="btn_admin"] {display:none !important;}</style>""", unsafe_allow_html=True)
+                st.button("📊 Consola Administrativa VIP", on_click=cb_set_menu, args=("admin",), type="tertiary", use_container_width=True)
 
             st.markdown("<h4 style='color:#A0A0A0; font-size:13px; margin-top:25px; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;'>Cuenta</h4>", unsafe_allow_html=True)
             
-            st.markdown("<div class='menu-item' onclick='document.getElementById(\"btn_ajustes\").click()'><div style='display:flex; align-items:center;'><span class='menu-icon'>⚙️</span> Ajustes de Perfil</div> <span style='color:#8E8E93;'>›</span></div>", unsafe_allow_html=True)
-            st.button("btn_ajustes", key="btn_ajustes", on_click=cb_set_menu, args=("ajustes",), help="Oculto")
-            st.markdown("""<style>button[key="btn_ajustes"] {display:none !important;}</style>""", unsafe_allow_html=True)
+            st.button("⚙️ Ajustes de Perfil", on_click=cb_set_menu, args=("ajustes",), type="tertiary", use_container_width=True)
 
             st.write("---")
             st.markdown("<div class='btn-logout'>", unsafe_allow_html=True)

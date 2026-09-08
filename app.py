@@ -1441,10 +1441,41 @@ else:
                 with col_admin1:
                     st.markdown("<h4 style='font-size:16px; color:#A0A0A0;'>💳 Conciliación Pendiente</h4>", unsafe_allow_html=True)
                     pagos_pendientes = {k: v for k, v in BASE_DATOS_PAGOS.items() if v["estatus"] == "En Revisión"}
+                    
                     if pagos_pendientes:
+                        # --- NUEVO: BOTÓN DE APROBACIÓN AUTOMÁTICA IA ---
+                        pagos_ia = {k: v for k, v in pagos_pendientes.items() if "Verificado por IA" in v.get("tipo", "")}
+                        if pagos_ia:
+                            st.markdown("<div style='background:rgba(255, 102, 0, 0.1); border:1px solid #FF6600; padding:15px; border-radius:15px; margin-bottom:15px;'>", unsafe_allow_html=True)
+                            st.markdown(f"<p style='color:#FF6600; font-weight:bold; margin:0 0 10px 0;'>🤖 Lote Inteligente: {len(pagos_ia)} pagos verificados.</p>", unsafe_allow_html=True)
+                            if st.button(f"⚡ Aprobar {len(pagos_ia)} Recargas IA", type="primary", use_container_width=True):
+                                for p_id, p_info in pagos_ia.items():
+                                    BASE_DATOS_PAGOS[p_id]["estatus"] = "Aprobado"
+                                    
+                                    nuevo_saldo = 0.0
+                                    for ced, info in BASE_DATOS_SOCIOS.items():
+                                        if str(info["accion"]) == str(p_info["accion"]) and info["rol"] == "Titular":
+                                            nuevo_saldo = float(info.get("saldo", 0)) + float(p_info['monto'])
+                                            BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
+                                            break
+                                            
+                                    nueva_solvencia = "Al dia" if nuevo_saldo >= 0 else "Moroso"
+                                    for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
+                                        if str(info_fam["accion"]) == str(p_info["accion"]):
+                                            BASE_DATOS_SOCIOS[ced_fam]["solvencia"] = nueva_solvencia
+                                            
+                                guardar_bd(BASE_DATOS_SOCIOS)
+                                guardar_bd_pagos(BASE_DATOS_PAGOS)
+                                st.toast(f"✅ {len(pagos_ia)} pagos aprobados automáticamente.", icon="🚀")
+                                st.rerun()
+                            st.markdown("</div>", unsafe_allow_html=True)
+                        
+                        # --- RENDERIZADO INDIVIDUAL MANUAL ---
                         for p_id, p_info in pagos_pendientes.items():
                             tipo_trans = p_info.get("tipo", "Abono a Billetera")
-                            with st.expander(f"Acción: {p_info['accion']} | ${p_info['monto']} ({p_info['metodo']}) - {tipo_trans}"):
+                            icono_ia = "🤖 " if "Verificado por IA" in tipo_trans else ""
+                            
+                            with st.expander(f"{icono_ia}Acción: {p_info['accion']} | ${p_info['monto']} ({p_info['metodo']})"):
                                 st.write(f"**Ref:** {p_info['referencia']} | **Fecha:** {p_info['fecha_reporte']}")
                                 btn_col1, btn_col2 = st.columns(2)
                                 with btn_col1:
@@ -1468,8 +1499,12 @@ else:
                                         st.toast("✅ Transacción aprobada.", icon="💰")
                                         st.rerun()
                                 with btn_col2:
-                                    if st.button("❌ Rechazar", key=f"rec_{p_id}"): BASE_DATOS_PAGOS[p_id]["estatus"] = "Rechazado"; guardar_bd_pagos(BASE_DATOS_PAGOS); st.rerun()
-                    else: st.success("No hay pagos pendientes de revisión.")
+                                    if st.button("❌ Rechazar", key=f"rec_{p_id}"): 
+                                        BASE_DATOS_PAGOS[p_id]["estatus"] = "Rechazado"
+                                        guardar_bd_pagos(BASE_DATOS_PAGOS)
+                                        st.rerun()
+                    else: 
+                        st.success("No hay pagos pendientes de revisión.")
 
                     st.write("")
                     st.markdown("<h4 style='font-size:16px; color:#A0A0A0;'>📥 Descargar Data (CSV)</h4>", unsafe_allow_html=True)

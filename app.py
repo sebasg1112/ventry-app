@@ -13,6 +13,8 @@ import urllib.parse
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import hmac
+import hashlib
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 icono_url = "https://i.ibb.co/t7xWXXR/logo.png"
@@ -226,6 +228,7 @@ st.markdown("""
         justify-content: center;
         gap: 6px;
         margin: 0 !important;
+        width: 100%;
     }
     
     /* ESTADO ACTIVO: Color Naranja Ventry */
@@ -464,13 +467,33 @@ if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = N
 if "pantalla_auth" not in st.session_state: st.session_state.pantalla_auth = "login"
 
 # ==========================================
-# 🛑 INTERCEPTOR DE PASES DIGITALES Y API ESP32
+# 🛑 INTERCEPTOR DE PASES DIGITALES Y API ESP32 (CON CRIPTOGRAFÍA HMAC-SHA256)
 # ==========================================
 params = st.query_params
 
 if "api" in params and params["api"] == "scan" and "qr" in params:
     data_qr = params["qr"]
+    firma_recibida = params.get("sig", "")
     
+    # Llave secreta compartida entre Streamlit y el ESP32 (Cámbiala en producción)
+    SECRET_KEY = st.secrets.get("IOT_SECRET_KEY", "ventry_secreto_esp32_2026")
+    
+    # 🔒 Validación Criptográfica
+    firma_calculada = hmac.new(
+        SECRET_KEY.encode('utf-8'), 
+        data_qr.encode('utf-8'), 
+        hashlib.sha256
+    ).hexdigest()
+    
+    if not hmac.compare_digest(firma_calculada, firma_recibida):
+        st.json({
+            "status": "error", 
+            "open_door": False, 
+            "message": "Firma Criptográfica Inválida. Intento de intrusión bloqueado."
+        })
+        st.stop()
+    
+    # Si la firma cuadra perfectamente, procesamos el acceso
     if data_qr.startswith("INVITADO|"):
         id_pase = data_qr.split("|")[1]
         if id_pase in BASE_DATOS_INVITACIONES:
@@ -831,7 +854,6 @@ else:
                 let qrObj = null;
 
                 function generateQR() {{
-                    // Creamos el timestamp y concatenamos sin depender de Python
                     const timestamp = Math.floor(Date.now() / 1000);
                     const data = "VENTRY_DYN|" + cedula + "|" + timestamp;
                     
@@ -845,7 +867,6 @@ else:
                         correctLevel : QRCode.CorrectLevel.H
                     }});
                     
-                    // Resetear la animación de la barra
                     timeLeft = 60;
                     document.getElementById("timer-fill").style.transition = "none";
                     document.getElementById("timer-fill").style.width = "100%";
@@ -855,21 +876,18 @@ else:
                     }}, 50);
                 }}
 
-                // Loop que actualiza los segundos y regenera el QR al llegar a 0
                 setInterval(() => {{
                     timeLeft--;
                     document.getElementById("time-left").innerText = timeLeft;
                     if(timeLeft <= 0) {{ generateQR(); }}
                 }}, 1000);
 
-                // Arrancamos el primer QR
                 generateQR();
             </script>
         </body>
         </html>
         """
         
-        # Renderizamos el componente con la lógica offline inyectada
         import streamlit.components.v1 as components
         components.html(html_carnet, height=660)
         
@@ -946,14 +964,13 @@ else:
                 if "datos_ia" not in st.session_state: st.session_state.datos_ia = None
                 
                 if comprobante is not None:
-                    # Simulamos el procesamiento de la API Vision
                     if st.session_state.datos_ia is None or st.session_state.get("last_file") != comprobante.name:
                         with st.spinner("🧠 Analizando comprobante..."):
                             import time
-                            time.sleep(1.5) # Simulamos el delay de la API
+                            time.sleep(1.5) 
                             st.session_state.datos_ia = {
                                 "referencia": f"{str(uuid.uuid4().int)[:8]}",
-                                "monto": 120.0, # Monto detectado simulado
+                                "monto": 120.0, 
                                 "metodo": "Pago Móvil"
                             }
                             st.session_state.last_file = comprobante.name
@@ -982,13 +999,13 @@ else:
                                 "tipo": "Abono (Verificado por IA)"
                             }
                             guardar_bd_pagos(BASE_DATOS_PAGOS)
-                            st.session_state.datos_ia = None # Limpiar caché
+                            st.session_state.datos_ia = None 
                             st.session_state.mensaje_pago_exitoso = "🤖 ✅ Reporte inteligente enviado. Prioridad alta en validación."
                             st.session_state.sub_pagos = "menu"
                             st.rerun()
                 else:
                     st.info("💡 Consejo: Asegúrate de que el monto y la referencia sean legibles en la captura de pantalla.")
-                    st.session_state.datos_ia = None # Reset si quitan la imagen
+                    st.session_state.datos_ia = None 
                 
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)

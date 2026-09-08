@@ -15,6 +15,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import hmac
 import hashlib
+import google.generativeai as genai
+from PIL import Image
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 icono_url = "https://i.ibb.co/t7xWXXR/logo.png"
@@ -965,20 +967,50 @@ else:
                 
                 if comprobante is not None:
                     if st.session_state.datos_ia is None or st.session_state.get("last_file") != comprobante.name:
-                        with st.spinner("🧠 Analizando comprobante..."):
-                            import time
-                            time.sleep(1.5) 
-                            st.session_state.datos_ia = {
-                                "referencia": f"{str(uuid.uuid4().int)[:8]}",
-                                "monto": 120.0, 
-                                "metodo": "Pago Móvil"
-                            }
-                            st.session_state.last_file = comprobante.name
-                    
-                    st.success("✅ Datos extraídos con éxito.")
+                        with st.spinner("🧠 Visión Artificial analizando comprobante..."):
+                            try:
+                                # Configuración de Gemini AI
+                                clave_api = st.secrets.get("GEMINI_API_KEY", "")
+                                if not clave_api:
+                                    st.error("Falta configurar GEMINI_API_KEY en secrets.")
+                                    st.stop()
+                                    
+                                genai.configure(api_key=clave_api)
+                                modelo = genai.GenerativeModel('gemini-1.5-flash')
+                                
+                                img_ia = Image.open(comprobante)
+                                prompt_ia = """
+                                Analiza esta imagen de un comprobante bancario (Transferencia, Pago Móvil o Zelle).
+                                Extrae exactamente el número de referencia y el monto pagado.
+                                Devuelve ÚNICAMENTE un objeto JSON válido con este formato, sin comillas invertidas ni bloques de código markdown:
+                                {
+                                    "referencia": "numero_aqui",
+                                    "monto": 123.45
+                                }
+                                """
+                                respuesta = modelo.generate_content([prompt_ia, img_ia])
+                                texto_limpio = respuesta.text.strip().replace('```json', '').replace('```', '')
+                                datos_extraidos = json.loads(texto_limpio)
+                                
+                                st.session_state.datos_ia = {
+                                    "referencia": str(datos_extraidos.get("referencia", "")),
+                                    "monto": float(datos_extraidos.get("monto", 0.0)),
+                                    "metodo": "Transferencia / Pago Móvil" 
+                                }
+                                st.session_state.last_file = comprobante.name
+                                st.success("✅ Extracción óptica completada.")
+                                
+                            except Exception as e:
+                                st.error(f"❌ La IA no pudo leer el recibo con claridad. Por favor ingresa los datos manualmente. (Detalle: {e})")
+                                st.session_state.datos_ia = {
+                                    "referencia": "",
+                                    "monto": 0.0,
+                                    "metodo": "Pago Móvil"
+                                }
+                                st.session_state.last_file = comprobante.name
                     
                     with st.form("form_recarga_ia"):
-                        metodo_r = st.selectbox("Método Detectado", ["Pago Móvil", "Transferencia", "Zelle", "Efectivo Taquilla"], index=0)
+                        metodo_r = st.selectbox("Método de Pago", ["Pago Móvil", "Transferencia", "Zelle", "Efectivo Taquilla"], index=0)
                         ref_r = st.text_input("Nº de Referencia", value=st.session_state.datos_ia["referencia"])
                         monto_r = st.number_input("Monto Detectado ($)", min_value=1.0, value=float(st.session_state.datos_ia["monto"]))
                         st.markdown("<br>", unsafe_allow_html=True)

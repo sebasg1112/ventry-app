@@ -52,7 +52,7 @@ st.markdown(f"""
     </head>
 """, unsafe_allow_html=True)
 
-# --- CSS AVANZADO: SOLID DARK MODE (RIAL CLONE) + PÍLDORA FLOTANTE ---
+# --- CSS AVANZADO: SOLID DARK MODE (RIAL CLONE) + PÍLDORA LIQUID GLASS ---
 st.markdown("""
     <style>
     #MainMenu {display: none;}
@@ -94,7 +94,7 @@ st.markdown("""
     div[data-baseweb="popover"] > div, div[data-baseweb="menu"] *, ul[role="listbox"] *, li[role="option"] *, div[role="dialog"] *, div[data-baseweb="calendar"] * { background-color: #1C1C1E !important; color: #ffffff !important; border-radius: 12px; }
     li[role="option"]:hover *, li[role="option"][aria-selected="true"] * { background-color: #FF6600 !important; color: #ffffff !important; }
 
-    /* BOTONES */
+    /* BOTONES PRIMARIOS Y SECUNDARIOS */
     .stButton>button[kind="primary"], .stFormSubmitButton>button { width: 100%; border-radius: 16px !important; background: linear-gradient(135deg, #FF7B00 0%, #E65C00 100%) !important; color: #ffffff !important; font-weight: 700 !important; letter-spacing: 0.8px; font-size: 15px !important; border: none !important; padding: 14px !important; box-shadow: 0 4px 15px rgba(230, 92, 0, 0.3) !important; transition: transform 0.15s ease; justify-content: center !important; text-transform: uppercase; }
     .stButton>button[kind="primary"]:active, .stFormSubmitButton>button:active { transform: scale(0.96) !important; }
     
@@ -146,28 +146,99 @@ st.markdown("""
         line-height: 1;
     }
 
-    /* 💊 BOTTOM NAV - PÍLDORA FLOTANTE (ESTILO iOS) */
+    /* 💊 BOTTOM NAV - PÍLDORA LIQUID GLASS EFFECT (SVG ICONS) */
     div.stRadio { 
         position: fixed !important; 
         bottom: 25px !important;
         left: 50% !important; 
         transform: translateX(-50%) !important; 
-        width: 90% !important; 
-        max-width: 400px !important; 
-        background-color: rgba(20, 20, 20, 0.75) !important; 
-        backdrop-filter: blur(15px) !important; 
-        -webkit-backdrop-filter: blur(15px) !important;
+        width: 92% !important; 
+        max-width: 380px !important; 
+        background: rgba(30, 30, 30, 0.5) !important; 
+        backdrop-filter: blur(25px) saturate(180%) !important; 
+        -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important; 
-        border-radius: 40px !important; 
-        padding: 8px 5px !important; 
+        border-radius: 50px !important; 
+        padding: 6px !important; 
         z-index: 99999 !important; 
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6) !important;
     }
-    div.stRadio > div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-evenly !important; align-items: center !important; gap: 0 !important; width:100% !important;}
-    div.stRadio > div[role="radiogroup"] > label { background: transparent !important; border: none !important; padding: 6px 2px !important; margin: 0 !important; cursor: pointer; position: relative; flex:1; display:flex; justify-content:center;}
-    div.stRadio > div[role="radiogroup"] > label > div:first-child, div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"], div.stRadio > div[role="radiogroup"] > label div[data-baseweb="radio"] { display: none !important; }
-    div.stRadio > div[role="radiogroup"] > label div { color: #8E8E93 !important; font-size: 10px !important; font-weight: 600 !important; transition: all 0.2s ease; display:flex; flex-direction:column; align-items:center; gap:4px;}
-    div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div { color: #FF6600 !important; font-weight: 800 !important; }
+    div.stRadio > div[role="radiogroup"] { 
+        display: flex !important; 
+        flex-direction: row !important; 
+        justify-content: space-between !important; 
+        align-items: center !important; 
+        gap: 5px !important; 
+        width: 100% !important;
+    }
+    div.stRadio > div[role="radiogroup"] > label { 
+        background: transparent !important; 
+        border: none !important; 
+        padding: 10px 0px !important; 
+        margin: 0 !important; 
+        cursor: pointer; 
+        position: relative; 
+        flex: 1; 
+        display: flex; 
+        justify-content: center;
+        border-radius: 40px !important; 
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    div.stRadio > div[role="radiogroup"] > label > div:first-child, 
+    div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"], 
+    div.stRadio > div[role="radiogroup"] > label div[data-baseweb="radio"] { 
+        display: none !important; 
+    }
+    /* ESTADO ACTIVO: Burbuja gris clara interior */
+    div.stRadio > div[role="radiogroup"] > label[data-checked="true"] { 
+        background: rgba(255, 255, 255, 0.12) !important; 
+    }
+    /* Texto inferior de los botones */
+    div.stRadio > div[role="radiogroup"] > label div[data-testid="stMarkdownContainer"] p { 
+        color: #A0A0A5 !important; 
+        font-size: 11px !important; 
+        font-weight: 500 !important; 
+        transition: all 0.2s ease; 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center;
+        gap: 6px;
+        margin: 0 !important;
+    }
+    /* ESTADO ACTIVO: Color Naranja Ventry */
+    div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div[data-testid="stMarkdownContainer"] p { 
+        color: #FF6600 !important; 
+        font-weight: 700 !important; 
+    }
+    /* INYECCIÓN DE ICONOS SVG VECTORIALES */
+    div.stRadio > div[role="radiogroup"] > label div[data-testid="stMarkdownContainer"] p::before {
+        content: '';
+        display: block;
+        width: 24px;
+        height: 24px;
+        background-color: currentColor; 
+    }
+    /* SVG 1: Inicio (Casa) */
+    div.stRadio > div[role="radiogroup"] > label:nth-child(1) div[data-testid="stMarkdownContainer"] p::before {
+        -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3Cpolyline points='9 22 9 12 15 12 15 22'/%3E%3C/svg%3E") no-repeat center / contain;
+        mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3Cpolyline points='9 22 9 12 15 12 15 22'/%3E%3C/svg%3E") no-repeat center / contain;
+    }
+    /* SVG 2: Carnet (ID Card) */
+    div.stRadio > div[role="radiogroup"] > label:nth-child(2) div[data-testid="stMarkdownContainer"] p::before {
+        -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='6' width='20' height='12' rx='2'/%3E%3Ccircle cx='8' cy='12' r='2'/%3E%3Cline x1='13' y1='11' x2='18' y2='11'/%3E%3C/svg%3E") no-repeat center / contain;
+        mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='6' width='20' height='12' rx='2'/%3E%3Ccircle cx='8' cy='12' r='2'/%3E%3Cline x1='13' y1='11' x2='18' y2='11'/%3E%3C/svg%3E") no-repeat center / contain;
+    }
+    /* SVG 3: Finanzas (Tarjeta de Crédito) */
+    div.stRadio > div[role="radiogroup"] > label:nth-child(3) div[data-testid="stMarkdownContainer"] p::before {
+        -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='1' y='4' width='22' height='16' rx='2' ry='2'/%3E%3Cline x1='1' y1='10' x2='23' y2='10'/%3E%3C/svg%3E") no-repeat center / contain;
+        mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='1' y='4' width='22' height='16' rx='2' ry='2'/%3E%3Cline x1='1' y1='10' x2='23' y2='10'/%3E%3C/svg%3E") no-repeat center / contain;
+    }
+    /* SVG 4: Menú (Cuadrícula) */
+    div.stRadio > div[role="radiogroup"] > label:nth-child(4) div[data-testid="stMarkdownContainer"] p::before {
+        -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='7' height='7' rx='1'/%3E%3Crect x='14' y='3' width='7' height='7' rx='1'/%3E%3Crect x='14' y='14' width='7' height='7' rx='1'/%3E%3Crect x='3' y='14' width='7' height='7' rx='1'/%3E%3C/svg%3E") no-repeat center / contain;
+        mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='7' height='7' rx='1'/%3E%3Crect x='14' y='3' width='7' height='7' rx='1'/%3E%3Crect x='14' y='14' width='7' height='7' rx='1'/%3E%3Crect x='3' y='14' width='7' height='7' rx='1'/%3E%3C/svg%3E") no-repeat center / contain;
+    }
 
     /* TARJETAS FINANCIERAS (CLON RIAL) SÓLIDAS */
     .rial-card { background-color: #121212 !important; border: 1px solid #1C1C1E !important; padding: 20px; border-radius: 20px; text-align: left; margin-bottom: 15px; }
@@ -646,12 +717,10 @@ else:
                 for n in notificaciones[:5]: st.markdown(f"<div style='background:#1C1C1E; padding:12px; border-radius:10px; margin-bottom:8px; font-size:13px; border-left:3px solid #FF6600;'>{n}</div>", unsafe_allow_html=True)
             else: st.write("No tienes notificaciones nuevas.")
 
-    # --- MENÚ INFERIOR (PÍLDORA FINTECH CON 4 OPCIONES MÁXIMO) ---
+    # --- MENÚ INFERIOR (PÍLDORA FINTECH CON SVG) ---
     opciones_bottom = ["Inicio", "Carnet", "Finanzas", "Menú"]
-    iconos_menu = {"Inicio": "🏠 Inicio", "Carnet": "🪪 Carnet", "Finanzas": "💳 Finanzas", "Menú": "☰ Menú"}
-
-    modulo_seleccionado_raw = st.radio("Nav", opciones_bottom, horizontal=True, label_visibility="collapsed", format_func=lambda x: iconos_menu.get(x, x))
-    modulo_seleccionado = modulo_seleccionado_raw
+    
+    modulo_seleccionado = st.radio("Nav", opciones_bottom, horizontal=True, label_visibility="collapsed")
 
     if modulo_seleccionado != "Menú": st.session_state.menu_view = "main"
 
@@ -1290,7 +1359,7 @@ else:
                             if busqueda_admin.lower() in str(info['accion']).lower() or \
                                busqueda_admin.lower() in str(ced).lower() or \
                                busqueda_admin.lower() in str(info['nombre']).lower():
-                                acciones_encontradas.add(info['accion'])
+                               acciones_encontradas.add(info['accion'])
                     else:
                         acciones_encontradas = set(d["accion"] for d in BASE_DATOS_SOCIOS.values())
                     

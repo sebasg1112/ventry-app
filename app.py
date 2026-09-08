@@ -768,39 +768,112 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Simular Apertura (Demo ESP32)", type="primary"): st.success("📡 Señal de apertura enviada a la garita.")
 
-    # --- MÓDULO 2: CARNET DIGITAL ---
+    # --- MÓDULO 2: CARNET DIGITAL (100% OFFLINE CLIENT-SIDE) ---
     elif modulo_seleccionado == "Carnet":
         solvencia = socio_actual.get('solvencia', 'Desconocido')
         if solvencia == "Moroso": st.error("⚠️ Tu grupo familiar presenta un saldo pendiente.")
+        
         if solvencia == "Al dia": clase_badge = "badge-aldia"; texto_badge = "AL DÍA"
         elif solvencia == "Pendiente": clase_badge = "badge-pendiente"; texto_badge = "PENDIENTE"
         else: clase_badge = "badge-moroso"; texto_badge = "MOROSO"
 
-        timestamp_actual = int(datetime.now().timestamp())
-        datos_qr = f"VENTRY_DYN|{socio_actual['cedula']}|{timestamp_actual}"
-        
-        img = qrcode.make(datos_qr)
-        buffer = BytesIO()
-        img.save(buffer, format="PNG")
-        img_str = base64.b64encode(buffer.getvalue()).decode()
+        # INYECCIÓN HTML/JS: El teléfono genera el QR sin pedirle permiso a Python
+        html_carnet = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+            <style>
+                body {{ background-color: transparent; margin: 0; font-family: -apple-system, sans-serif; display: flex; justify-content: center; }}
+                .glass-card {{ background-color: #121212; border: 1px solid #1C1C1E; border-radius: 24px; padding: 40px 30px; width: 100%; max-width: 360px; position: relative; overflow: hidden; }}
+                .magnum-logo {{ text-align: center; margin-bottom: 30px; }}
+                .logo-m {{ font-size: 55px; font-weight: 200; margin: 0; line-height: 1; color: #ffffff; text-align:center; }}
+                .logo-magnum {{ font-size: 15px; font-weight: 700; letter-spacing: 6px; margin: 5px 0 0 0; color: #ffffff; text-align:center; }}
+                .logo-city {{ font-size: 9px; font-weight: 600; letter-spacing: 3px; color: #d4af37; margin: 0; text-transform: uppercase; text-align:center; }} 
+                .logo-line {{ width: 40px; height: 2px; background-color: #d4af37; margin: 15px auto 30px auto; border-radius: 2px; }}
+                .info-group {{ margin-bottom: 16px; border-bottom: 1px solid #1C1C1E; padding-bottom: 8px; }}
+                .info-label {{ font-size: 11px; color: #8E8E93; margin-bottom: 2px; text-transform: uppercase; font-weight: 600; }}
+                .info-value {{ font-size: 18px; font-weight: 600; color: #ffffff; margin: 0; }}
+                .qr-container {{ text-align: center; margin-top: 35px; }}
+                .qr-box {{ background: #ffffff; padding: 12px; border-radius: 16px; display: inline-block; margin-bottom: 15px; }}
+                .status-badge {{ display: inline-block; padding: 6px 20px; border-radius: 30px; font-size: 11px; font-weight: 800; color: #000; letter-spacing: 1px; text-transform: uppercase; }}
+                .badge-aldia {{ background-color: #32d74b !important; color:#000; }}
+                .badge-moroso {{ background-color: #ff453a !important; color:#fff; }}
+                .badge-pendiente {{ background-color: #ffd60a !important; color:#000; }}
+                /* Barra de progreso OTP */
+                #timer-bar {{ width: 100%; height: 4px; background: #1C1C1E; border-radius: 2px; margin-top: 20px; overflow: hidden; }}
+                #timer-fill {{ height: 100%; width: 100%; background: #FF6600; transition: width 1s linear; }}
+            </style>
+        </head>
+        <body>
+            <div class="glass-card">
+                <div class="magnum-logo">
+                    <p class="logo-m">M</p>
+                    <p class="logo-magnum">MAGNUM</p>
+                    <p class="logo-city">CITY CLUB</p>
+                    <div class="logo-line"></div>
+                </div>
+                <div class="info-group"><p class="info-label">Socio</p><p class="info-value">{socio_actual['nombre']}</p></div>
+                <div class="info-group"><p class="info-label">Cédula</p><p class="info-value">{socio_actual['cedula']}</p></div>
+                <div class="info-group"><p class="info-label">Acción</p><p class="info-value">{socio_actual['accion']} <span style="font-size:13px; color:#8E8E93; font-weight:500;">({socio_actual['rol']})</span></p></div>
+                
+                <div class="qr-container">
+                    <div class="qr-box" id="qr-code"></div>
+                    <br><span class="status-badge {clase_badge}">{texto_badge}</span>
+                    <div id="timer-bar"><div id="timer-fill"></div></div>
+                    <p style="color:#8E8E93; font-size:10px; margin-top:8px; font-weight:600; letter-spacing: 0.5px;">NUEVO CÓDIGO EN <span id="time-left" style="color:#FF6600;">60</span>S</p>
+                </div>
+            </div>
 
-        st.markdown(f"""
-<div class="dark-wrapper">
-<div class="glass-card">
-<div class="magnum-logo">
-<p class="logo-m">M</p>
-<p class="logo-magnum">MAGNUM</p>
-<p class="logo-city">CITY CLUB</p>
-<div class="logo-line"></div>
-</div>
-<div class="info-group"><p class="info-label">Socio</p><p class="info-value">{socio_actual['nombre']}</p></div>
-<div class="info-group"><p class="info-label">Cédula</p><p class="info-value">{socio_actual['cedula']}</p></div>
-<div class="info-group"><p class="info-label">Acción</p><p class="info-value">{socio_actual['accion']} <span style="font-size:13px; color:#8E8E93; font-weight:500;">({socio_actual['rol']})</span></p></div>
-<div class="qr-container"><div class="qr-box"><img src="data:image/png;base64,{img_str}"></div><br><span class="status-badge {clase_badge}">{texto_badge}</span></div>
-</div></div>
-""", unsafe_allow_html=True)
-        st.info("⏱️ Código dinámico. Se regenera cada 60s para evitar clonaciones.")
-        if st.button("🔄 Actualizar Código", type="primary"): st.rerun()
+            <script>
+                const cedula = "{socio_actual['cedula']}";
+                let timeLeft = 60;
+                let qrObj = null;
+
+                function generateQR() {{
+                    // Creamos el timestamp y concatenamos sin depender de Python
+                    const timestamp = Math.floor(Date.now() / 1000);
+                    const data = "VENTRY_DYN|" + cedula + "|" + timestamp;
+                    
+                    document.getElementById("qr-code").innerHTML = "";
+                    qrObj = new QRCode(document.getElementById("qr-code"), {{
+                        text: data,
+                        width: 150,
+                        height: 150,
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    }});
+                    
+                    // Resetear la animación de la barra
+                    timeLeft = 60;
+                    document.getElementById("timer-fill").style.transition = "none";
+                    document.getElementById("timer-fill").style.width = "100%";
+                    setTimeout(() => {{
+                        document.getElementById("timer-fill").style.transition = "width 60s linear";
+                        document.getElementById("timer-fill").style.width = "0%";
+                    }}, 50);
+                }}
+
+                // Loop que actualiza los segundos y regenera el QR al llegar a 0
+                setInterval(() => {{
+                    timeLeft--;
+                    document.getElementById("time-left").innerText = timeLeft;
+                    if(timeLeft <= 0) {{ generateQR(); }}
+                }}, 1000);
+
+                // Arrancamos el primer QR
+                generateQR();
+            </script>
+        </body>
+        </html>
+        """
+        
+        # Renderizamos el componente con la lógica offline inyectada
+        import streamlit.components.v1 as components
+        components.html(html_carnet, height=660)
+        
+        st.info("💡 Este carnet es autónomo: Se regenera solo sin usar datos móviles cada 60s.")
 
     # --- MÓDULO 3: FINANZAS ---
     elif modulo_seleccionado == "Finanzas":

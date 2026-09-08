@@ -1427,30 +1427,59 @@ else:
                 tasa_morosidad = (morosos_count / total_acciones * 100) if total_acciones > 0 else 0
                 capital_riesgo = sum([abs(float(info.get("saldo", 0))) for info in BASE_DATOS_SOCIOS.values() if info["rol"] == "Titular" and float(info.get("saldo", 0)) < 0])
 
-                col_k1, col_k2, col_k3 = st.columns(3)
-                with col_k1: st.markdown(f'<div class="rial-card"><p class="rial-title">Familias Activas</p><h3 class="rial-saldo" style="font-size:24px; margin:0;">{total_acciones}</h3></div>', unsafe_allow_html=True)
-                with col_k2: st.markdown(f'<div class="rial-card"><p class="rial-title">Tasa de Morosidad</p><h3 class="rial-saldo" style="color:{"#ff453a" if tasa_morosidad > 15 else "#FF6600"} !important; font-size:24px; margin:0;">{tasa_morosidad:.1f}%</h3></div>', unsafe_allow_html=True)
-                with col_k3: st.markdown(f'<div class="rial-card"><p class="rial-title">Capital por Cobrar</p><h3 class="rial-saldo rial-monto-verde" style="font-size:24px; margin:0;">${capital_riesgo:,.2f}</h3></div>', unsafe_allow_html=True)
+                # Nuevo: Ingresos del mes
+                ingresos_brutos = sum([float(p["monto"]) for p in BASE_DATOS_PAGOS.values() if p["estatus"] == "Aprobado" and mes_actual_str() in p.get("fecha_reporte", mes_actual_str())])
+
+                col_k1, col_k2, col_k3, col_k4 = st.columns(4)
+                with col_k1: st.markdown(f'<div class="rial-card"><p class="rial-title">Familias Activas</p><h3 class="rial-saldo" style="font-size:20px; margin:0;">{total_acciones}</h3></div>', unsafe_allow_html=True)
+                with col_k2: st.markdown(f'<div class="rial-card"><p class="rial-title">Morosidad</p><h3 class="rial-saldo" style="color:{"#ff453a" if tasa_morosidad > 15 else "#FF6600"} !important; font-size:20px; margin:0;">{tasa_morosidad:.1f}%</h3></div>', unsafe_allow_html=True)
+                with col_k3: st.markdown(f'<div class="rial-card"><p class="rial-title">Exposición (Deuda)</p><h3 class="rial-saldo rial-monto-rojo" style="font-size:20px; margin:0;">${capital_riesgo:,.2f}</h3></div>', unsafe_allow_html=True)
+                with col_k4: st.markdown(f'<div class="rial-card"><p class="rial-title">Caja Recaudada</p><h3 class="rial-saldo rial-monto-verde" style="font-size:20px; margin:0;">${ingresos_brutos:,.2f}</h3></div>', unsafe_allow_html=True)
                 st.write("---")
 
                 st.markdown("<h4 style='color:#A0A0A0; font-size:16px;'>📈 Inteligencia de Negocios (BI)</h4>", unsafe_allow_html=True)
-                col_chart1, col_chart2 = st.columns(2)
                 
+                # Fila 1 de gráficos
+                col_chart1, col_chart2 = st.columns(2)
                 with col_chart1:
                     st.markdown("<p style='font-size:12px; color:#888; text-transform:uppercase;'>Distribución de Solvencia</p>", unsafe_allow_html=True)
                     df_solvencia = pd.DataFrame({"Estatus": ["Al Día", "Morosos", "Pendiente"], "Total Familias": [len(acciones_al_dia), morosos_count, len(acciones_pendientes)]}).set_index("Estatus")
                     st.bar_chart(df_solvencia, color="#FF6600")
 
                 with col_chart2:
+                    st.markdown("<p style='font-size:12px; color:#888; text-transform:uppercase;'>Métodos de Pago Preferidos</p>", unsafe_allow_html=True)
+                    pagos_aprobados = [p for p in BASE_DATOS_PAGOS.values() if p["estatus"] == "Aprobado"]
+                    if pagos_aprobados:
+                        df_pagos = pd.DataFrame(pagos_aprobados)
+                        dist_metodos = df_pagos['metodo'].value_counts()
+                        st.bar_chart(dist_metodos, color="#32d74b")
+                    else:
+                        st.info("Sin datos de pagos suficientes.")
+
+                # Fila 2 de gráficos
+                col_chart3, col_chart4 = st.columns(2)
+                with col_chart3:
                     st.markdown("<p style='font-size:12px; color:#888; text-transform:uppercase;'>Flujo de Accesos (Garita)</p>", unsafe_allow_html=True)
                     if st.session_state.db_historial:
                         df_historial = pd.DataFrame(st.session_state.db_historial)
-                        df_accesos = df_historial['via'].value_counts().reset_index()
-                        df_accesos.columns = ['Método de Ingreso', 'Cantidad']
-                        df_accesos.set_index('Método de Ingreso', inplace=True)
-                        st.bar_chart(df_accesos, color="#32d74b")
+                        df_accesos = df_historial['via'].value_counts()
+                        st.bar_chart(df_accesos, color="#0A84FF")
                     else:
-                        st.info("Aún no hay datos de acceso suficientes para graficar.")
+                        st.info("Aún no hay datos de acceso.")
+                        
+                with col_chart4:
+                    st.markdown("<p style='font-size:12px; color:#888; text-transform:uppercase;'>Horas Pico de Entrada</p>", unsafe_allow_html=True)
+                    if st.session_state.db_historial:
+                        df_h = pd.DataFrame(st.session_state.db_historial)
+                        try:
+                            df_h['hora'] = pd.to_datetime(df_h['fecha'], format="%d/%m/%Y %H:%M:%S").dt.hour
+                            horas_pico = df_h['hora'].value_counts().sort_index()
+                            horas_pico.index = [f"{h:02d}:00" for h in horas_pico.index]
+                            st.line_chart(horas_pico, color="#FFD60A")
+                        except:
+                            st.info("Formato de fecha incompatible para graficar horas pico.")
+                    else:
+                        st.info("Aún no hay datos de acceso.")
 
                 st.write("---")
                 

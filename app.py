@@ -146,7 +146,9 @@ st.markdown("""
         line-height: 1;
     }
 
-    /* 💊 BOTTOM NAV - PÍLDORA LIQUID GLASS EFFECT (SVG ICONS) */
+    /* ========================================================= */
+    /* 💊 BOTTOM NAV - PÍLDORA LIQUID GLASS EFFECT (SVG ICONS)   */
+    /* ========================================================= */
     div.stRadio { 
         position: fixed !important; 
         bottom: 25px !important;
@@ -171,6 +173,13 @@ st.markdown("""
         gap: 5px !important; 
         width: 100% !important;
     }
+    
+    /* 🚫 FULMINADOR DE PUNTOS BLANCOS (RADIO CIRCLES) 🚫 */
+    div.stRadio [data-baseweb="radio"] { display: none !important; }
+    div.stRadio [role="radio"] { display: none !important; }
+    div.stRadio div[role="radiogroup"] > label > div:first-child { display: none !important; }
+
+    /* Área clickeable expandida al 100% */
     div.stRadio > div[role="radiogroup"] > label { 
         background: transparent !important; 
         border: none !important; 
@@ -184,15 +193,17 @@ st.markdown("""
         border-radius: 40px !important; 
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
-    div.stRadio > div[role="radiogroup"] > label > div:first-child, 
-    div.stRadio > div[role="radiogroup"] > label span[data-baseweb="radio"], 
-    div.stRadio > div[role="radiogroup"] > label div[data-baseweb="radio"] { 
-        display: none !important; 
+    div.stRadio div[role="radiogroup"] > label > div:last-child {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
     }
+
     /* ESTADO ACTIVO: Burbuja gris clara interior */
     div.stRadio > div[role="radiogroup"] > label[data-checked="true"] { 
         background: rgba(255, 255, 255, 0.12) !important; 
     }
+
     /* Texto inferior de los botones */
     div.stRadio > div[role="radiogroup"] > label div[data-testid="stMarkdownContainer"] p { 
         color: #A0A0A5 !important; 
@@ -205,12 +216,15 @@ st.markdown("""
         justify-content: center;
         gap: 6px;
         margin: 0 !important;
+        width: 100%;
     }
+    
     /* ESTADO ACTIVO: Color Naranja Ventry */
     div.stRadio > div[role="radiogroup"] > label[data-checked="true"] div[data-testid="stMarkdownContainer"] p { 
         color: #FF6600 !important; 
         font-weight: 700 !important; 
     }
+
     /* INYECCIÓN DE ICONOS SVG VECTORIALES */
     div.stRadio > div[role="radiogroup"] > label div[data-testid="stMarkdownContainer"] p::before {
         content: '';

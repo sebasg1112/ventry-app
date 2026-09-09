@@ -5,3 +5,4 @@ gspread
 pandas
 google-generativeai
 pillow
+opencv-python-headless

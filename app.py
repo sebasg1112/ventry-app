@@ -747,9 +747,17 @@ else:
 
     # --- MÓDULO 1: INICIO ---
     if modulo_seleccionado == "Inicio":
-        st.markdown("""
+        hora_actual = datetime.now().hour
+        if 5 <= hora_actual < 12: saludo = "Buenos días"
+        elif 12 <= hora_actual < 19: saludo = "Buenas tardes"
+        else: saludo = "Buenas noches"
+        
+        primer_nombre = socio_actual['nombre'].split()[0]
+        
+        st.markdown(f"""
 <div style="text-align: center; margin-top: 0px;">
 <h2 style="margin-bottom: 5px; font-size:26px; font-weight:900; color:#ffffff; letter-spacing:0.5px;">Magnum City Club</h2>
+<p style="color: #FF6600; font-size:15px; font-weight:700; margin-bottom: 25px; letter-spacing: 0.5px;">{saludo}, {primer_nombre} 👋</p>
 <p style="color: #8E8E93; font-size:12px; text-transform:uppercase; letter-spacing:3px; font-weight:600;">Puerta Principal</p>
 <div class="open-button-container">
 <div class="open-button-glow">
@@ -763,7 +771,9 @@ else:
 </div>
 """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Simular Apertura (Demo ESP32)", type="primary"): st.success("📡 Señal de apertura enviada a la garita.")
+        if st.button("Simular Apertura (Demo ESP32)", type="primary"): 
+            st.success("📡 Señal de apertura enviada a la garita.")
+            st.balloons()
 
     # --- MÓDULO 2: CARNET DIGITAL ---
     elif modulo_seleccionado == "Carnet":
@@ -1359,6 +1369,27 @@ else:
 
             else:
                 res = st.session_state.garita_scan_result
+                
+                # --- MOTOR DE VOZ IA (TEXT-TO-SPEECH) ---
+                if res["status"] == "success":
+                    texto_voz = f"Acceso Autorizado. {res['detail']}"
+                else:
+                    texto_voz = f"Alerta de seguridad. {res['title']}."
+                
+                texto_limpio = texto_voz.replace("'", "").replace('"', '')
+                
+                html_voz = f"""
+                <script>
+                    let msg = new SpeechSynthesisUtterance("{texto_limpio}");
+                    msg.lang = "es-ES";
+                    msg.rate = 1.0; 
+                    msg.pitch = 1.1;
+                    window.speechSynthesis.speak(msg);
+                </script>
+                """
+                import streamlit.components.v1 as components
+                components.html(html_voz, height=0)
+
                 if res["status"] == "success":
                     st.markdown(f"""
                     <div class='garita-alert-success'>
@@ -1482,6 +1513,7 @@ else:
                                     for ced_fam, info_fam in BASE_DATOS_SOCIOS.items():
                                         if str(info_fam["accion"]) == str(p_info["accion"]):
                                             BASE_DATOS_SOCIOS[ced_fam]["solvencia"] = nueva_solvencia
+                                            
                                 guardar_bd(BASE_DATOS_SOCIOS); guardar_bd_pagos(BASE_DATOS_PAGOS); st.toast(f"✅ {len(pagos_ia)} pagos aprobados automáticamente.", icon="🚀"); st.rerun()
                             st.markdown("</div>", unsafe_allow_html=True)
                         

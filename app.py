@@ -1225,15 +1225,22 @@ else:
             st.button("← Volver al Menú", type="primary", on_click=cb_set_menu, args=("main",))
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # SUB-VISTA: VENTRY PAY (POS LOGICA COMPLETA - SIN CV2)
+        # SUB-VISTA: VENTRY PAY (POS LOGICA COMPLETA Y TÁCTIL)
         elif st.session_state.menu_view == "pos":
-            st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff;'>Ventry Pay <span style='font-size:14px; color:#A0A0A0;'>(Punto de Venta)</span></h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff;'>Ventry Pay <span style='font-size:14px; color:#A0A0A0;'>(POS Táctil)</span></h3>", unsafe_allow_html=True)
             st.write(f"Concesionario: **{socio_actual['nombre']}**")
             
             if "pos_cliente_cedula" not in st.session_state:
                 st.session_state.pos_cliente_cedula = None
                 st.session_state.pos_cliente_nombre = None
                 st.session_state.pos_cliente_accion = None
+            if "carrito_pos" not in st.session_state:
+                st.session_state.carrito_pos = []
+
+            def cb_agregar_item(nombre_item, precio_item):
+                st.session_state.carrito_pos.append({"item": nombre_item, "precio": precio_item})
+            def cb_limpiar_carrito():
+                st.session_state.carrito_pos = []
 
             if st.session_state.pos_cliente_cedula is None:
                 data_qr = st.text_input("🔫 Escáner de Carnet (Pistola USB/Bluetooth):", placeholder="Dispare aquí...")
@@ -1253,6 +1260,7 @@ else:
                                 st.session_state.pos_cliente_cedula = cedula_qr
                                 st.session_state.pos_cliente_nombre = socio_qr['nombre']
                                 st.session_state.pos_cliente_accion = socio_qr['accion']
+                                st.session_state.carrito_pos = [] # Limpiar carrito al nuevo cliente
                                 st.rerun()
                             else: st.error("❌ Socio no encontrado.")
                         except: st.error("❌ Código QR Ilegible.")
@@ -1270,40 +1278,74 @@ else:
                     <p class='rial-title'>Socio Escaneado</p>
                     <h4 style='color:#fff; margin-bottom:2px;'>{st.session_state.pos_cliente_nombre}</h4>
                     <p style='color:#FF6600; font-weight:bold; margin-bottom:20px; font-size:12px;'>Acción {st.session_state.pos_cliente_accion}</p>
-                    <p class='rial-title'>Fondo Familiar Disponible</p>
-                    <h3 class='rial-saldo' style='color:#FF6600 !important;'>${saldo_fam:.2f}</h3>
+                    <div style='display:flex; justify-content:space-between; align-items:center;'>
+                        <div>
+                            <p class='rial-title' style='margin:0;'>Fondo Disponible</p>
+                            <h3 class='rial-saldo' style='color:#FF6600 !important;'>${saldo_fam:.2f}</h3>
+                        </div>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                with st.form("form_cobro_pos"):
-                    concepto = st.text_input("Concepto de Consumo (Ej. Hamburguesas)")
-                    monto_cobro = st.number_input("Monto a debitar ($)", min_value=0.1, step=1.0)
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    btn_cobrar = st.form_submit_button("PROCESAR PAGO VENTRY")
+                # --- CATÁLOGO DE PRODUCTOS (INTERFAZ TÁCTIL) ---
+                st.markdown("<h4 style='font-size:14px; color:#A0A0A0; margin-top:15px; text-transform:uppercase;'>Catálogo Rápido</h4>", unsafe_allow_html=True)
+                
+                col_p1, col_p2, col_p3 = st.columns(3)
+                with col_p1: st.button("🍔 Burger\n$5.00", on_click=cb_agregar_item, args=("🍔 Hamburguesa", 5.0), use_container_width=True)
+                with col_p2: st.button("🍺 Cerveza\n$2.00", on_click=cb_agregar_item, args=("🍺 Cerveza Polar", 2.0), use_container_width=True)
+                with col_p3: st.button("🥤 Soda\n$1.50", on_click=cb_agregar_item, args=("🥤 Refresco", 1.5), use_container_width=True)
+                
+                col_p4, col_p5, col_p6 = st.columns(3)
+                with col_p4: st.button("🍟 Papas\n$3.00", on_click=cb_agregar_item, args=("🍟 Ración de Papas", 3.0), use_container_width=True)
+                with col_p5: st.button("🍕 Pizza\n$12.00", on_click=cb_agregar_item, args=("🍕 Pizza Familiar", 12.0), use_container_width=True)
+                with col_p6: st.button("☕ Café\n$1.00", on_click=cb_agregar_item, args=("☕ Café Espresso", 1.0), use_container_width=True)
+
+                total_cuenta = sum(item["precio"] for item in st.session_state.carrito_pos)
+
+                if st.session_state.carrito_pos:
+                    st.markdown("<h4 style='font-size:14px; color:#A0A0A0; margin-top:20px; text-transform:uppercase;'>Cuenta Actual</h4>", unsafe_allow_html=True)
                     
-                if btn_cobrar:
-                    if not concepto: st.error("⚠️ Ingrese el concepto del cobro.")
-                    elif saldo_fam < monto_cobro: st.error("❌ Transacción Rechazada: Saldo insuficiente en el Fondo Familiar.")
-                    else:
-                        nuevo_saldo = saldo_fam - monto_cobro
-                        for ced, info in BASE_DATOS_SOCIOS.items():
-                            if str(info["accion"]) == str(st.session_state.pos_cliente_accion) and info["rol"] == "Titular":
-                                BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
-                                break
-                        guardar_bd(BASE_DATOS_SOCIOS)
-                        
-                        id_consumo = f"PAY-{str(uuid.uuid4())[:6].upper()}"
-                        BASE_DATOS_PAGOS[id_consumo] = {"accion": st.session_state.pos_cliente_accion, "metodo": "Ventry Pay", "referencia": f"Tienda: {socio_actual['nombre']}", "monto": monto_cobro, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "Aprobado", "tipo": f"Consumo: {concepto}"}
-                        guardar_bd_pagos(BASE_DATOS_PAGOS)
-                        
-                        st.toast("✅ Transacción Exitosa.")
-                        st.session_state.pos_cliente_cedula = None
-                        st.rerun()
+                    for idx, producto in enumerate(st.session_state.carrito_pos):
+                        st.markdown(f"<div style='display:flex; justify-content:space-between; border-bottom:1px solid #1C1C1E; padding:8px 0;'><span>{producto['item']}</span><b style='color:#32d74b;'>${producto['precio']:.2f}</b></div>", unsafe_allow_html=True)
+                    
+                    st.markdown(f"<div style='display:flex; justify-content:space-between; padding:15px 0; margin-bottom:10px;'><span style='font-size:20px; font-weight:800;'>TOTAL:</span><b style='color:#FF6600; font-size:24px;'>${total_cuenta:.2f}</b></div>", unsafe_allow_html=True)
+
+                    btn_c1, btn_c2 = st.columns([3, 1])
+                    with btn_c1:
+                        if st.button(f"💸 COBRAR ${total_cuenta:.2f}", type="primary", use_container_width=True):
+                            if saldo_fam < total_cuenta:
+                                st.error("❌ Transacción Rechazada: Saldo insuficiente en el Fondo Familiar.")
+                            else:
+                                nuevo_saldo = saldo_fam - total_cuenta
+                                for ced, info in BASE_DATOS_SOCIOS.items():
+                                    if str(info["accion"]) == str(st.session_state.pos_cliente_accion) and info["rol"] == "Titular":
+                                        BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo
+                                        break
+                                guardar_bd(BASE_DATOS_SOCIOS)
+                                
+                                desglose = ", ".join([p["item"].split(" ")[0] for p in st.session_state.carrito_pos]) # Solo guarda los emojis para resumir
+                                
+                                id_consumo = f"PAY-{str(uuid.uuid4())[:6].upper()}"
+                                BASE_DATOS_PAGOS[id_consumo] = {
+                                    "accion": st.session_state.pos_cliente_accion, "metodo": "Ventry Pay", 
+                                    "referencia": f"Tienda: {socio_actual['nombre']}", "monto": total_cuenta, 
+                                    "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "Aprobado", 
+                                    "tipo": f"Consumo: {desglose}"
+                                }
+                                guardar_bd_pagos(BASE_DATOS_PAGOS)
+                                
+                                st.toast("✅ Transacción Exitosa. Cobro debitado.")
+                                st.session_state.pos_cliente_cedula = None
+                                st.session_state.carrito_pos = []
+                                st.rerun()
+                    with btn_c2:
+                        st.button("🗑️", on_click=cb_limpiar_carrito, use_container_width=True, help="Vaciar carrito")
                         
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
                 if st.button("← Cancelar y Escanear a otro", type="primary"):
                     st.session_state.pos_cliente_cedula = None
+                    st.session_state.carrito_pos = []
                     st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
 

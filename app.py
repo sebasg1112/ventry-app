@@ -772,8 +772,7 @@ else:
 """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Simular Apertura (Demo ESP32)", type="primary"): 
-            st.success("📡 Señal de apertura enviada a la garita.")
-            st.balloons()
+            st.success("📡 Señal de apertura enviada a la garita de forma exitosa.")
 
     # --- MÓDULO 2: CARNET DIGITAL ---
     elif modulo_seleccionado == "Carnet":
@@ -1057,7 +1056,7 @@ else:
                     
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-                st.button("← Volver a Balances", type="primary", on_click=cb_nav_pagos, args=("menu",))
+                st.button("← Volver al Balances", type="primary", on_click=cb_nav_pagos, args=("menu",))
                 st.markdown("</div>", unsafe_allow_html=True)
 
     # --- MÓDULO 4: EL HUB ---
@@ -1168,7 +1167,7 @@ else:
             st.button("← Volver al Menú", type="primary", on_click=cb_set_menu, args=("main",))
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # VENTRY PAY
+        # VENTRY PAY (POS TÁCTIL + CANDADO PIN 4 DÍGITOS)
         elif st.session_state.menu_view == "pos":
             st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff;'>Ventry Pay <span style='font-size:14px; color:#A0A0A0;'>(POS Táctil)</span></h3>", unsafe_allow_html=True)
             st.write(f"Concesionario: **{socio_actual['nombre']}**")
@@ -1262,10 +1261,16 @@ else:
                     
                     st.markdown(f"<div style='display:flex; justify-content:space-between; padding:15px 0; margin-bottom:10px;'><span style='font-size:20px; font-weight:800;'>TOTAL:</span><b style='color:#FF6600; font-size:24px;'>${total_cuenta:.2f}</b></div>", unsafe_allow_html=True)
 
+                    # --- CANDADO FINANCIERO: PIN DE 4 DÍGITOS ---
+                    pin_seguridad = st.text_input("🔑 PIN de Autorización (4 dígitos del Socio)", type="password", max_chars=4, placeholder="••••")
+
                     btn_c1, btn_c2 = st.columns([3, 1])
                     with btn_c1:
                         if st.button(f"💸 COBRAR ${total_cuenta:.2f}", type="primary", use_container_width=True):
-                            if saldo_fam < total_cuenta:
+                            # Validación del PIN (Temporalmente acepta 1234 o la clave del socio)
+                            if pin_seguridad not in ["1234", str(socio_actual.get("clave", ""))]:
+                                st.error("❌ PIN de autorización incorrecto. Transacción denegada.")
+                            elif saldo_fam < total_cuenta:
                                 st.error("❌ Transacción Rechazada: Saldo insuficiente en el Fondo Familiar.")
                             else:
                                 nuevo_saldo = saldo_fam - total_cuenta

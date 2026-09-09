@@ -476,7 +476,7 @@ if "api" in params and params["api"] == "scan" and "qr" in params:
     data_qr = params["qr"]
     firma_recibida = params.get("sig", "")
     
-    # Llave secreta compartida entre Streamlit y el ESP32 (Cámbiala en producción)
+    # Llave secreta compartida entre Streamlit y el ESP32
     SECRET_KEY = st.secrets.get("IOT_SECRET_KEY", "ventry_secreto_esp32_2026")
     
     # 🔒 Validación Criptográfica
@@ -494,7 +494,6 @@ if "api" in params and params["api"] == "scan" and "qr" in params:
         })
         st.stop()
     
-    # Si la firma cuadra perfectamente, procesamos el acceso
     if data_qr.startswith("INVITADO|"):
         id_pase = data_qr.split("|")[1]
         if id_pase in BASE_DATOS_INVITACIONES:
@@ -801,7 +800,6 @@ else:
         elif solvencia == "Pendiente": clase_badge = "badge-pendiente"; texto_badge = "PENDIENTE"
         else: clase_badge = "badge-moroso"; texto_badge = "MOROSO"
 
-        # INYECCIÓN HTML/JS: El teléfono genera el QR sin pedirle permiso a Python
         html_carnet = f"""
         <!DOCTYPE html>
         <html>
@@ -968,7 +966,6 @@ else:
                     if st.session_state.datos_ia is None or st.session_state.get("last_file") != comprobante.name:
                         with st.spinner("🧠 Visión Artificial analizando comprobante..."):
                             try:
-                                # Configuración de Gemini AI
                                 clave_api = st.secrets.get("GEMINI_API_KEY", "")
                                 if not clave_api:
                                     st.error("Falta configurar GEMINI_API_KEY en secrets.")
@@ -1137,15 +1134,6 @@ else:
             
             st.button("⚙️ Ajustes de Perfil", on_click=cb_set_menu, args=("ajustes",), type="tertiary", use_container_width=True)
 
-            st.write("---")
-            st.markdown("<div class='btn-logout'>", unsafe_allow_html=True)
-            if st.button("Cerrar Sesión"):
-                st.session_state.logueado = False
-                st.session_state.usuario_actual = None
-                st.session_state.pantalla_auth = "login"
-                st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
-
         # SUB-VISTA: INVITADOS (LOGICA COMPLETA)
         elif st.session_state.menu_view == "invitados":
             st.markdown("<h3 style='font-size:22px; font-weight:800; color:#fff; margin-bottom: 20px;'>Pases y Accesos</h3>", unsafe_allow_html=True)
@@ -1237,7 +1225,7 @@ else:
             st.button("← Volver al Menú", type="primary", on_click=cb_set_menu, args=("main",))
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # SUB-VISTA: VENTRY PAY (POS LOGICA COMPLETA)
+        # SUB-VISTA: VENTRY PAY (POS LOGICA COMPLETA - SIN CV2)
         elif st.session_state.menu_view == "pos":
             st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff;'>Ventry Pay <span style='font-size:14px; color:#A0A0A0;'>(Punto de Venta)</span></h3>", unsafe_allow_html=True)
             st.write(f"Concesionario: **{socio_actual['nombre']}**")
@@ -1248,16 +1236,7 @@ else:
                 st.session_state.pos_cliente_accion = None
 
             if st.session_state.pos_cliente_cedula is None:
-                data_usb = st.text_input("🔫 Escáner de Carnet (Pistola USB):", placeholder="Dispare aquí...")
-                foto_qr = st.camera_input("📸 O escanear QR del socio:")
-
-                data_qr = data_usb if data_usb else None
-                if foto_qr is not None and not data_qr:
-                    bytes_data = foto_qr.getvalue()
-                    cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
-                    detector = cv2.QRCodeDetector()
-                    data, bbox, _ = detector.detectAndDecode(cv2_img)
-                    if data: data_qr = data
+                data_qr = st.text_input("🔫 Escáner de Carnet (Pistola USB/Bluetooth):", placeholder="Dispare aquí...")
 
                 if data_qr:
                     if data_qr.startswith("VENTRY_DYN|"):
@@ -1333,25 +1312,14 @@ else:
             st.button("← Volver al Menú Principal", type="primary", on_click=cb_set_menu, args=("main",))
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # SUB-VISTA: GARITA (LOGICA COMPLETA)
+        # SUB-VISTA: GARITA (LOGICA COMPLETA - SIN CV2)
         elif st.session_state.menu_view == "garita":
             st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff;'>Modo Operativo: Garita</h3>", unsafe_allow_html=True)
             
             if "garita_scan_result" not in st.session_state: st.session_state.garita_scan_result = None
 
             if st.session_state.garita_scan_result is None:
-                data_usb = st.text_input("🔫 Lector Físico (USB/Bluetooth):", placeholder="Dispare el escáner aquí...")
-                st.write("📸 O utilizar cámara del dispositivo:")
-                foto_qr = st.camera_input("Escanear con cámara del dispositivo:")
-
-                data_qr = data_usb if data_usb else None
-                if foto_qr is not None and not data_qr:
-                    bytes_data = foto_qr.getvalue()
-                    cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
-                    detector = cv2.QRCodeDetector()
-                    data, bbox, _ = detector.detectAndDecode(cv2_img)
-                    if data: data_qr = data
-                    else: st.error("⚠️ No se detectó QR. Mejore la luz o acerque el código.")
+                data_qr = st.text_input("🔫 Lector Físico (USB/Bluetooth):", placeholder="Dispare el escáner aquí...")
 
                 if data_qr:
                     if data_qr.startswith("INVITADO|"):
@@ -1458,7 +1426,6 @@ else:
                 tasa_morosidad = (morosos_count / total_acciones * 100) if total_acciones > 0 else 0
                 capital_riesgo = sum([abs(float(info.get("saldo", 0))) for info in BASE_DATOS_SOCIOS.values() if info["rol"] == "Titular" and float(info.get("saldo", 0)) < 0])
 
-                # Nuevo: Ingresos del mes
                 ingresos_brutos = sum([float(p["monto"]) for p in BASE_DATOS_PAGOS.values() if p["estatus"] == "Aprobado" and mes_actual_str() in p.get("fecha_reporte", mes_actual_str())])
 
                 col_k1, col_k2, col_k3, col_k4 = st.columns(4)
@@ -1470,7 +1437,6 @@ else:
 
                 st.markdown("<h4 style='color:#A0A0A0; font-size:16px;'>📈 Inteligencia de Negocios (BI)</h4>", unsafe_allow_html=True)
                 
-                # Fila 1 de gráficos
                 col_chart1, col_chart2 = st.columns(2)
                 with col_chart1:
                     st.markdown("<p style='font-size:12px; color:#888; text-transform:uppercase;'>Distribución de Solvencia</p>", unsafe_allow_html=True)
@@ -1487,7 +1453,6 @@ else:
                     else:
                         st.info("Sin datos de pagos suficientes.")
 
-                # Fila 2 de gráficos
                 col_chart3, col_chart4 = st.columns(2)
                 with col_chart3:
                     st.markdown("<p style='font-size:12px; color:#888; text-transform:uppercase;'>Flujo de Accesos (Garita)</p>", unsafe_allow_html=True)
@@ -1520,7 +1485,6 @@ else:
                     pagos_pendientes = {k: v for k, v in BASE_DATOS_PAGOS.items() if v["estatus"] == "En Revisión"}
                     
                     if pagos_pendientes:
-                        # --- NUEVO: BOTÓN DE APROBACIÓN AUTOMÁTICA IA ---
                         pagos_ia = {k: v for k, v in pagos_pendientes.items() if "Verificado por IA" in v.get("tipo", "")}
                         if pagos_ia:
                             st.markdown("<div style='background:rgba(255, 102, 0, 0.1); border:1px solid #FF6600; padding:15px; border-radius:15px; margin-bottom:15px;'>", unsafe_allow_html=True)
@@ -1547,7 +1511,6 @@ else:
                                 st.rerun()
                             st.markdown("</div>", unsafe_allow_html=True)
                         
-                        # --- RENDERIZADO INDIVIDUAL MANUAL ---
                         for p_id, p_info in pagos_pendientes.items():
                             tipo_trans = p_info.get("tipo", "Abono a Billetera")
                             icono_ia = "🤖 " if "Verificado por IA" in tipo_trans else ""
@@ -1706,6 +1669,16 @@ else:
                         guardar_bd(BASE_DATOS_SOCIOS)
                         st.session_state.usuario_actual["clave"] = clave_nueva
                         st.success("✅ Contraseña actualizada exitosamente.")
+                
+                # --- BOTÓN DE CERRAR SESIÓN REUBICADO ---
+                st.write("---")
+                st.markdown("<div class='btn-logout'>", unsafe_allow_html=True)
+                if st.button("Cerrar Sesión"):
+                    st.session_state.logueado = False
+                    st.session_state.usuario_actual = None
+                    st.session_state.pantalla_auth = "login"
+                    st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
                 
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)

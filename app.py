@@ -208,7 +208,6 @@ def generar_ticket_pdf(datos):
     pdf.set_font("Arial", 'I', 7)
     pdf.cell(60, 4, txt="Documento generado por Ventry OS", ln=True, align='C')
     
-    # Manejo robusto dependiendo de la versión de FPDF
     try:
         return pdf.output(dest='S').encode('latin-1')
     except TypeError:
@@ -978,7 +977,6 @@ else:
             if "ticket_generado" not in st.session_state: st.session_state.ticket_generado = None
             if "pos_cliente_cedula" not in st.session_state: st.session_state.pos_cliente_cedula = None; st.session_state.pos_cliente_nombre = None; st.session_state.pos_cliente_accion = None
             
-            # El carrito ahora es un diccionario para manejar cantidades
             if "carrito_pos" not in st.session_state or isinstance(st.session_state.carrito_pos, list): 
                 st.session_state.carrito_pos = {}
 
@@ -1097,11 +1095,13 @@ else:
                     
                     for nombre, info in st.session_state.carrito_pos.items():
                         subtotal = info["precio"] * info["cantidad"]
-                        c_text, c_btn = st.columns([5, 1])
+                        c_text, c_btn_minus, c_btn_plus = st.columns([4, 1, 1])
                         with c_text:
                             st.markdown(f"<div style='padding-top:10px; font-size:15px;'><b>{info['cantidad']}x</b> {nombre} <span style='float:right; color:#32d74b;'><b>${subtotal:.2f}</b></span></div>", unsafe_allow_html=True)
-                        with c_btn:
+                        with c_btn_minus:
                             st.button("➖", key=f"del_{nombre}", on_click=cb_quitar_item, args=(nombre,), use_container_width=True)
+                        with c_btn_plus:
+                            st.button("➕", key=f"add_{nombre}", on_click=cb_agregar_item, args=(nombre, info["precio"]), use_container_width=True)
                             
                     st.markdown(f"<div style='display:flex; justify-content:space-between; padding:15px 0 5px 0; margin-bottom:10px; border-top:1px solid #1C1C1E;'><span style='font-size:20px; font-weight:800;'>TOTAL:</span><b style='color:#FF6600; font-size:24px;'>${total_cuenta:.2f}</b></div>", unsafe_allow_html=True)
 

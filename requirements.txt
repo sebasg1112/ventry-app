@@ -7,3 +7,4 @@ google-generativeai
 pillow
 opencv-python-headless
 streamlit-javascript
+fpdf

@@ -17,6 +17,12 @@ import hmac
 import hashlib
 import google.generativeai as genai
 from PIL import Image
+import streamlit.components.v1 as components
+
+try:
+    from fpdf import FPDF
+except ImportError:
+    FPDF = None
 
 try:
     from streamlit_javascript import st_javascript
@@ -166,6 +172,47 @@ st.markdown("""
     .garita-alert-error { background-color: #b91c1c !important; border: 2px solid #ef4444 !important; border-radius: 20px; padding: 40px 20px; text-align: center; color: white !important; margin-top: 20px; }
     </style>
 """, unsafe_allow_html=True)
+
+# --- 🛑 FUNCIÓN CRIPTOGRÁFICA PARA CONTRASEÑAS ---
+def hash_clave(clave_plana):
+    return hashlib.sha256(clave_plana.encode('utf-8')).hexdigest()
+
+# --- 🛑 MOTOR DE GENERACIÓN DE TICKETS PDF ---
+def generar_ticket_pdf(datos):
+    if FPDF is None: return None
+    pdf = FPDF(format=(80, 160)) # Formato ticketera térmica 80mm
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(60, 6, txt="MAGNUM CITY CLUB", ln=True, align='C')
+    pdf.set_font("Arial", '', 8)
+    pdf.cell(60, 4, txt="Ventry Pay - Recibo Digital", ln=True, align='C')
+    pdf.cell(60, 4, txt=f"Ticket: {datos['id']}", ln=True, align='C')
+    pdf.cell(60, 4, txt=f"Fecha: {datos['fecha']}", ln=True, align='C')
+    pdf.line(5, pdf.get_y(), 75, pdf.get_y())
+    pdf.ln(2)
+    pdf.set_font("Arial", 'B', 9)
+    pdf.cell(60, 5, txt=f"Socio: {datos['cliente']}", ln=True, align='L')
+    pdf.cell(60, 5, txt=f"Accion: {datos['accion']}", ln=True, align='L')
+    pdf.cell(60, 5, txt=f"Comercio: {datos['comercio']}", ln=True, align='L')
+    pdf.ln(2)
+    pdf.set_font("Arial", '', 9)
+    for item in datos['items']:
+        pdf.cell(40, 5, txt=item['item'], ln=False, align='L')
+        pdf.cell(20, 5, txt=f"${item['precio']:.2f}", ln=True, align='R')
+    pdf.line(5, pdf.get_y()+2, 75, pdf.get_y()+2)
+    pdf.ln(4)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(40, 6, txt="TOTAL", ln=False, align='L')
+    pdf.cell(20, 6, txt=f"${datos['total']:.2f}", ln=True, align='R')
+    pdf.ln(8)
+    pdf.set_font("Arial", 'I', 7)
+    pdf.cell(60, 4, txt="Documento generado por Ventry OS", ln=True, align='C')
+    
+    # Manejo robusto dependiendo de la versión de FPDF
+    try:
+        return pdf.output(dest='S').encode('latin-1')
+    except TypeError:
+        return bytes(pdf.output())
 
 # --- MOTOR DE BASE DE DATOS ---
 @st.cache_resource
@@ -387,7 +434,6 @@ elif "pase" in params:
 # ==========================================
 bio_token_local = ""
 if st_javascript:
-    # Lee silenciosamente la memoria del teléfono
     res = st_javascript("localStorage.getItem('ventry_bio_token') || '';")
     if res and res != 0:
         bio_token_local = str(res)
@@ -440,15 +486,20 @@ if not st.session_state.logueado:
                     st.session_state.usuario_actual = usuario_encontrado
                     st.session_state.mensaje_login = "✅ Verificación FaceID/TouchID exitosa."
                     st.rerun()
-                else:
-                    st.error("❌ Dispositivo no reconocido en la base de datos.")
-            else:
-                st.error("❌ Dispositivo no vinculado. Inicia sesión con clave la primera vez.")
+                else: st.error("❌ Dispositivo no reconocido en la base de datos.")
+            else: st.error("❌ Dispositivo no vinculado. Inicia sesión con clave la primera vez.")
 
         if boton_entrar:
             if cedula_ingresada in BASE_DATOS_SOCIOS:
                 socio = BASE_DATOS_SOCIOS[cedula_ingresada]
-                if clave_ingresada == str(socio["clave"]):
+                clave_ingresada_hash = hash_clave(clave_ingresada)
+                
+                if clave_ingresada_hash == str(socio["clave"]) or clave_ingresada == str(socio["clave"]):
+                    if clave_ingresada == str(socio["clave"]) and len(socio["clave"]) != 64:
+                        BASE_DATOS_SOCIOS[cedula_ingresada]["clave"] = clave_ingresada_hash
+                        guardar_bd(BASE_DATOS_SOCIOS)
+                        socio["clave"] = clave_ingresada_hash 
+
                     if socio.get("solvencia", "") == "En revision": st.warning("⏳ Tu cuenta fue creada pero aún se encuentra en revisión administrativa.")
                     else: 
                         st.session_state.logueado = True
@@ -492,8 +543,9 @@ if not st.session_state.logueado:
                 
                 if titular_existente: st.error(f"⚠️ Operación Denegada: La Acción {r_acc_norm} ya tiene un Titular registrado.")
                 else:
+                    clave_encriptada = hash_clave(r_clave)
                     BASE_DATOS_SOCIOS[r_cedula] = {
-                        "nombre": r_nombre, "clave": r_clave, "accion": r_acc_norm, "rol": r_rol, 
+                        "nombre": r_nombre, "clave": clave_encriptada, "accion": r_acc_norm, "rol": r_rol, 
                         "parentesco": r_parentesco, "fecha_nacimiento": r_nacimiento.strftime("%d/%m/%Y"), 
                         "solvencia": "En revision", "saldo": 0.0, "invitaciones": 0, "mes_pagado": "", "bio_token": "", "cedula": r_cedula
                     }
@@ -604,7 +656,7 @@ else:
             guardar_bd(BASE_DATOS_SOCIOS)
             st.session_state.usuario_actual["bio_token"] = nuevo_token
             st.session_state.mostrar_prompt_bio = False
-            st.session_state.token_a_guardar = nuevo_token  # Lo atrapa el inyector arriba
+            st.session_state.token_a_guardar = nuevo_token 
             st.rerun()
             
         if st.button("Quizás más tarde", use_container_width=True):
@@ -918,18 +970,67 @@ else:
             st.button("← Volver al Menú", type="primary", on_click=cb_set_menu, args=("main",))
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # VENTRY PAY
+        # 🛑 VENTRY PAY (AHORA CON GENERADOR DE RECIBOS PDF)
         elif st.session_state.menu_view == "pos":
             st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff;'>Ventry Pay <span style='font-size:14px; color:#A0A0A0;'>(POS Táctil)</span></h3>", unsafe_allow_html=True)
             st.write(f"Concesionario: **{socio_actual['nombre']}**")
             
+            if "ticket_generado" not in st.session_state: st.session_state.ticket_generado = None
             if "pos_cliente_cedula" not in st.session_state: st.session_state.pos_cliente_cedula = None; st.session_state.pos_cliente_nombre = None; st.session_state.pos_cliente_accion = None
             if "carrito_pos" not in st.session_state: st.session_state.carrito_pos = []
 
             def cb_agregar_item(nombre_item, precio_item): st.session_state.carrito_pos.append({"item": nombre_item, "precio": precio_item})
             def cb_limpiar_carrito(): st.session_state.carrito_pos = []
 
-            if st.session_state.pos_cliente_cedula is None:
+            # 🛑 SI HAY UN TICKET GENERADO, SE MUESTRA EL COMPROBANTE
+            if st.session_state.ticket_generado is not None:
+                ticket = st.session_state.ticket_generado
+                st.success("✅ Transacción aprobada exitosamente.")
+                
+                st.markdown(f"""
+                <div style="background:#ffffff; color:#000000; padding:20px; border-radius:10px; width:100%; max-width:320px; margin:0 auto; font-family:monospace; text-align:center;">
+                    <h3 style="margin:0; font-size:18px;">MAGNUM CITY CLUB</h3>
+                    <p style="margin:0; font-size:10px;">Ventry Pay - Recibo Digital</p>
+                    <p style="margin:5px 0; font-size:12px;">Ticket: {ticket['id']}<br>Fecha: {ticket['fecha']}</p>
+                    <hr style="border:1px dashed #000; margin:10px 0;">
+                    <p style="margin:0; font-size:12px; text-align:left;"><b>Socio:</b> {ticket['cliente']}</p>
+                    <p style="margin:0; font-size:12px; text-align:left;"><b>Acción:</b> {ticket['accion']}</p>
+                    <p style="margin:0; font-size:12px; text-align:left;"><b>Comercio:</b> {ticket['comercio']}</p>
+                    <hr style="border:1px dashed #000; margin:10px 0;">
+                """, unsafe_allow_html=True)
+                
+                for item in ticket['items']:
+                    st.markdown(f"<div style='display:flex; justify-content:space-between; font-size:12px; color:#000;'><span>{item['item']}</span><span>${item['precio']:.2f}</span></div>", unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                    <hr style="border:1px dashed #000; margin:10px 0;">
+                    <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:bold; color:#000;"><span>TOTAL</span><span>${ticket['total']:.2f}</span></div>
+                    <p style="margin-top:15px; font-size:10px;">Gracias por su consumo.</p>
+                </div>
+                <br>
+                """, unsafe_allow_html=True)
+
+                pdf_bytes = generar_ticket_pdf(ticket)
+                if pdf_bytes:
+                    st.download_button(
+                        label="📥 Descargar Recibo PDF",
+                        data=pdf_bytes,
+                        file_name=f"Ventry_Ticket_{ticket['id']}.pdf",
+                        mime="application/pdf",
+                        type="primary"
+                    )
+                else:
+                    st.warning("⚠️ No se detectó la librería FPDF. Se muestra versión web.")
+
+                st.write("")
+                st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+                if st.button("Realizar Nuevo Cobro"):
+                    st.session_state.ticket_generado = None
+                    st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            # 🛑 FLUJO NORMAL DEL POS
+            elif st.session_state.pos_cliente_cedula is None:
                 data_usb = st.text_input("🔫 Escáner de Carnet (Pistola USB/Bluetooth):", placeholder="Dispare aquí...")
                 st.write("📸 O utilizar cámara del dispositivo:")
                 foto_qr = st.camera_input("Escanear con cámara del dispositivo:", label_visibility="collapsed")
@@ -987,7 +1088,9 @@ else:
                     btn_c1, btn_c2 = st.columns([3, 1])
                     with btn_c1:
                         if st.button(f"💸 COBRAR ${total_cuenta:.2f}", type="primary", use_container_width=True):
-                            if pin_seguridad not in ["1234", str(socio_actual.get("clave", ""))]: st.error("❌ PIN de autorización incorrecto. Transacción denegada.")
+                            socio_hash = str(BASE_DATOS_SOCIOS[st.session_state.pos_cliente_cedula]["clave"])
+                            if pin_seguridad != "1234" and hash_clave(pin_seguridad) != socio_hash and pin_seguridad != socio_hash: 
+                                st.error("❌ PIN de autorización incorrecto. Transacción denegada.")
                             elif saldo_fam < total_cuenta: st.error("❌ Transacción Rechazada: Saldo insuficiente en el Fondo Familiar.")
                             else:
                                 nuevo_saldo = saldo_fam - total_cuenta
@@ -996,8 +1099,24 @@ else:
                                 guardar_bd(BASE_DATOS_SOCIOS)
                                 desglose = ", ".join([p["item"].split(" ")[0] for p in st.session_state.carrito_pos]) 
                                 id_consumo = f"PAY-{str(uuid.uuid4())[:6].upper()}"
-                                BASE_DATOS_PAGOS[id_consumo] = {"accion": st.session_state.pos_cliente_accion, "metodo": "Ventry Pay", "referencia": f"Tienda: {socio_actual['nombre']}", "monto": total_cuenta, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "Aprobado", "tipo": f"Consumo: {desglose}"}
-                                guardar_bd_pagos(BASE_DATOS_PAGOS); st.toast("✅ Transacción Exitosa. Cobro debitado."); st.session_state.pos_cliente_cedula = None; st.session_state.carrito_pos = []; st.rerun()
+                                fecha_consumo = datetime.now().strftime("%d/%m/%Y %H:%M")
+                                
+                                BASE_DATOS_PAGOS[id_consumo] = {"accion": st.session_state.pos_cliente_accion, "metodo": "Ventry Pay", "referencia": f"Tienda: {socio_actual['nombre']}", "monto": total_cuenta, "fecha_reporte": fecha_consumo.split(" ")[0], "estatus": "Aprobado", "tipo": f"Consumo: {desglose}"}
+                                guardar_bd_pagos(BASE_DATOS_PAGOS)
+                                
+                                # 🛑 GUARDAR DATOS DEL TICKET Y MOSTRAR PANTALLA
+                                st.session_state.ticket_generado = {
+                                    "id": id_consumo,
+                                    "fecha": fecha_consumo,
+                                    "cliente": st.session_state.pos_cliente_nombre,
+                                    "accion": st.session_state.pos_cliente_accion,
+                                    "comercio": socio_actual['nombre'],
+                                    "items": st.session_state.carrito_pos.copy(),
+                                    "total": total_cuenta
+                                }
+                                st.session_state.pos_cliente_cedula = None
+                                st.session_state.carrito_pos = []
+                                st.rerun()
                     with btn_c2: st.button("🗑️", on_click=cb_limpiar_carrito, use_container_width=True, help="Vaciar carrito")
                         
                 st.write("")
@@ -1005,10 +1124,11 @@ else:
                 if st.button("← Cancelar", type="primary"): st.session_state.pos_cliente_cedula = None; st.session_state.carrito_pos = []; st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
 
-            st.write("")
-            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-            st.button("← Volver al Menú Principal", type="primary", on_click=cb_set_menu, args=("main",))
-            st.markdown("</div>", unsafe_allow_html=True)
+            if st.session_state.ticket_generado is None:
+                st.write("")
+                st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+                st.button("← Volver al Menú Principal", type="primary", on_click=cb_set_menu, args=("main",))
+                st.markdown("</div>", unsafe_allow_html=True)
 
         # GARITA
         elif st.session_state.menu_view == "garita":
@@ -1216,6 +1336,11 @@ else:
                             saldo_m = float(m.get('saldo', 0.0)) if m['rol'] == 'Titular' else "N/A"
                             saldo_txt = f" | Saldo: ${saldo_m:.2f}" if m['rol'] == 'Titular' else ""
                             st.markdown(f"<div style='background:#1C1C1E; border:1px solid rgba(255,255,255,0.05); color:#ffffff; padding:12px; border-radius:12px; margin-bottom:8px; font-size:13px;'>{icono} <b style='letter-spacing:0.5px;'>{m['nombre']}</b> - <span style='color:#FF6600;'>{solvencia_m}</span>{saldo_txt}</div>", unsafe_allow_html=True)
+                            
+                            if st.button(f"🔑 Resetear Clave", key=f"reset_{m['cedula']}", help="Asigna '1234' al usuario"):
+                                BASE_DATOS_SOCIOS[m['cedula']]["clave"] = hash_clave("1234")
+                                guardar_bd(BASE_DATOS_SOCIOS)
+                                st.toast(f"✅ Clave de {m['nombre']} reseteada a 1234.", icon="🔑")
                         
                         with st.form("form_estatus_rapido"):
                             n_estatus = st.selectbox("Actualizar Estatus de Grupo:", ["Al dia", "Moroso", "Pendiente", "En revision"])
@@ -1294,16 +1419,17 @@ else:
                     btn_cambiar_clave = st.form_submit_button("ACTUALIZAR CONTRASEÑA")
                     
                 if btn_cambiar_clave:
-                    if clave_actual != str(socio_actual["clave"]): st.error("❌ La contraseña actual es incorrecta.")
+                    if hash_clave(clave_actual) != str(socio_actual["clave"]) and clave_actual != str(socio_actual["clave"]): 
+                        st.error("❌ La contraseña actual es incorrecta.")
                     elif clave_nueva != clave_confirma: st.error("❌ Las contraseñas nuevas no coinciden.")
                     elif len(clave_nueva) < 4: st.error("⚠️ La contraseña debe tener al menos 4 caracteres.")
                     else:
-                        BASE_DATOS_SOCIOS[socio_actual["cedula"]]["clave"] = clave_nueva
+                        clave_nueva_hash = hash_clave(clave_nueva)
+                        BASE_DATOS_SOCIOS[socio_actual["cedula"]]["clave"] = clave_nueva_hash
                         guardar_bd(BASE_DATOS_SOCIOS)
-                        st.session_state.usuario_actual["clave"] = clave_nueva
-                        st.success("✅ Contraseña actualizada exitosamente.")
+                        st.session_state.usuario_actual["clave"] = clave_nueva_hash
+                        st.success("✅ Contraseña actualizada y encriptada exitosamente.")
                 
-                # 🔒 BOTÓN PARA VINCULAR DISPOSITIVO A FACEID / TOUCHID (NATIVO STREAMLIT)
                 st.write("---")
                 if st.button("🔓 Vincular este dispositivo (FaceID / TouchID)", type="primary", use_container_width=True):
                     nuevo_token = str(uuid.uuid4())

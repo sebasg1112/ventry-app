@@ -970,17 +970,31 @@ else:
             st.button("← Volver al Menú", type="primary", on_click=cb_set_menu, args=("main",))
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # 🛑 VENTRY PAY (AHORA CON GENERADOR DE RECIBOS PDF)
+        # 🛑 VENTRY PAY (POS TÁCTIL CON CANTIDADES Y EDICIÓN)
         elif st.session_state.menu_view == "pos":
             st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff;'>Ventry Pay <span style='font-size:14px; color:#A0A0A0;'>(POS Táctil)</span></h3>", unsafe_allow_html=True)
             st.write(f"Concesionario: **{socio_actual['nombre']}**")
             
             if "ticket_generado" not in st.session_state: st.session_state.ticket_generado = None
             if "pos_cliente_cedula" not in st.session_state: st.session_state.pos_cliente_cedula = None; st.session_state.pos_cliente_nombre = None; st.session_state.pos_cliente_accion = None
-            if "carrito_pos" not in st.session_state: st.session_state.carrito_pos = []
+            
+            # El carrito ahora es un diccionario para manejar cantidades
+            if "carrito_pos" not in st.session_state or isinstance(st.session_state.carrito_pos, list): 
+                st.session_state.carrito_pos = {}
 
-            def cb_agregar_item(nombre_item, precio_item): st.session_state.carrito_pos.append({"item": nombre_item, "precio": precio_item})
-            def cb_limpiar_carrito(): st.session_state.carrito_pos = []
+            def cb_agregar_item(nombre_item, precio_item): 
+                if nombre_item in st.session_state.carrito_pos:
+                    st.session_state.carrito_pos[nombre_item]["cantidad"] += 1
+                else:
+                    st.session_state.carrito_pos[nombre_item] = {"precio": precio_item, "cantidad": 1}
+                    
+            def cb_quitar_item(nombre_item):
+                if nombre_item in st.session_state.carrito_pos:
+                    st.session_state.carrito_pos[nombre_item]["cantidad"] -= 1
+                    if st.session_state.carrito_pos[nombre_item]["cantidad"] <= 0:
+                        del st.session_state.carrito_pos[nombre_item]
+
+            def cb_limpiar_carrito(): st.session_state.carrito_pos = {}
 
             # 🛑 SI HAY UN TICKET GENERADO, SE MUESTRA EL COMPROBANTE
             if st.session_state.ticket_generado is not None:
@@ -1055,7 +1069,7 @@ else:
                             if (timestamp_ahora - timestamp_qr) > 60: st.error("❌ Código QR Expirado. Pida al socio que actualice su carnet.")
                             elif cedula_qr in BASE_DATOS_SOCIOS:
                                 socio_qr = BASE_DATOS_SOCIOS[cedula_qr]
-                                st.session_state.pos_cliente_cedula = cedula_qr; st.session_state.pos_cliente_nombre = socio_qr['nombre']; st.session_state.pos_cliente_accion = socio_qr['accion']; st.session_state.carrito_pos = []; st.rerun()
+                                st.session_state.pos_cliente_cedula = cedula_qr; st.session_state.pos_cliente_nombre = socio_qr['nombre']; st.session_state.pos_cliente_accion = socio_qr['accion']; st.session_state.carrito_pos = {}; st.rerun()
                             else: st.error("❌ Socio no encontrado.")
                         except: st.error("❌ Código QR Ilegible.")
                     else: st.error("❌ Código QR no es un Carnet Ventry válido.")
@@ -1076,12 +1090,20 @@ else:
                 with col_p5: st.button("🍕 Pizza\n$12.00", on_click=cb_agregar_item, args=("🍕 Pizza Familiar", 12.0), use_container_width=True)
                 with col_p6: st.button("☕ Café\n$1.00", on_click=cb_agregar_item, args=("☕ Café Espresso", 1.0), use_container_width=True)
 
-                total_cuenta = sum(item["precio"] for item in st.session_state.carrito_pos)
+                total_cuenta = sum(info["precio"] * info["cantidad"] for info in st.session_state.carrito_pos.values())
 
                 if st.session_state.carrito_pos:
                     st.markdown("<h4 style='font-size:14px; color:#A0A0A0; margin-top:20px; text-transform:uppercase;'>Cuenta Actual</h4>", unsafe_allow_html=True)
-                    for idx, producto in enumerate(st.session_state.carrito_pos): st.markdown(f"<div style='display:flex; justify-content:space-between; border-bottom:1px solid #1C1C1E; padding:8px 0;'><span>{producto['item']}</span><b style='color:#32d74b;'>${producto['precio']:.2f}</b></div>", unsafe_allow_html=True)
-                    st.markdown(f"<div style='display:flex; justify-content:space-between; padding:15px 0; margin-bottom:10px;'><span style='font-size:20px; font-weight:800;'>TOTAL:</span><b style='color:#FF6600; font-size:24px;'>${total_cuenta:.2f}</b></div>", unsafe_allow_html=True)
+                    
+                    for nombre, info in st.session_state.carrito_pos.items():
+                        subtotal = info["precio"] * info["cantidad"]
+                        c_text, c_btn = st.columns([5, 1])
+                        with c_text:
+                            st.markdown(f"<div style='padding-top:10px; font-size:15px;'><b>{info['cantidad']}x</b> {nombre} <span style='float:right; color:#32d74b;'><b>${subtotal:.2f}</b></span></div>", unsafe_allow_html=True)
+                        with c_btn:
+                            st.button("➖", key=f"del_{nombre}", on_click=cb_quitar_item, args=(nombre,), use_container_width=True)
+                            
+                    st.markdown(f"<div style='display:flex; justify-content:space-between; padding:15px 0 5px 0; margin-bottom:10px; border-top:1px solid #1C1C1E;'><span style='font-size:20px; font-weight:800;'>TOTAL:</span><b style='color:#FF6600; font-size:24px;'>${total_cuenta:.2f}</b></div>", unsafe_allow_html=True)
 
                     pin_seguridad = st.text_input("🔑 PIN de Autorización (4 dígitos del Socio)", type="password", max_chars=4, placeholder="••••")
 
@@ -1097,7 +1119,8 @@ else:
                                 for ced, info in BASE_DATOS_SOCIOS.items():
                                     if str(info["accion"]) == str(st.session_state.pos_cliente_accion) and info["rol"] == "Titular": BASE_DATOS_SOCIOS[ced]["saldo"] = nuevo_saldo; break
                                 guardar_bd(BASE_DATOS_SOCIOS)
-                                desglose = ", ".join([p["item"].split(" ")[0] for p in st.session_state.carrito_pos]) 
+                                
+                                desglose = ", ".join([f"{info['cantidad']}x {nombre.split(' ')[0]}" for nombre, info in st.session_state.carrito_pos.items()]) 
                                 id_consumo = f"PAY-{str(uuid.uuid4())[:6].upper()}"
                                 fecha_consumo = datetime.now().strftime("%d/%m/%Y %H:%M")
                                 
@@ -1111,17 +1134,17 @@ else:
                                     "cliente": st.session_state.pos_cliente_nombre,
                                     "accion": st.session_state.pos_cliente_accion,
                                     "comercio": socio_actual['nombre'],
-                                    "items": st.session_state.carrito_pos.copy(),
+                                    "items": [{"item": f"{info['cantidad']}x {nombre}", "precio": info['precio'] * info['cantidad']} for nombre, info in st.session_state.carrito_pos.items()],
                                     "total": total_cuenta
                                 }
                                 st.session_state.pos_cliente_cedula = None
-                                st.session_state.carrito_pos = []
+                                st.session_state.carrito_pos = {}
                                 st.rerun()
                     with btn_c2: st.button("🗑️", on_click=cb_limpiar_carrito, use_container_width=True, help="Vaciar carrito")
                         
                 st.write("")
                 st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
-                if st.button("← Cancelar", type="primary"): st.session_state.pos_cliente_cedula = None; st.session_state.carrito_pos = []; st.rerun()
+                if st.button("← Cancelar", type="primary"): st.session_state.pos_cliente_cedula = None; st.session_state.carrito_pos = {}; st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
 
             if st.session_state.ticket_generado is None:

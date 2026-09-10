@@ -295,6 +295,7 @@ BASE_DATOS_DIRECTORIO = st.session_state.db_directorio
 if "logueado" not in st.session_state: st.session_state.logueado = False
 if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = None
 if "pantalla_auth" not in st.session_state: st.session_state.pantalla_auth = "login"
+if "mostrar_prompt_bio" not in st.session_state: st.session_state.mostrar_prompt_bio = False
 
 # ==========================================
 # 🛑 INTERCEPTOR GLOBAL DE URL (API IoT Y BIOMETRÍA)
@@ -359,7 +360,7 @@ elif "action" in params:
         if usuario_encontrado:
             st.session_state.logueado = True
             st.session_state.usuario_actual = usuario_encontrado
-            st.session_state.mensaje_login = "✅ Verificación biométrica exitosa."
+            st.session_state.mensaje_login = "✅ Verificación FaceID/TouchID exitosa."
             st.query_params.clear()
             st.rerun()
         else:
@@ -374,6 +375,7 @@ elif "action" in params:
             guardar_bd(BASE_DATOS_SOCIOS)
             st.session_state.usuario_actual["bio_token"] = token
             st.session_state.mensaje_perfil = "✅ Dispositivo vinculado exitosamente para acceso rápido."
+            st.session_state.mostrar_prompt_bio = False # Ocultar prompt si estaba activo
             st.query_params.clear()
             st.rerun()
 
@@ -441,19 +443,21 @@ if not st.session_state.logueado:
                 st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
         with col2:
-            # 🔒 BOTÓN DE FACEID (Ejecuta validación local)
+            # 🔒 BOTÓN DE FACEID MEJORADO (Evita el bloqueo de iframes usando target="_parent")
             html_faceid = """
             <script>
-                function triggerFaceID() {
+                function loginBio() {
                     let token = localStorage.getItem("ventry_bio_token");
-                    if(token) {
-                        window.parent.location.search = "?action=login_bio&token=" + token;
+                    if (token) {
+                        document.getElementById('link').href = "?action=login_bio&token=" + token;
+                        document.getElementById('link').click();
                     } else {
-                        alert("Dispositivo no vinculado. Inicia sesión con clave y actívalo en Ajustes de Perfil.");
+                        alert("No hay un dispositivo vinculado. Inicia sesión con clave la primera vez.");
                     }
                 }
             </script>
-            <div onclick="triggerFaceID()" style="border: 1px solid #1C1C1E; background:#121212; padding: 13px 0px; border-radius: 18px; color: #8E8E93; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; transition:all 0.2s;" onmouseover="this.style.borderColor='#FF6600'; this.style.color='#fff';" onmouseout="this.style.borderColor='#1C1C1E'; this.style.color='#8E8E93';">
+            <a id="link" target="_parent" style="display:none;"></a>
+            <div onclick="loginBio()" style="border: 1px solid #1C1C1E; background:#121212; padding: 13px 0px; border-radius: 18px; color: #8E8E93; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; transition:all 0.2s;" onmouseover="this.style.borderColor='#FF6600'; this.style.color='#fff';" onmouseout="this.style.borderColor='#1C1C1E'; this.style.color='#8E8E93';">
                 🔒 FaceID / TouchID
             </div>
             """
@@ -464,7 +468,13 @@ if not st.session_state.logueado:
                 socio = BASE_DATOS_SOCIOS[cedula_ingresada]
                 if clave_ingresada == str(socio["clave"]):
                     if socio.get("solvencia", "") == "En revision": st.warning("⏳ Tu cuenta fue creada pero aún se encuentra en revisión administrativa.")
-                    else: st.session_state.logueado = True; st.session_state.usuario_actual = socio; st.rerun()
+                    else: 
+                        st.session_state.logueado = True
+                        st.session_state.usuario_actual = socio
+                        # Si no tiene Token, activamos el prompt para preguntarle
+                        if not socio.get("bio_token", ""):
+                            st.session_state.mostrar_prompt_bio = True
+                        st.rerun()
                 else: st.error("❌ Contraseña incorrecta.")
             else: st.error("⚠️ Usuario no registrado.")
 
@@ -533,54 +543,39 @@ else:
 
     if "menu_view" not in st.session_state: st.session_state.menu_view = "main"
 
-    def cb_set_menu(vista):
-        st.session_state.menu_view = vista
-
-    def cb_nav_pagos(destino):
-        st.session_state.sub_pagos = destino
+    def cb_set_menu(vista): st.session_state.menu_view = vista
+    def cb_nav_pagos(destino): st.session_state.sub_pagos = destino
+    def cb_limpiar_garita():
+        if "garita_scan_result" in st.session_state: del st.session_state.garita_scan_result
 
     def cb_pagar_cuota(saldo, monto, mes, invites, tipo, nombre_mes, accion):
         ya_pagado = False
         for m in st.session_state.db_socios.values():
             if str(m["accion"]) == str(accion) and m["rol"] == "Titular":
-                if m.get("mes_pagado", "") == mes: ya_pagado = True
-                break
+                if m.get("mes_pagado", "") == mes: ya_pagado = True; break
         
-        if ya_pagado:
-            st.session_state.mensaje_pago_exitoso = "⚠️ Transacción ignorada: El mes ya estaba pagado."
-            st.session_state.sub_pagos = "menu"
-            return
+        if ya_pagado: st.session_state.mensaje_pago_exitoso = "⚠️ Transacción ignorada: El mes ya estaba pagado."; st.session_state.sub_pagos = "menu"; return
             
         nuevo_saldo = saldo - monto
         for ced, info in st.session_state.db_socios.items():
             if str(info["accion"]) == str(accion) and info["rol"] == "Titular":
-                st.session_state.db_socios[ced]["saldo"] = nuevo_saldo
-                st.session_state.db_socios[ced]["mes_pagado"] = mes
-                st.session_state.db_socios[ced]["invitaciones"] = invites
-                break
+                st.session_state.db_socios[ced]["saldo"] = nuevo_saldo; st.session_state.db_socios[ced]["mes_pagado"] = mes; st.session_state.db_socios[ced]["invitaciones"] = invites; break
         
         for ced_fam, info_fam in st.session_state.db_socios.items():
-            if str(info_fam["accion"]) == str(accion):
-                st.session_state.db_socios[ced_fam]["solvencia"] = "Al dia"
+            if str(info_fam["accion"]) == str(accion): st.session_state.db_socios[ced_fam]["solvencia"] = "Al dia"
         
         guardar_bd(st.session_state.db_socios)
-        
         id_cargo = f"CRG-{str(uuid.uuid4())[:6].upper()}"
         st.session_state.db_pagos[id_cargo] = {"accion": accion, "metodo": "Sistema Ventry", "referencia": f"CUOTA-{mes.replace('/','-')}", "monto": monto, "fecha_reporte": datetime.now().strftime("%d/%m/%Y"), "estatus": "Aprobado", "tipo": tipo}
         guardar_bd_pagos(st.session_state.db_pagos)
-        
         st.session_state.mensaje_pago_exitoso = f"✅ Mensualidad de {nombre_mes} cancelada con éxito."
         st.session_state.sub_pagos = "menu"
-
-    def cb_limpiar_garita():
-        if "garita_scan_result" in st.session_state:
-            del st.session_state.garita_scan_result
 
     # --- HEADER ---
     col_logo, col_campana = st.columns([5, 1])
     with col_logo:
         st.markdown(f"""
-        <div style="display:flex; align-items:center; gap:12px; margin-bottom: 25px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom: 15px;">
             <img src="https://i.ibb.co/t7xWXXR/logo.png" width="30" style="border-radius:8px; box-shadow: 0 4px 15px rgba(255,102,0,0.4);">
             <span style="font-size:20px; font-weight:900; letter-spacing: 2px;" class="gradient-text">VENTRY</span>
         </div>
@@ -606,6 +601,42 @@ else:
     if "mensaje_login" in st.session_state:
         st.success(st.session_state.mensaje_login)
         del st.session_state.mensaje_login
+
+    # 🛑 PROMPT DE VINCULACIÓN AL INICIAR SESIÓN POR PRIMERA VEZ
+    if st.session_state.get("mostrar_prompt_bio", False):
+        st.markdown("""
+        <div style="background:#1C1C1E; border:1px solid #FF6600; border-radius:15px; padding:20px; margin-bottom:20px; box-shadow: 0 10px 30px rgba(255,102,0,0.15);">
+            <h4 style="color:#FF6600; margin-top:0; display:flex; align-items:center; gap:8px;">🔒 Activar FaceID / TouchID</h4>
+            <p style="color:#E0E0E0; font-size:13px; margin-bottom:15px;">Agiliza tu acceso al club vinculando este dispositivo. No tendrás que ingresar tu contraseña la próxima vez que entres.</p>
+        """, unsafe_allow_html=True)
+        
+        html_link_prompt = """
+        <script>
+            function generateUUID() {
+                if (typeof crypto !== 'undefined' && crypto.randomUUID) { return crypto.randomUUID(); }
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            }
+            function linkBioPrompt() {
+                let token = generateUUID();
+                localStorage.setItem("ventry_bio_token", token);
+                document.getElementById('link_prompt').href = "?action=link_bio&token=" + token;
+                document.getElementById('link_prompt').click();
+            }
+        </script>
+        <a id="link_prompt" target="_parent" style="display:none;"></a>
+        <div onclick="linkBioPrompt()" style="background:linear-gradient(135deg, #FF7B00 0%, #E65C00 100%); color:white; padding:12px; border-radius:12px; text-align:center; font-weight:bold; font-size:14px; cursor:pointer; margin-bottom:10px;">
+            Sí, vincular este dispositivo
+        </div>
+        """
+        components.html(html_link_prompt, height=55)
+        
+        if st.button("Quizás más tarde", use_container_width=True):
+            st.session_state.mostrar_prompt_bio = False
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
     # --- MENÚ INFERIOR ---
     opciones_bottom = ["Inicio", "Carnet", "Finanzas", "Menú"]
@@ -1297,16 +1328,25 @@ else:
                         st.session_state.usuario_actual["clave"] = clave_nueva
                         st.success("✅ Contraseña actualizada exitosamente.")
                 
-                # 🔒 BOTÓN PARA VINCULAR DISPOSITIVO A FACEID / TOUCHID
+                # 🔒 BOTÓN PARA VINCULAR DISPOSITIVO A FACEID / TOUCHID (MEJORADO)
                 st.write("---")
                 html_link_bio = """
                 <script>
+                    function generateUUID() {
+                        if (typeof crypto !== 'undefined' && crypto.randomUUID) { return crypto.randomUUID(); }
+                        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                            return v.toString(16);
+                        });
+                    }
                     function linkDevice() {
-                        let token = crypto.randomUUID();
+                        let token = generateUUID();
                         localStorage.setItem("ventry_bio_token", token);
-                        window.parent.location.search = "?action=link_bio&token=" + token;
+                        document.getElementById('link').href = "?action=link_bio&token=" + token;
+                        document.getElementById('link').click();
                     }
                 </script>
+                <a id="link" target="_parent" style="display:none;"></a>
                 <div onclick="linkDevice()" style="border: 1px solid #FF6600; background:rgba(255,102,0,0.1); padding: 13px 0px; border-radius: 16px; color: #FF6600; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; margin-bottom: 20px;">
                     🔓 Vincular este dispositivo (FaceID / TouchID)
                 </div>

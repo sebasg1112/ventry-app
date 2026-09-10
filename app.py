@@ -17,7 +17,11 @@ import hmac
 import hashlib
 import google.generativeai as genai
 from PIL import Image
-import streamlit.components.v1 as components
+
+try:
+    from streamlit_javascript import st_javascript
+except ImportError:
+    st_javascript = None
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 icono_url = "https://i.ibb.co/t7xWXXR/logo.png"
@@ -298,7 +302,7 @@ if "pantalla_auth" not in st.session_state: st.session_state.pantalla_auth = "lo
 if "mostrar_prompt_bio" not in st.session_state: st.session_state.mostrar_prompt_bio = False
 
 # ==========================================
-# 🛑 INTERCEPTOR GLOBAL DE URL (API IoT Y BIOMETRÍA)
+# 🛑 INTERCEPTOR GLOBAL DE URL (API IoT)
 # ==========================================
 params = st.query_params
 
@@ -345,28 +349,6 @@ if "api" in params and params["api"] == "scan" and "qr" in params:
     else: st.json({"status": "error", "open_door": False, "message": "QR Desconocido"})
     st.stop() 
 
-elif "action" in params:
-    action = params["action"]
-    token = params.get("token", "")
-    
-    # 🔒 FLUJO LOGIN BIOMÉTRICO (Este sí usa URL porque estamos deslogueados)
-    if action == "login_bio" and token:
-        usuario_encontrado = None
-        for ced, info in BASE_DATOS_SOCIOS.items():
-            if str(info.get("bio_token", "")) == token:
-                usuario_encontrado = info
-                break
-        
-        if usuario_encontrado:
-            st.session_state.logueado = True
-            st.session_state.usuario_actual = usuario_encontrado
-            st.session_state.mensaje_login = "✅ Verificación FaceID/TouchID exitosa."
-            st.query_params.clear()
-            st.rerun()
-        else:
-            st.error("❌ Dispositivo no reconocido. Inicia sesión con clave y vincúlalo en Ajustes.")
-            st.query_params.clear()
-
 elif "pase" in params:
     id_pase_url = params["pase"]
     if id_pase_url in BASE_DATOS_INVITACIONES:
@@ -401,6 +383,16 @@ elif "pase" in params:
 
 
 # ==========================================
+# LECTURA DEL TOKEN BIOMÉTRICO (SIN RECARGAR PÁGINA)
+# ==========================================
+bio_token_local = ""
+if st_javascript:
+    # Lee silenciosamente la memoria del teléfono
+    res = st_javascript("localStorage.getItem('ventry_bio_token') || '';")
+    if res and res != 0:
+        bio_token_local = str(res)
+
+# ==========================================
 # PANTALLA INICIAL: LOGIN Y REGISTRO
 # ==========================================
 if not st.session_state.logueado:
@@ -431,23 +423,27 @@ if not st.session_state.logueado:
                 st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
         with col2:
-            # 🔒 BOTÓN DE FACEID (Ejecuta validación local)
-            html_faceid = """
-            <script>
-                function loginBio() {
-                    let token = localStorage.getItem("ventry_bio_token");
-                    if (token) {
-                        window.parent.location.href = "?action=login_bio&token=" + token;
-                    } else {
-                        alert("No hay un dispositivo vinculado. Inicia sesión con clave la primera vez.");
-                    }
-                }
-            </script>
-            <div onclick="loginBio()" style="border: 1px solid #1C1C1E; background:#121212; padding: 13px 0px; border-radius: 18px; color: #8E8E93; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; transition:all 0.2s;" onmouseover="this.style.borderColor='#FF6600'; this.style.color='#fff';" onmouseout="this.style.borderColor='#1C1C1E'; this.style.color='#8E8E93';">
-                🔒 FaceID / TouchID
-            </div>
-            """
-            components.html(html_faceid, height=50)
+            st.markdown("<div class='btn-secundario'>", unsafe_allow_html=True)
+            btn_faceid = st.button("🔒 FaceID / TouchID", type="primary")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        if btn_faceid:
+            if bio_token_local:
+                usuario_encontrado = None
+                for ced, info in BASE_DATOS_SOCIOS.items():
+                    if str(info.get("bio_token", "")) == bio_token_local:
+                        usuario_encontrado = info
+                        break
+                
+                if usuario_encontrado:
+                    st.session_state.logueado = True
+                    st.session_state.usuario_actual = usuario_encontrado
+                    st.session_state.mensaje_login = "✅ Verificación FaceID/TouchID exitosa."
+                    st.rerun()
+                else:
+                    st.error("❌ Dispositivo no reconocido en la base de datos.")
+            else:
+                st.error("❌ Dispositivo no vinculado. Inicia sesión con clave la primera vez.")
 
         if boton_entrar:
             if cedula_ingresada in BASE_DATOS_SOCIOS:
@@ -457,7 +453,6 @@ if not st.session_state.logueado:
                     else: 
                         st.session_state.logueado = True
                         st.session_state.usuario_actual = socio
-                        # Activar el prompt solo si no tiene token configurado
                         if not socio.get("bio_token", ""):
                             st.session_state.mostrar_prompt_bio = True
                         st.rerun()
@@ -517,10 +512,10 @@ else:
     socio_actual = st.session_state.usuario_actual
     rol_actual = socio_actual["rol"]
 
-    # 🔒 INYECTOR INVISIBLE DE TOKEN (Se ejecuta solo si hay un token pendiente de guardar)
+    # 🔒 INYECTOR INVISIBLE DE TOKEN
     if "token_a_guardar" in st.session_state:
-        js_save = f"<script>localStorage.setItem('ventry_bio_token', '{st.session_state.token_a_guardar}');</script>"
-        components.html(js_save, height=0)
+        if st_javascript:
+            st_javascript(f"localStorage.setItem('ventry_bio_token', '{st.session_state.token_a_guardar}');")
         st.success("✅ Dispositivo vinculado exitosamente para acceso rápido FaceID/TouchID.")
         del st.session_state.token_a_guardar
 
@@ -595,7 +590,7 @@ else:
         st.success(st.session_state.mensaje_login)
         del st.session_state.mensaje_login
 
-    # 🛑 PROMPT DE VINCULACIÓN AL INICIAR SESIÓN POR PRIMERA VEZ (MÉTODO PYTHON)
+    # 🛑 PROMPT DE VINCULACIÓN AL INICIAR SESIÓN POR PRIMERA VEZ
     if st.session_state.get("mostrar_prompt_bio", False):
         st.markdown("""
         <div style="background:#1C1C1E; border:1px solid #FF6600; border-radius:15px; padding:20px; margin-bottom:20px; box-shadow: 0 10px 30px rgba(255,102,0,0.15);">
@@ -1272,6 +1267,10 @@ else:
             if "sub_ajustes" not in st.session_state: st.session_state.sub_ajustes = "menu"
 
             if st.session_state.sub_ajustes == "menu":
+                if "mensaje_perfil" in st.session_state:
+                    st.success(st.session_state.mensaje_perfil)
+                    del st.session_state.mensaje_perfil
+                    
                 st.markdown("<h3 style='font-size:24px; font-weight:800; color:#fff; margin-bottom: 20px;'>Ajustes</h3>", unsafe_allow_html=True)
                 st.button("Perfil y Seguridad", type="primary", on_click=lambda: st.session_state.update(sub_ajustes="perfil"))
                 st.write("")
@@ -1304,14 +1303,14 @@ else:
                         st.session_state.usuario_actual["clave"] = clave_nueva
                         st.success("✅ Contraseña actualizada exitosamente.")
                 
-                # 🔒 BOTÓN PARA VINCULAR DISPOSITIVO A FACEID / TOUCHID (MÉTODO PYTHON)
+                # 🔒 BOTÓN PARA VINCULAR DISPOSITIVO A FACEID / TOUCHID (NATIVO STREAMLIT)
                 st.write("---")
                 if st.button("🔓 Vincular este dispositivo (FaceID / TouchID)", type="primary", use_container_width=True):
                     nuevo_token = str(uuid.uuid4())
                     BASE_DATOS_SOCIOS[socio_actual["cedula"]]["bio_token"] = nuevo_token
                     guardar_bd(BASE_DATOS_SOCIOS)
                     st.session_state.usuario_actual["bio_token"] = nuevo_token
-                    st.session_state.token_a_guardar = nuevo_token  # Lo atrapa el inyector arriba
+                    st.session_state.token_a_guardar = nuevo_token 
                     st.rerun()
                 
                 st.markdown("<div class='btn-logout'>", unsafe_allow_html=True)
